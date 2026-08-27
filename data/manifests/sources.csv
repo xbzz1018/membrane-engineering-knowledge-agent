@@ -1,0 +1,7 @@
+record_group,source_type,source_url,license_note,local_policy
+fixture_cases,synthetic_fixture,fixture://case-fixtures,synthetic local fixture,commit small fixture
+synthetic_cases,synthetic,synthetic://generated-cases,generated for testing only,commit generated JSONL with synthetic=true
+material_specs,synthetic_fixture,fixture://material-specs,synthetic local fixture,commit small fixture
+price_records,synthetic_fixture,fixture://price-records,synthetic local fixture not market quotation,commit small fixture
+public_cases,public_metadata,https://www.tensinet.com/index.php/database-projects,check site terms before reuse,store metadata and URL only
+technical_specs,public_documents,https://www.birdair.com/resources/specifications/,check document terms before redistribution,local cache and manifest

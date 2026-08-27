@@ -1,0 +1,145 @@
+name: membrane-engineering-agent
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: membrane-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: engineering
+      POSTGRES_PASSWORD: engineering123
+      POSTGRES_DB: engineering_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U engineering -d engineering_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis/redis-stack:7.4.0-v3
+    container_name: membrane-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    volumes:
+      - ./docker/redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.25
+    container_name: membrane-milvus-etcd
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: >-
+      etcd --advertise-client-urls=http://etcd:2379
+      --listen-client-urls=http://0.0.0.0:2379 --data-dir=/etcd
+    volumes:
+      - ./docker/etcd_data:/etcd
+
+  minio:
+    image: minio/minio:latest
+    container_name: membrane-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: minio server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./docker/minio_data:/data
+
+  milvus:
+    image: milvusdb/milvus:v2.6.13
+    container_name: membrane-milvus
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MQ_TYPE: woodpecker
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - ./docker/milvus_data:/var/lib/milvus
+    depends_on:
+      - etcd
+      - minio
+
+  neo4j:
+    image: neo4j:5.20
+    container_name: membrane-neo4j
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/engineering123
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - ./docker/neo4j_data:/data
+      - ./docker/neo4j_logs:/logs
+
+  temporal-postgres:
+    profiles: ["temporal"]
+    image: postgres:17
+    container_name: membrane-temporal-postgres
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+      POSTGRES_DB: temporal
+    volumes:
+      - ./docker/temporal_postgres_data:/var/lib/postgresql/data
+
+  temporal:
+    profiles: ["temporal"]
+    image: temporalio/auto-setup:1.29.0
+    container_name: membrane-temporal
+    environment:
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal
+      POSTGRES_SEEDS: temporal-postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development.yaml
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    depends_on:
+      - temporal-postgres
+
+  kafka:
+    profiles: ["kafka"]
+    image: apache/kafka:4.0.0
+    container_name: membrane-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - "9092:9092"
+    volumes:
+      - ./docker/kafka_data:/var/lib/kafka/data

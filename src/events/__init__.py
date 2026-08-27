@@ -1,0 +1,1 @@
+"""Optional Kafka event integration."""

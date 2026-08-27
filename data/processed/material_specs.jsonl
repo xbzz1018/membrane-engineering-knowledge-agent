@@ -1,0 +1,3 @@
+{"spec_id":"spec-ptfe-standard","material":"PTFE","specification":"玻纤基材涂覆 PTFE","thickness_mm":0.8,"weight_g_m2":1200,"light_transmission_pct":12,"application":"永久性屋盖","source_url":"fixture://spec-ptfe-standard","source_type":"synthetic_fixture","synthetic":true}
+{"spec_id":"spec-pvc-pvdf","material":"PVC/PVDF","specification":"涂层聚酯纤维织物","thickness_mm":0.7,"weight_g_m2":950,"light_transmission_pct":8,"application":"雨棚、车棚","source_url":"fixture://spec-pvc-pvdf","source_type":"synthetic_fixture","synthetic":true}
+{"spec_id":"spec-etfe-200","material":"ETFE","specification":"ETFE 膜 200 μm","thickness_um":200,"weight_g_m2":350,"light_transmission_pct":89,"application":"采光顶、气枕","source_url":"fixture://spec-etfe-200","source_type":"synthetic_fixture","synthetic":true}
