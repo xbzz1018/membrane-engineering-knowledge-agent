@@ -11,6 +11,10 @@
 - 已加入 DeepAgents facade、Temporal Workflow/Activities/Worker 和 Kafka Publisher/Consumer。
 - 已生成 100 条可复现合成工程案例，数据库当前包含 105 条案例、3 条规格和 3 条价格 fixture。
 - 已通过 `pytest`（3 passed）、Ruff、compileall、pip check、Docker Compose config 和幂等 Alembic upgrade。
+- 已添加 `import_api_env.ps1`，可显式从旧项目本地环境文件导入允许的模型变量且不显示密钥。
+- 已添加可选 `temporal` 和 `kafka` Compose Profile；默认服务不依赖二者。
+- 已将旧医疗入口、医疗数据、医疗 Agent 和旧初始化脚本从独立副本移除。
+- 已将项目 README 改为膜结构工程领域说明。
 
 ## 错误记录
 

@@ -9,9 +9,9 @@
 - [x] 阶段 1：独立基线、环境配置和 Fake 模式
 - [x] 阶段 2：医疗领域替换为膜结构工程领域
 - [x] 阶段 3：上传、解析、索引和证据返回
-- [x] 阶段 4：DeepAgents 复杂资料包审查
-- [x] 阶段 5：Temporal 长任务编排
-- [x] 阶段 6：Kafka 批量资料事件 Profile
+- [x] 阶段 4：DeepAgents 复杂资料包审查（facade 已实现，真实模型调用待 API 验收）
+- [x] 阶段 5：Temporal 长任务编排（Workflow/Worker 已实现，服务端重启验收待执行）
+- [x] 阶段 6：Kafka 批量资料事件 Profile（Publisher/Consumer 已实现，Kafka 服务验收待执行）
 - [ ] 阶段 7：数据扩充和完整验收
 
 ## 状态规则
