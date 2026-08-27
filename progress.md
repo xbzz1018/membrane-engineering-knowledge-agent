@@ -9,7 +9,8 @@
 - 已创建 F 盘 Conda 环境 `F:\code\homework\conda-envs\agent-membrane` 并安装核心及可选依赖。
 - 已替换启动入口、配置、数据库、文档上传、工程领域 Supervisor 和资料包审查 API。
 - 已加入 DeepAgents facade、Temporal Workflow/Activities/Worker 和 Kafka Publisher/Consumer。
-- 已生成 100 条可复现合成工程案例，数据库当前包含 105 条案例、3 条规格和 3 条价格 fixture。
+- 已生成 100 条可复现合成工程案例，并从 TensiNet 分页采集 100 条公开项目元数据；数据库当前包含 205 条案例、3 条规格和 3 条价格 fixture。
+- 已加入 `collect_public_case_metadata.py` 和 `validate_data.py`，公开案例唯一 ID、必需字段和 provenance 校验通过。
 - 已通过 `pytest`（3 passed）、Ruff、compileall、pip check、Docker Compose config 和幂等 Alembic upgrade。
 - 已添加 `import_api_env.ps1`，可显式从旧项目本地环境文件导入允许的模型变量且不显示密钥。
 - 已添加可选 `temporal` 和 `kafka` Compose Profile；默认服务不依赖二者。
