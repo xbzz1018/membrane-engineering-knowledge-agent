@@ -9,7 +9,11 @@ from src.engineering.storage import EngineeringStorage, cases, prices, specs
 async def seed_local_data(store: EngineeringStorage) -> dict[str, int]:
     data_root = store.settings.data_path if hasattr(store, "settings") else Path(__file__).resolve().parents[2] / "data" / "processed"
     # Keep the committed fixture small; larger datasets are imported by scripts.
-    case_rows = _read_jsonl(data_root / "cases.jsonl")
+    case_rows = (
+        _read_jsonl(data_root / "cases.jsonl")
+        + _read_jsonl(data_root / "synthetic_cases.jsonl")
+        + _read_jsonl(data_root / "public_cases.jsonl")
+    )
     spec_rows = _read_jsonl(data_root / "material_specs.jsonl")
     price_rows = _read_jsonl(data_root / "price_records.jsonl")
     return {

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, HTTPException
 
 from src.core.config import get_settings
@@ -14,7 +16,7 @@ router = APIRouter(prefix="/api/v1/package-reviews", tags=["package-review"])
 @router.post("", response_model=PackageReviewResponse)
 async def package_review(request: PackageReviewRequest) -> PackageReviewResponse:
     if get_settings().TEMPORAL_ENABLED:
-        review_id = __import__("uuid").uuid4().hex
+        review_id = uuid.uuid4().hex
         workflow = await submit_package_review(review_id, request.document_ids, request.question)
         return PackageReviewResponse(
             review_id=review_id,

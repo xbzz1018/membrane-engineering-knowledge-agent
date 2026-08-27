@@ -57,9 +57,9 @@ class Settings(BaseSettings):
     NEO4J_PASSWORD: str = "engineering123"
 
     PARSER_MODE: str = "basic"  # basic | mineru
-    MINERU_EXECUTABLE: str = ""
+    MINERU_EXECUTABLE: str = r"F:\code\homework\project\1_membrane_project_precheck\runtime\envs\mineru\Scripts\mineru.exe"
     MINERU_API_URL: str = ""
-    MINERU_WORK_ROOT: str = ""
+    MINERU_WORK_ROOT: str = r"F:\code\homework\model-cache\mineru"
     MINERU_TIMEOUT: int = Field(default=900, ge=30, le=3600)
 
     DEEPAGENTS_ENABLED: bool = False

@@ -82,6 +82,15 @@ POST /api/v1/package-reviews
 
 `data/processed` 中的文件是可提交的小型 fixture。公开数据采集和 100+ 案例扩充使用 `scripts`，原始 PDF 放在本地 `data/raw`，仓库只保存来源、许可证和 SHA-256 manifest。合成案例和价格记录均标记 `synthetic=true`。
 
+生成并导入本地案例：
+
+```powershell
+& F:\code\homework\conda-envs\agent-membrane\python.exe scripts\collect_public_case_metadata.py --limit 100
+& F:\code\homework\conda-envs\agent-membrane\python.exe scripts\build_synthetic_cases.py --count 100
+& F:\code\homework\conda-envs\agent-membrane\python.exe scripts\seed_data.py
+& F:\code\homework\conda-envs\agent-membrane\python.exe scripts\validate_data.py
+```
+
 ## 项目边界
 
 这是一个可复现的 Agent 应用项目，不是正式工程设计或报价软件。所有工程安全结论、最终选材和合同报价都必须由专业人员复核。

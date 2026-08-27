@@ -19,7 +19,11 @@ def read_jsonl(path: Path) -> list[dict]:
 async def main() -> None:
     await storage.init()
     root = storage.settings.data_path
-    case_rows = read_jsonl(root / "cases.jsonl") + read_jsonl(root / "synthetic_cases.jsonl")
+    case_rows = (
+        read_jsonl(root / "cases.jsonl")
+        + read_jsonl(root / "synthetic_cases.jsonl")
+        + read_jsonl(root / "public_cases.jsonl")
+    )
     spec_rows = read_jsonl(root / "material_specs.jsonl")
     price_rows = read_jsonl(root / "price_records.jsonl")
     counts = {
