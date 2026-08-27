@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import re
@@ -28,7 +29,7 @@ def _text(pattern: str, body: str) -> str:
     return re.sub(r"\s+", " ", html.unescape(value)).strip()
 
 
-def parse_projects(content: str) -> list[dict]:
+def parse_projects(content: str, source_page_url: str = BASE_URL, source_sha256: str = "") -> list[dict]:
     rows = []
     for match in PROJECT_PATTERN.finditer(content):
         body = match.group("body")
@@ -41,9 +42,11 @@ def parse_projects(content: str) -> list[dict]:
             "location": _text(r'project-info-title">Location:\s*</span>\s*<h5>(.*?)</h5>', body) or "unknown",
             "year": None,
             "source_url": urljoin(BASE_URL, match.group("href")),
+            "source_page_url": source_page_url,
             "source_type": "public_metadata",
             "license": "TensiNet site terms; metadata and source link only",
             "retrieved_at": datetime.now(UTC).isoformat(),
+            "source_sha256": source_sha256 or hashlib.sha256(content.encode("utf-8")).hexdigest(),
             "synthetic": False,
         })
     return rows
@@ -78,7 +81,12 @@ def collect(limit: int, delay: float) -> list[dict]:
             if token:
                 form[token] = "1"
             page = fetch(opener, urljoin(BASE_URL, "/index.php/projects-database/projects"), urlencode(form).encode())
-        page_rows = parse_projects(page)
+        source_page_url = BASE_URL if offset == 0 else urljoin(BASE_URL, "/index.php/projects-database/projects")
+        page_rows = parse_projects(
+            page,
+            source_page_url=source_page_url,
+            source_sha256=hashlib.sha256(page.encode("utf-8")).hexdigest(),
+        )
         if not page_rows:
             break
         for row in page_rows:

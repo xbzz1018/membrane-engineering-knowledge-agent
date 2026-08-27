@@ -1,26 +1,39 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$SourceFile,
-    [string]$TargetFile = ".env"
+    [string]$TargetFile = ".env",
+    [switch]$EnableApiMode
 )
 
 $ErrorActionPreference = "Stop"
 if (-not (Test-Path -LiteralPath $SourceFile)) { throw "Source env file does not exist: $SourceFile" }
 
 $allowed = @(
-    "DASHSCOPE_API_KEY", "DEEPSEEK_API_KEY", "OPENAI_API_KEY",
-    "BASE_URL_CHAT", "CHAT_MODEL", "EMBEDDING_MODEL", "VL_MODEL",
+    "DASHSCOPE_API_KEY", "DASHSCOPE_API_BASE", "DASHSCOPE_MODEL",
+    "DEEPSEEK_API_KEY", "DEEPSEEK_API_BASE", "DEEPSEEK_MODEL",
+    "GATEWAY_API_KEY", "GATEWAY_API_BASE", "GATEWAY_MODEL", "GATEWAY_EMBEDDING_MODEL",
+    "EMBEDDING_PROVIDER", "EMBEDDING_API_KEY", "EMBEDDING_API_BASE",
+    "EMBEDDING_MODEL", "EMBEDDING_DIMENSIONS", "CHAT_MODEL", "VL_MODEL",
     "MINERU_API_URL"
 )
+$renamed = @{ "LLM_PROVIDER" = "MODEL_PROVIDER" }
 $sourceValues = @{}
 foreach ($line in Get-Content -LiteralPath $SourceFile) {
     if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$') {
         $name = $Matches[1]
         if ($allowed -contains $name) { $sourceValues[$name] = $Matches[2] }
+        if ($renamed.ContainsKey($name)) { $sourceValues[$renamed[$name]] = $Matches[2] }
     }
 }
 
-$targetLines = if (Test-Path -LiteralPath $TargetFile) { @(Get-Content -LiteralPath $TargetFile) } else { @() }
+$targetLines = if (Test-Path -LiteralPath $TargetFile) {
+    @(Get-Content -LiteralPath $TargetFile)
+} elseif (Test-Path -LiteralPath ".env.example") {
+    @(Get-Content -LiteralPath ".env.example")
+} else {
+    @()
+}
+if ($EnableApiMode) { $sourceValues["MODEL_MODE"] = "api" }
 $written = [System.Collections.Generic.HashSet[string]]::new()
 $output = foreach ($line in $targetLines) {
     if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=') {
@@ -33,7 +46,7 @@ $output = foreach ($line in $targetLines) {
     }
     $line
 }
-foreach ($name in $allowed) {
+foreach ($name in @($allowed + $renamed.Values + "MODEL_MODE")) {
     if ($sourceValues.ContainsKey($name) -and -not $written.Contains($name)) {
         $output += "$name=$($sourceValues[$name])"
     }

@@ -1,32 +1,64 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 from typing import Any
 
 import httpx
 
-from src.core.config import get_settings
+from src.core.config import Settings, get_settings
+
+
+class ProviderConfigurationError(RuntimeError):
+    """Raised when API mode has no complete provider configuration."""
+
+
+class ProviderRequestError(RuntimeError):
+    """Raised for a failed remote model request without exposing credentials."""
 
 
 class ModelProvider:
-    """Small OpenAI-compatible adapter with deterministic no-key fallback."""
+    """OpenAI-compatible adapter with an explicit, isolated Fake mode."""
 
-    def __init__(self):
-        self.settings = get_settings()
+    def __init__(self, settings: Settings | None = None):
+        self.settings = settings or get_settings()
         self.provider = self._select_provider()
-        self.model = self.settings.CHAT_MODEL
+        self.model = self._chat_model()
 
     def _select_provider(self) -> str:
+        mode = self.settings.MODEL_MODE.lower()
         requested = self.settings.MODEL_PROVIDER.lower()
-        if self.settings.MODEL_MODE.lower() == "fake" or requested == "fake":
+        if mode == "fake":
             return "fake"
-        if requested == "dashscope" or (requested == "auto" and self.settings.DASHSCOPE_API_KEY):
-            return "dashscope"
-        if requested == "deepseek" or (requested == "auto" and self.settings.DEEPSEEK_API_KEY):
-            return "deepseek"
-        if requested == "openai" or (requested == "auto" and self.settings.BASE_URL_CHAT):
-            return "openai"
-        return "fake"
+        if mode != "api":
+            raise ProviderConfigurationError("MODEL_MODE must be 'fake' or 'api'")
+        if requested == "fake":
+            raise ProviderConfigurationError("MODEL_PROVIDER=fake is not allowed when MODEL_MODE=api")
+
+        configured = {
+            "deepseek": bool(self.settings.DEEPSEEK_API_KEY),
+            "gateway": bool(self.settings.GATEWAY_API_KEY and self.settings.GATEWAY_API_BASE),
+            "dashscope": bool(self.settings.DASHSCOPE_API_KEY),
+        }
+        if requested == "auto":
+            for candidate in ("deepseek", "gateway", "dashscope"):
+                if configured[candidate]:
+                    return candidate
+            raise ProviderConfigurationError("MODEL_MODE=api requires a configured chat provider")
+        if requested not in configured:
+            raise ProviderConfigurationError(f"Unsupported MODEL_PROVIDER: {requested}")
+        if not configured[requested]:
+            raise ProviderConfigurationError(f"Incomplete configuration for provider: {requested}")
+        return requested
+
+    def _chat_model(self) -> str:
+        if self.provider == "deepseek":
+            return self.settings.DEEPSEEK_MODEL or self.settings.CHAT_MODEL
+        if self.provider == "gateway":
+            return self.settings.GATEWAY_MODEL or self.settings.CHAT_MODEL
+        if self.provider == "dashscope":
+            return self.settings.DASHSCOPE_MODEL or self.settings.CHAT_MODEL
+        return "deterministic"
 
     @property
     def metadata(self) -> dict[str, Any]:
@@ -49,17 +81,55 @@ class ModelProvider:
 
     def _base_url(self) -> str:
         if self.provider == "dashscope":
-            return self.settings.BASE_URL_CHAT or "https://dashscope.aliyuncs.com/compatible-mode/v1"
+            return self.settings.DASHSCOPE_API_BASE.rstrip("/")
         if self.provider == "deepseek":
-            return self.settings.BASE_URL_CHAT or "https://api.deepseek.com"
-        return self.settings.BASE_URL_CHAT.rstrip("/")
+            return self.settings.DEEPSEEK_API_BASE.rstrip("/")
+        if self.provider == "gateway":
+            return self.settings.GATEWAY_API_BASE.rstrip("/")
+        raise ProviderConfigurationError("Fake mode has no remote base URL")
 
     def _api_key(self) -> str:
         if self.provider == "dashscope":
             return self.settings.DASHSCOPE_API_KEY
         if self.provider == "deepseek":
             return self.settings.DEEPSEEK_API_KEY
-        return self.settings.DASHSCOPE_API_KEY or self.settings.DEEPSEEK_API_KEY
+        if self.provider == "gateway":
+            return self.settings.GATEWAY_API_KEY
+        raise ProviderConfigurationError("Fake mode has no API key")
+
+    def _embedding_config(self) -> tuple[str, str, str, str]:
+        if self.settings.MODEL_MODE.lower() == "fake":
+            return "fake", "", "", self.settings.EMBEDDING_MODEL
+        requested = self.settings.EMBEDDING_PROVIDER.lower()
+        if requested in {"local", "custom", "openai"}:
+            requested = "embedding"
+        options = {
+            "embedding": (
+                self.settings.EMBEDDING_API_BASE,
+                self.settings.EMBEDDING_API_KEY,
+                self.settings.EMBEDDING_MODEL,
+            ),
+            "gateway": (
+                self.settings.GATEWAY_API_BASE,
+                self.settings.GATEWAY_API_KEY,
+                self.settings.GATEWAY_EMBEDDING_MODEL or self.settings.EMBEDDING_MODEL,
+            ),
+            "dashscope": (
+                self.settings.DASHSCOPE_API_BASE,
+                self.settings.DASHSCOPE_API_KEY,
+                self.settings.EMBEDDING_MODEL,
+            ),
+        }
+        if requested == "fake":
+            raise ProviderConfigurationError("EMBEDDING_PROVIDER=fake is not allowed when MODEL_MODE=api")
+        candidates = ("embedding", "gateway", "dashscope") if requested == "auto" else (requested,)
+        for candidate in candidates:
+            if candidate not in options:
+                raise ProviderConfigurationError(f"Unsupported EMBEDDING_PROVIDER: {candidate}")
+            base_url, api_key, model = options[candidate]
+            if base_url and api_key and model:
+                return candidate, base_url.rstrip("/"), api_key, model
+        raise ProviderConfigurationError("MODEL_MODE=api requires a configured embedding provider")
 
     async def chat(self, system: str, user: str, json_mode: bool = False) -> tuple[str, dict[str, Any]]:
         if self.provider == "fake":
@@ -73,33 +143,71 @@ class ModelProvider:
         if json_mode:
             body["response_format"] = {"type": "json_object"}
         headers = {"Authorization": f"Bearer {self._api_key()}", "Content-Type": "application/json"}
-        try:
-            async with httpx.AsyncClient(timeout=self.settings.MODEL_TIMEOUT_SECONDS) as client:
-                response = await client.post(f"{self._base_url()}/chat/completions", headers=headers, json=body)
-                response.raise_for_status()
-                payload = response.json()
-            content = payload["choices"][0]["message"].get("content", "")
-            return content, {"provider": self.provider, "model": self.model, "usage": payload.get("usage", {})}
-        except Exception as exc:
-            return self._fake_answer(user), {"provider": "fake-fallback", "error": str(exc)}
+        last_error: Exception | None = None
+        for attempt in range(self.settings.MODEL_RETRY_ATTEMPTS):
+            try:
+                async with httpx.AsyncClient(timeout=self.settings.MODEL_TIMEOUT_SECONDS) as client:
+                    response = await client.post(f"{self._base_url()}/chat/completions", headers=headers, json=body)
+                    response.raise_for_status()
+                    payload = response.json()
+                content = payload["choices"][0]["message"].get("content", "")
+                if not isinstance(content, str) or not content.strip():
+                    raise ValueError("empty model content")
+                return content, {
+                    "provider": self.provider,
+                    "model": self.model,
+                    "usage": payload.get("usage", {}),
+                    "attempts": attempt + 1,
+                }
+            except Exception as exc:
+                last_error = exc
+                if attempt + 1 < self.settings.MODEL_RETRY_ATTEMPTS:
+                    await asyncio.sleep(self.settings.MODEL_RETRY_BACKOFF_SECONDS * (2 ** attempt))
+        raise ProviderRequestError(
+            f"{self.provider} chat request failed ({type(last_error).__name__})"
+        ) from last_error
 
     async def embed(self, text: str) -> list[float]:
-        if self.provider != "dashscope" or not self.settings.DASHSCOPE_API_KEY:
+        provider, base_url, api_key, model = self._embedding_config()
+        if provider == "fake":
             return self._fake_embedding(text)
-        body = {"model": self.settings.EMBEDDING_MODEL, "input": [text]}
-        headers = {"Authorization": f"Bearer {self.settings.DASHSCOPE_API_KEY}", "Content-Type": "application/json"}
-        try:
-            async with httpx.AsyncClient(timeout=self.settings.MODEL_TIMEOUT_SECONDS) as client:
-                response = await client.post(f"{self._base_url()}/embeddings", headers=headers, json=body)
-                response.raise_for_status()
-                return response.json()["data"][0]["embedding"]
-        except Exception:
-            return self._fake_embedding(text)
+        body: dict[str, Any] = {"model": model, "input": [text]}
+        body["dimensions"] = self.settings.EMBEDDING_DIMENSIONS
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        last_error: Exception | None = None
+        for attempt in range(self.settings.MODEL_RETRY_ATTEMPTS):
+            try:
+                async with httpx.AsyncClient(timeout=self.settings.MODEL_TIMEOUT_SECONDS) as client:
+                    response = await client.post(f"{base_url}/embeddings", headers=headers, json=body)
+                    response.raise_for_status()
+                    vector = response.json()["data"][0]["embedding"]
+                if not isinstance(vector, list) or not vector:
+                    raise ValueError("empty embedding vector")
+                return vector
+            except Exception as exc:
+                last_error = exc
+                if attempt + 1 < self.settings.MODEL_RETRY_ATTEMPTS:
+                    await asyncio.sleep(self.settings.MODEL_RETRY_BACKOFF_SECONDS * (2 ** attempt))
+        raise ProviderRequestError(
+            f"{provider} embedding request failed ({type(last_error).__name__})"
+        ) from last_error
 
-    @staticmethod
-    def _fake_embedding(text: str) -> list[float]:
+    async def health(self) -> dict[str, Any]:
+        if self.provider == "fake":
+            return {"enabled": True, "healthy": True, "detail": "deterministic fake mode"}
+        try:
+            headers = {"Authorization": f"Bearer {self._api_key()}"}
+            async with httpx.AsyncClient(timeout=self.settings.HEALTHCHECK_TIMEOUT_SECONDS) as client:
+                response = await client.get(f"{self._base_url()}/models", headers=headers)
+                response.raise_for_status()
+            return {"enabled": True, "healthy": True, "detail": self.provider}
+        except Exception as exc:
+            return {"enabled": True, "healthy": False, "detail": type(exc).__name__}
+
+    def _fake_embedding(self, text: str) -> list[float]:
         digest = hashlib.sha256(text.encode("utf-8")).digest()
-        return [((byte / 255.0) * 2) - 1 for byte in digest]
+        dimensions = self.settings.EMBEDDING_DIMENSIONS
+        return [((digest[index % len(digest)] / 255.0) * 2) - 1 for index in range(dimensions)]
 
     @staticmethod
     def _fake_answer(user: str) -> str:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -62,17 +63,38 @@ async def parse_document(path: str) -> tuple[list[dict[str, Any]], str]:
         if executable.exists():
             # MinerU output formats vary by version; use it when successful and fall back safely.
             try:
-                output_dir = Path(settings.MINERU_WORK_ROOT or settings.upload_path / "mineru")
-                output_dir.mkdir(parents=True, exist_ok=True)
-                proc = await asyncio.create_subprocess_exec(
-                    str(executable), "-p", str(file_path), "-o", str(output_dir),
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                )
-                await asyncio.wait_for(proc.communicate(), timeout=settings.MINERU_TIMEOUT)
-                markdown = next(output_dir.rglob("*.md"), None)
-                if markdown and markdown.exists():
-                    chunks = [{"page_number": 1, "chunk_index": i, "text": item} for i, item in enumerate(_chunks(markdown.read_text(encoding="utf-8", errors="ignore")))]
-                    return chunks, "mineru"
+                work_root = Path(settings.MINERU_WORK_ROOT or settings.upload_path / "mineru")
+                work_root.mkdir(parents=True, exist_ok=True)
+                with tempfile.TemporaryDirectory(prefix="ingest-", dir=work_root) as temporary:
+                    command = [
+                        str(executable),
+                        "-p", str(file_path),
+                        "-o", temporary,
+                        "--backend", settings.MINERU_BACKEND,
+                        "--method", settings.MINERU_METHOD,
+                        "--lang", settings.MINERU_LANG,
+                    ]
+                    if settings.MINERU_API_URL:
+                        command.extend(("--api-url", settings.MINERU_API_URL))
+                    proc = await asyncio.create_subprocess_exec(
+                        *command,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                    )
+                    _, stderr = await asyncio.wait_for(proc.communicate(), timeout=settings.MINERU_TIMEOUT)
+                    if proc.returncode != 0:
+                        detail = stderr.decode("utf-8", errors="ignore")[-500:]
+                        raise RuntimeError(f"MinerU exited with {proc.returncode}: {detail}")
+                    markdown_files = sorted(Path(temporary).rglob("*.md"))
+                    if markdown_files:
+                        text = "\n".join(
+                            path.read_text(encoding="utf-8", errors="ignore") for path in markdown_files
+                        )
+                        chunks = [
+                            {"page_number": 1, "chunk_index": i, "text": item}
+                            for i, item in enumerate(_chunks(text))
+                        ]
+                        return chunks, "mineru"
             except Exception:
                 pass
     return await asyncio.to_thread(parse_basic, file_path), "basic"

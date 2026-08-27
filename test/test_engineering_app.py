@@ -50,6 +50,10 @@ def test_upload_index_and_package_review() -> None:
     )
     assert review.status_code == 200
     assert review.json()["status"] == "completed"
+    persisted = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}")
+    assert persisted.status_code == 200
+    assert persisted.json()["report"] == review.json()["report"]
+    assert persisted.json()["sources"]
 
 
 def test_unknown_document_is_rejected() -> None:
@@ -59,3 +63,8 @@ def test_unknown_document_is_rejected() -> None:
         json={"document_ids": ["missing-document"]},
     )
     assert response.status_code == 400
+
+
+def test_unknown_package_review_returns_404() -> None:
+    response = request("GET", "/api/v1/package-reviews/missing-review")
+    assert response.status_code == 404

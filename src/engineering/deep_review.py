@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 from typing import Any
 
@@ -18,11 +19,7 @@ async def _collect_evidence(document_ids: list[str]) -> tuple[str, list[dict[str
     parts: list[str] = []
     sources: list[dict[str, Any]] = []
     for document in documents:
-        chunks = await storage.search_chunks(document["filename"], limit=20)
-        chunks = [item for item in chunks if item["document_id"] == document["id"]]
-        if not chunks:
-            chunks = await storage.search_chunks(document["id"], limit=20)
-            chunks = [item for item in chunks if item["document_id"] == document["id"]]
+        chunks = await storage.list_document_chunks(document["id"], limit=20)
         sources.append(SourceRef(
             source_id=f"doc:{document['id']}",
             title=document["filename"],
@@ -55,50 +52,105 @@ async def _run_deepagents(request: PackageReviewRequest, evidence: str) -> tuple
     settings = get_settings()
     if not settings.DEEPAGENTS_ENABLED:
         return None
-    try:
-        from deepagents import create_deep_agent
-    except Exception:
-        return None
-    try:
-        provider = get_model_provider()
-        model = provider.langchain_model()
+    if len(request.document_ids) < 2:
+        raise ValueError("DeepAgents 资料包审查至少需要两个文档")
+    from deepagents import (
+        GeneralPurposeSubagentProfile,
+        HarnessProfile,
+        create_deep_agent,
+        register_harness_profile,
+    )
+    from deepagents.backends import StateBackend
+    from deepagents.middleware.filesystem import FilesystemMiddleware, FilesystemPermission
 
-        async def read_evidence(_: str = "") -> str:
-            """Read the evidence bundle selected for this review."""
-            return evidence[:18000]
+    provider = get_model_provider()
+    model = provider.langchain_model()
+    backend = StateBackend()
+    permissions = [
+        FilesystemPermission(operations=["read"], paths=["/evidence/**"], mode="allow"),
+        FilesystemPermission(operations=["read", "write"], paths=["/**"], mode="deny"),
+    ]
 
-        async def write_report(report: str) -> str:
-            """Return a report draft for the caller to persist."""
-            return report
-
-        agent = create_deep_agent(
-            model=model,
-            tools=[read_evidence, write_report],
-            system_prompt=(
-                "你是膜结构工程资料审查 Agent。只能使用提供的文档证据，"
-                "比较设计方案、膜材规格和价格记录，不做结构安全计算和正式报价。"
-            ),
-            subagents=[
-                {
-                    "name": "design_researcher",
-                    "description": "分析设计方案和工程案例",
-                    "system_prompt": "只分析设计方案、结构形式和应用场景，并引用输入证据。",
-                    "tools": [read_evidence],
-                },
-                {
-                    "name": "material_researcher",
-                    "description": "分析膜材规格和价格资料",
-                    "system_prompt": "只分析膜材规格、单位、日期和价格来源，不生成正式报价。",
-                    "tools": [read_evidence],
-                },
-            ],
+    def restricted_filesystem() -> FilesystemMiddleware:
+        return FilesystemMiddleware(
+            backend=backend,
+            tools=["ls", "read_file"],
+            _permissions=permissions,
         )
-        result = await agent.ainvoke({"messages": [{"role": "user", "content": request.question}]})
-        messages = result.get("messages", []) if isinstance(result, dict) else []
-        answer = messages[-1].content if messages and hasattr(messages[-1], "content") else str(result)
-        return answer, "deepagents"
-    except Exception:
-        return None
+
+    register_harness_profile(
+        "openai",
+        HarnessProfile(
+            excluded_tools=frozenset({"execute", "write_file", "edit_file", "delete", "glob", "grep"}),
+            general_purpose_subagent=GeneralPurposeSubagentProfile(enabled=False),
+        ),
+    )
+    subagents = [
+        {
+            "name": "design_reviewer",
+            "description": "审查设计方案、结构形式、适用场景和版本冲突",
+            "system_prompt": (
+                "只读取 /evidence/package.md，审查设计方案、结构形式、适用场景和版本冲突。"
+                "每个结论必须引用文件名和页码；不做结构安全计算。"
+            ),
+            "tools": [],
+            "middleware": [restricted_filesystem()],
+            "permissions": permissions,
+        },
+        {
+            "name": "material_reviewer",
+            "description": "审查膜材型号、规格、单位、日期和版本",
+            "system_prompt": (
+                "只读取 /evidence/package.md，审查膜材型号、规格、单位、日期和版本。"
+                "每个结论必须引用文件名和页码；证据不足时明确说明。"
+            ),
+            "tools": [],
+            "middleware": [restricted_filesystem()],
+            "permissions": permissions,
+        },
+        {
+            "name": "price_reviewer",
+            "description": "审查价格记录的单位、日期、来源和可比性",
+            "system_prompt": (
+                "只读取 /evidence/package.md，审查价格记录的单位、日期、来源和可比性。"
+                "不得生成正式报价；每个结论必须引用文件名和页码。"
+            ),
+            "tools": [],
+            "middleware": [restricted_filesystem()],
+            "permissions": permissions,
+        },
+    ]
+    agent = create_deep_agent(
+        model=model,
+        tools=[],
+        backend=backend,
+        permissions=permissions,
+        middleware=[restricted_filesystem()],
+        system_prompt=(
+            "你是膜结构工程资料包主审 Agent。必须分别委派 design_reviewer、material_reviewer、"
+            "price_reviewer，然后仅依据 /evidence/package.md 汇总。报告包含方案、膜材、价格、冲突、"
+            "证据不足和待人工确认；不得进行结构安全计算或生成正式报价。"
+        ),
+        subagents=subagents,
+    )
+    state = {
+        "messages": [{"role": "user", "content": request.question}],
+        "files": {
+            "/evidence/package.md": {
+                "content": evidence[:50000],
+                "encoding": "utf-8",
+            }
+        },
+    }
+    result = await asyncio.wait_for(
+        agent.ainvoke(state),
+        timeout=settings.DEEPAGENTS_TIMEOUT_SECONDS,
+    )
+    messages = result.get("messages", []) if isinstance(result, dict) else []
+    answer = messages[-1].content if messages and hasattr(messages[-1], "content") else str(result)
+    if not isinstance(answer, str) or not answer.strip():
+        raise RuntimeError("DeepAgents returned an empty report")
+    return answer, "deepagents"
 
 
 async def run_package_review(request: PackageReviewRequest) -> dict[str, Any]:

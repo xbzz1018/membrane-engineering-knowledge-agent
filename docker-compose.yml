@@ -24,8 +24,8 @@ services:
     container_name: membrane-redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
-      - "8001:8001"
+      - "16379:6379"
+      - "18001:8001"
     volumes:
       - ./docker/redis_data:/data
     healthcheck:
@@ -47,6 +47,11 @@ services:
       --listen-client-urls=http://0.0.0.0:2379 --data-dir=/etcd
     volumes:
       - ./docker/etcd_data:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   minio:
     image: minio/minio:latest
@@ -57,10 +62,15 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     command: minio server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "19000:9000"
+      - "19001:9001"
     volumes:
       - ./docker/minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   milvus:
     image: milvusdb/milvus:v2.6.13
@@ -78,8 +88,15 @@ services:
     volumes:
       - ./docker/milvus_data:/var/lib/milvus
     depends_on:
-      - etcd
-      - minio
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
   neo4j:
     image: neo4j:5.20
@@ -95,6 +112,11 @@ services:
     volumes:
       - ./docker/neo4j_data:/data
       - ./docker/neo4j_logs:/logs
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p engineering123 'RETURN 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
   temporal-postgres:
     profiles: ["temporal"]
@@ -106,23 +128,33 @@ services:
       POSTGRES_DB: temporal
     volumes:
       - ./docker/temporal_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   temporal:
     profiles: ["temporal"]
     image: temporalio/auto-setup:1.29.0
     container_name: membrane-temporal
     environment:
-      DB: postgresql
+      DB: postgres12
       DB_PORT: 5432
       POSTGRES_USER: temporal
       POSTGRES_PWD: temporal
       POSTGRES_SEEDS: temporal-postgres
-      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development.yaml
     ports:
       - "7233:7233"
       - "8233:8233"
     depends_on:
-      - temporal-postgres
+      temporal-postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "temporal:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
 
   kafka:
     profiles: ["kafka"]
@@ -143,3 +175,8 @@ services:
       - "9092:9092"
     volumes:
       - ./docker/kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20

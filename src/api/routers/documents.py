@@ -8,6 +8,7 @@ from src.core.config import get_settings
 from src.engineering.parsing import parse_document
 from src.engineering.schemas import DocumentResponse, IndexResponse
 from src.engineering.storage import storage
+from src.events.kafka_events import publisher
 from src.workflows.temporal_app import submit_document_ingest
 
 router = APIRouter(prefix="/api/v1/documents", tags=["documents"])
@@ -34,7 +35,19 @@ async def index_document(document_id: str) -> IndexResponse:
         raise HTTPException(status_code=404, detail="文档不存在")
     if get_settings().TEMPORAL_ENABLED:
         workflow = await submit_document_ingest(document_id)
-        return IndexResponse(document_id=document_id, chunks=0, parser="temporal", status=workflow["status"])
-    chunks, parser = await parse_document(row["stored_path"])
+        return IndexResponse(
+            document_id=document_id,
+            chunks=0,
+            parser="temporal",
+            status=workflow["status"],
+            workflow_id=workflow["workflow_id"],
+        )
+    local_path = await storage.resolve_document_path(row)
+    chunks, parser = await parse_document(str(local_path))
     count = await storage.save_chunks(document_id, chunks, parser)
+    await publisher.publish(
+        "document.ingest.completed",
+        document_id,
+        {"document_id": document_id, "chunks": count, "parser": parser},
+    )
     return IndexResponse(document_id=document_id, chunks=count, parser=parser, status="indexed")

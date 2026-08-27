@@ -10,6 +10,11 @@ class SourceRef(BaseModel):
     location: str = ""
     url: str = ""
     excerpt: str = ""
+    date: str = ""
+    version: str = ""
+    retrieval: list[dict] = Field(default_factory=list)
+    fusion_score: float | None = None
+    fusion_method: str = ""
 
 
 class ChatRequest(BaseModel):
@@ -41,6 +46,7 @@ class IndexResponse(BaseModel):
     chunks: int
     parser: str
     status: str
+    workflow_id: str = ""
 
 
 class PackageReviewRequest(BaseModel):
@@ -58,3 +64,21 @@ class PackageReviewResponse(BaseModel):
     sources: list[SourceRef] = Field(default_factory=list)
     conflicts: list[str] = Field(default_factory=list)
     workflow: dict | None = None
+    created_at: str = ""
+
+
+class MemoryItemResponse(BaseModel):
+    memory_id: str
+    user_id: str
+    kind: str
+    content: str
+    source: str
+    created_at: str
+
+
+class WorkflowDecisionRequest(BaseModel):
+    reason: str = Field(default="", max_length=1000)
+
+
+class BatchImportRequest(BaseModel):
+    document_ids: list[str] = Field(min_length=1, max_length=100)

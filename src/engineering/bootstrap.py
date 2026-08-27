@@ -6,20 +6,25 @@ from pathlib import Path
 from src.engineering.storage import EngineeringStorage, cases, prices, specs
 
 
-async def seed_local_data(store: EngineeringStorage) -> dict[str, int]:
+def load_local_data(store: EngineeringStorage) -> dict[str, list[dict]]:
     data_root = store.settings.data_path if hasattr(store, "settings") else Path(__file__).resolve().parents[2] / "data" / "processed"
-    # Keep the committed fixture small; larger datasets are imported by scripts.
-    case_rows = (
-        _read_jsonl(data_root / "cases.jsonl")
-        + _read_jsonl(data_root / "synthetic_cases.jsonl")
-        + _read_jsonl(data_root / "public_cases.jsonl")
-    )
-    spec_rows = _read_jsonl(data_root / "material_specs.jsonl")
-    price_rows = _read_jsonl(data_root / "price_records.jsonl")
     return {
-        "cases": await store.seed_payloads(cases, case_rows, "case_id"),
-        "specs": await store.seed_payloads(specs, spec_rows, "spec_id"),
-        "prices": await store.seed_payloads(prices, price_rows, "price_id"),
+        "cases": (
+            _read_jsonl(data_root / "cases.jsonl")
+            + _read_jsonl(data_root / "synthetic_cases.jsonl")
+            + _read_jsonl(data_root / "public_cases.jsonl")
+        ),
+        "specs": _read_jsonl(data_root / "material_specs.jsonl"),
+        "prices": _read_jsonl(data_root / "price_records.jsonl"),
+    }
+
+
+async def seed_local_data(store: EngineeringStorage) -> dict[str, int]:
+    rows = load_local_data(store)
+    return {
+        "cases": await store.seed_payloads(cases, rows["cases"], "case_id"),
+        "specs": await store.seed_payloads(specs, rows["specs"], "spec_id"),
+        "prices": await store.seed_payloads(prices, rows["prices"], "price_id"),
     }
 
 

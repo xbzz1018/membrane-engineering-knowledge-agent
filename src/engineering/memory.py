@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 
 from src.core.config import get_settings
@@ -15,6 +16,21 @@ class MemoryService:
 
     async def load_short(self, user_id: str, session_id: str) -> list[dict]:
         key = f"{user_id}:{session_id}"
+        if self.settings.RUNTIME_MODE.lower() == "full":
+            from redis.asyncio import Redis
+
+            redis = Redis(
+                host=self.settings.REDIS_HOST,
+                port=self.settings.REDIS_PORT,
+                password=self.settings.REDIS_PASSWORD or None,
+                db=self.settings.REDIS_DB,
+                decode_responses=True,
+            )
+            try:
+                values = await redis.lrange(f"membrane:short:{key}", -10, -1)
+                return [json.loads(value) for value in values]
+            finally:
+                await redis.aclose()
         item = _short_term.get(key)
         if not item or item[0] <= time.time():
             _short_term.pop(key, None)
@@ -23,8 +39,29 @@ class MemoryService:
 
     async def append_short(self, user_id: str, session_id: str, role: str, content: str) -> list[dict]:
         key = f"{user_id}:{session_id}"
+        message = {"role": role, "content": content[:1200]}
+        if self.settings.RUNTIME_MODE.lower() == "full":
+            from redis.asyncio import Redis
+
+            redis = Redis(
+                host=self.settings.REDIS_HOST,
+                port=self.settings.REDIS_PORT,
+                password=self.settings.REDIS_PASSWORD or None,
+                db=self.settings.REDIS_DB,
+                decode_responses=True,
+            )
+            redis_key = f"membrane:short:{key}"
+            try:
+                async with redis.pipeline(transaction=True) as pipe:
+                    pipe.rpush(redis_key, json.dumps(message, ensure_ascii=False))
+                    pipe.ltrim(redis_key, -10, -1)
+                    pipe.expire(redis_key, self.settings.SHORT_TERM_MEMORY_TTL)
+                    await pipe.execute()
+                return await self.load_short(user_id, session_id)
+            finally:
+                await redis.aclose()
         history = await self.load_short(user_id, session_id)
-        history.append({"role": role, "content": content[:1200]})
+        history.append(message)
         _short_term[key] = (time.time() + self.settings.SHORT_TERM_MEMORY_TTL, history[-10:])
         return history[-10:]
 
