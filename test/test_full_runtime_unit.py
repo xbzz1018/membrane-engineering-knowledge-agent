@@ -55,7 +55,7 @@ def test_fake_embedding_matches_configured_milvus_dimension() -> None:
     assert first == second
 
 
-def test_long_term_memory_can_be_viewed_and_deleted() -> None:
+def test_long_term_memory_requires_confirmation_before_use() -> None:
     suffix = uuid.uuid4().hex
     user_id = f"memory-user-{suffix}"
     session_id = f"memory-session-{suffix}"
@@ -70,15 +70,29 @@ def test_long_term_memory_can_be_viewed_and_deleted() -> None:
     )
     assert chat.status_code == 200
 
-    listed = request("GET", f"/api/v1/memories/{user_id}")
+    listed = request("GET", "/api/v1/memories?status=pending")
     assert listed.status_code == 200
     memories = listed.json()
-    assert len(memories) == 1
-    assert "synthetic PTFE canopy" in memories[0]["content"]
+    matching = [item for item in memories if "synthetic PTFE canopy" in item["content"]]
+    assert len(matching) == 1
+    assert matching[0]["status"] == "pending"
+    memory_id = matching[0]["memory_id"]
 
-    deleted = request("DELETE", f"/api/v1/memories/{user_id}/{memories[0]['memory_id']}")
+    confirmed = request("POST", f"/api/v1/memories/{memory_id}/confirm")
+    assert confirmed.status_code == 200
+    assert confirmed.json()["status"] == "confirmed"
+
+    updated = request("PATCH", f"/api/v1/memories/{memory_id}", json={
+        "content": "请记住我们的项目是 synthetic ETFE canopy",
+    })
+    assert updated.status_code == 200
+    assert updated.json()["status"] == "pending"
+    assert "ETFE" in updated.json()["content"]
+    assert request("POST", f"/api/v1/memories/{memory_id}/confirm").json()["status"] == "confirmed"
+
+    deleted = request("DELETE", f"/api/v1/memories/{memory_id}")
     assert deleted.status_code == 204
-    assert request("GET", f"/api/v1/memories/{user_id}").json() == []
+    assert all(item["memory_id"] != memory_id for item in request("GET", "/api/v1/memories").json())
 
 
 def test_deleting_unknown_memory_returns_404() -> None:

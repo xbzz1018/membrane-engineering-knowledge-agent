@@ -1,4 +1,4 @@
-"""Build the deterministic v1 frozen evaluation set and its attested SHA-256."""
+"""Build attested v2 retrieval and package-review evaluation sets."""
 
 from __future__ import annotations
 
@@ -6,83 +6,83 @@ import hashlib
 import json
 from pathlib import Path
 
-OUTPUT = Path("data/eval/frozen_v1.jsonl")
-ATTESTATION = Path("data/eval/frozen_v1.sha256")
+ROOT = Path("data/eval")
+RETRIEVAL_OUTPUT = ROOT / "frozen_retrieval_v2.jsonl"
+PACKAGE_OUTPUT = ROOT / "frozen_packages_v2.jsonl"
 
 
-def build() -> list[dict]:
-    rows = []
-    materials = ["PTFE", "PVC/PVDF", "ETFE", "Precontraint 502", "PTFE mesh"]
-    material_questions = [
-        "的厚度和重量规格是什么",
-        "的透光性能和适用场景是什么",
-        "膜材规格应核对哪些单位",
-        "技术参数来源和版本是什么",
-    ]
-    for material in materials:
-        for question in material_questions:
-            rows.append({
-                "eval_id": f"material-{len(rows) + 1:03d}",
-                "category": "material",
-                "query": f"{material}{question}",
-                "expected_route": "material",
-                "required_source_types": ["material_spec"],
-            })
+def _read(path: str) -> list[dict]:
+    return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line]
 
-    price_materials = ["PTFE", "PVC/PVDF", "ETFE", "PTFE mesh", "PVC mesh"]
-    regions = ["华东 synthetic", "华南 synthetic", "华北 synthetic", "西南 synthetic"]
-    for material in price_materials:
-        for region in regions:
-            rows.append({
-                "eval_id": f"price-{len(rows) + 1:03d}",
-                "category": "price",
-                "query": f"查询 {region} 的 {material} 历史价格和资料日期，仅作成本参考",
-                "expected_route": "price",
-                "required_source_types": ["price"],
-            })
 
-    locations = ["上海", "苏州", "杭州", "南京", "宁波"]
-    applications = ["体育场", "入口雨棚", "交通连廊", "停车棚"]
-    for location in locations:
-        for application in applications:
-            rows.append({
-                "eval_id": f"design-{len(rows) + 1:03d}",
-                "category": "design",
-                "query": f"查找 {location} {application} 的相似设计方案和案例",
-                "expected_route": "design",
-                "required_source_types": ["case"],
-            })
-
-    multi_materials = ["PTFE", "PVC/PVDF", "ETFE", "Precontraint 502", "PTFE mesh"]
-    multi_questions = [
-        "比较体育场方案、膜材规格和历史价格",
-        "对比入口雨棚案例、材料参数与成本资料",
-        "比较交通连廊设计、膜材版本和价格日期",
-        "对比停车棚方案与材料价格，不生成正式报价",
-    ]
-    for material in multi_materials:
-        for question in multi_questions:
-            rows.append({
-                "eval_id": f"multi-{len(rows) + 1:03d}",
-                "category": "multi",
-                "query": f"{material} {question}",
-                "expected_route": "multi",
-                "required_source_types": ["case"],
-            })
-    if len(rows) != 80:
-        raise AssertionError(f"Frozen evaluation set must contain 80 rows, got {len(rows)}")
+def build_retrieval() -> list[dict]:
+    rows: list[dict] = []
+    for item in _read("data/processed/material_specs.jsonl")[:20]:
+        rows.append({
+            "eval_id": f"spec-{len(rows) + 1:03d}",
+            "category": "material_spec",
+            "query": (
+                f"查询 {item['manufacturer']} 型号 {item['product_reference']} 的规格和版本 "
+                f"{item['source_version']}"
+            ),
+            "expected_source_id": f"spec:{item['spec_id']}",
+        })
+    for item in _read("data/processed/price_records.jsonl")[:20]:
+        rows.append({
+            "eval_id": f"price-{len(rows) + 1:03d}",
+            "category": "price",
+            "query": (
+                f"查询 {item['region']} {item['material']} {item['effective_date']} "
+                f"{item['unit']} synthetic 历史价格"
+            ),
+            "expected_source_id": f"price:{item['price_id']}",
+        })
+    for item in _read("data/processed/synthetic_cases.jsonl")[:20]:
+        rows.append({
+            "eval_id": f"case-{len(rows) + 1:03d}",
+            "category": "case",
+            "query": (
+                f"查找案例 {item['title']}，地点 {item['location']}，结构 {item['structure_type']}，"
+                f"膜材 {item['membrane_material']}"
+            ),
+            "expected_source_id": f"case:{item['case_id']}",
+        })
+    if len(rows) != 60:
+        raise AssertionError(f"retrieval set must contain 60 rows, got {len(rows)}")
     return rows
 
 
-def main() -> None:
-    rows = build()
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+def build_packages() -> list[dict]:
+    return [
+        {
+            "eval_id": f"package-{index:03d}",
+            "question": "审查设计、膜材和价格资料，识别厚度与版本冲突。",
+            "documents": [
+                f"设计资料 {index}：PTFE 膜材厚度 0.7 mm，设计版本 1，日期 2025-01。",
+                f"采购价格资料 {index}：PTFE 膜材厚度 0.8 mm，版本 2，日期 2025-02，synthetic 价格。",
+            ],
+            "expected_conflict": True,
+        }
+        for index in range(1, 21)
+    ]
+
+
+def _write(path: Path, rows: list[dict]) -> str:
     payload = "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in rows) + "\n"
     encoded = payload.encode("utf-8")
-    OUTPUT.write_bytes(encoded)
+    path.write_bytes(encoded)
     digest = hashlib.sha256(encoded).hexdigest()
-    ATTESTATION.write_text(f"{digest}  {OUTPUT.name}\n", encoding="ascii")
-    print(json.dumps({"rows": len(rows), "sha256": digest, "output": str(OUTPUT)}, sort_keys=True))
+    path.with_suffix(".sha256").write_text(f"{digest}  {path.name}\n", encoding="ascii")
+    return digest
+
+
+def main() -> None:
+    ROOT.mkdir(parents=True, exist_ok=True)
+    summary = {
+        "retrieval": {"rows": 60, "sha256": _write(RETRIEVAL_OUTPUT, build_retrieval())},
+        "packages": {"rows": 20, "sha256": _write(PACKAGE_OUTPUT, build_packages())},
+    }
+    print(json.dumps(summary, sort_keys=True))
 
 
 if __name__ == "__main__":

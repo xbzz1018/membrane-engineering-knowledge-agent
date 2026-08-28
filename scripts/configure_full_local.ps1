@@ -1,8 +1,6 @@
 param(
     [string]$TargetFile = ".env",
-    [switch]$EnableDeepAgents,
-    [switch]$EnableTemporal,
-    [switch]$EnableKafka
+    [switch]$EnableTemporal
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,8 +14,7 @@ $updates = [ordered]@{
     "MINIO_ENDPOINT" = "localhost:19000"
     "PARSER_MODE" = "basic"
     "TEMPORAL_ENABLED" = $EnableTemporal.ToString().ToLowerInvariant()
-    "KAFKA_ENABLED" = $EnableKafka.ToString().ToLowerInvariant()
-    "DEEPAGENTS_ENABLED" = $EnableDeepAgents.ToString().ToLowerInvariant()
+    "AUTH_ENABLED" = "true"
 }
 $lines = @(Get-Content -LiteralPath $TargetFile)
 $written = [System.Collections.Generic.HashSet[string]]::new()

@@ -69,37 +69,10 @@ async def _check_milvus(settings: Settings) -> None:
     await asyncio.to_thread(probe)
 
 
-async def _check_neo4j(settings: Settings) -> None:
-    from neo4j import AsyncGraphDatabase
-
-    driver = AsyncGraphDatabase.driver(
-        settings.NEO4J_URI,
-        auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD),
-    )
-    try:
-        await driver.verify_connectivity()
-    finally:
-        await driver.close()
-
-
 async def _check_temporal(settings: Settings) -> None:
     from temporalio.client import Client
 
     await Client.connect(settings.TEMPORAL_TARGET, namespace=settings.TEMPORAL_NAMESPACE)
-
-
-async def _check_kafka(settings: Settings) -> None:
-    from aiokafka.admin import AIOKafkaAdminClient
-
-    client = AIOKafkaAdminClient(
-        bootstrap_servers=settings.KAFKA_BOOTSTRAP_SERVERS,
-        request_timeout_ms=int(settings.HEALTHCHECK_TIMEOUT_SECONDS * 1000),
-    )
-    try:
-        await client.start()
-        await client.list_topics()
-    finally:
-        await client.close()
 
 
 async def dependency_health(
@@ -123,8 +96,8 @@ async def dependency_health(
         "database": await _checked(True, check_database, timeout),
         "model": await _checked(True, check_model, timeout),
         "upload_storage": await _checked(
-            not is_full,
-            lambda: _check_path(config.upload_path),
+            True,
+            (lambda: _check_minio(config)) if is_full else (lambda: _check_path(config.upload_path)),
             timeout,
         ),
         "mineru": await _checked(
@@ -135,9 +108,7 @@ async def dependency_health(
         "redis": await _checked(is_full, lambda: _check_redis(config), timeout),
         "minio": await _checked(is_full, lambda: _check_minio(config), timeout),
         "milvus": await _checked(is_full, lambda: _check_milvus(config), timeout),
-        "neo4j": await _checked(is_full, lambda: _check_neo4j(config), timeout),
         "temporal": await _checked(config.TEMPORAL_ENABLED, lambda: _check_temporal(config), timeout),
-        "kafka": await _checked(config.KAFKA_ENABLED, lambda: _check_kafka(config), timeout),
     }
     healthy = all(item["healthy"] is not False for item in checks.values())
     return {

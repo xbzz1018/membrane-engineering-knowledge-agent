@@ -1,1 +1,1 @@
-"""Optional Kafka event integration."""
+"""Reserved for internal application events; durable work uses Temporal."""

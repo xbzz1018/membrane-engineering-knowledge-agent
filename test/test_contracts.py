@@ -2,18 +2,25 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 from collections import Counter
 from pathlib import Path
 
 import httpx
+import pytest
+from fastapi import HTTPException
+from langchain_core.messages import AIMessage
 
 from scripts.build_document_fixtures import build as build_documents
 from scripts.build_synthetic_cases import build as build_cases
 from scripts.build_synthetic_prices import build as build_prices
 from scripts.validate_data import read_jsonl, validate
+from src.api.dependencies import require_project_role
 from src.core.config import Settings
-from src.engineering.agents import EngineeringSupervisor
-from src.events.kafka_events import EventEnvelope
+from src.core.security import Principal, create_access_token, decode_access_token, hash_password, verify_password
+from src.engineering.knowledge_agent import AgentProtocolError, KnowledgeAgent
+from src.engineering.review_agents import PackageReviewService
+from src.engineering.storage import storage
 from src.main import app
 from src.workflows import temporal_app
 from src.workflows.temporal_definitions import _retry_policy
@@ -82,22 +89,13 @@ def test_synthetic_generators_are_deterministic() -> None:
     assert build_prices() == build_prices()
 
 
-def test_event_envelope_round_trip_and_unique_ids() -> None:
-    first = EventEnvelope.create(
-        event_type="document.ingest.requested",
-        aggregate_type="document",
-        aggregate_id="doc-1",
-        payload={"document_id": "doc-1"},
-    )
-    second = EventEnvelope.create(
-        event_type="document.ingest.requested",
-        aggregate_type="document",
-        aggregate_id="doc-1",
-        payload={"document_id": "doc-1"},
-    )
-    assert EventEnvelope.model_validate_json(first.model_dump_json()) == first
-    assert first.event_id != second.event_id
-    assert first.schema_version == "1.0"
+def test_password_hash_and_jwt_round_trip() -> None:
+    encoded = hash_password("test-password")
+    assert verify_password("test-password", encoded)
+    assert not verify_password("wrong-password", encoded)
+    principal = Principal("user-1", "tester", "tenant-1", "reviewer")
+    settings = Settings(_env_file=None, JWT_SECRET="test-secret-with-enough-entropy-32-bytes")
+    assert decode_access_token(create_access_token(principal, settings), settings) == principal
 
 
 def test_temporal_retry_policy_contract() -> None:
@@ -112,7 +110,7 @@ def test_disabled_temporal_submission_is_explicit(monkeypatch) -> None:
     monkeypatch.setattr(temporal_app, "get_settings", lambda: settings)
     document = asyncio.run(temporal_app.submit_document_ingest("doc-1"))
     package = asyncio.run(
-        temporal_app.submit_package_review("review-1", ["doc-1"], "question", "user", "project")
+        temporal_app.submit_package_review("review-1", ["doc-1"], "question", "user", "project", "tenant")
     )
     assert document["enabled"] is False and document["status"] == "local"
     assert package["enabled"] is False and package["status"] == "local"
@@ -138,23 +136,79 @@ def test_chat_rejects_empty_message() -> None:
 
 def test_batch_import_rejects_missing_documents() -> None:
     response = request("POST", "/api/v1/batch-imports", json={"document_ids": ["missing-document"]})
-    assert response.status_code == 400
-
-
-def test_replay_rejects_when_kafka_disabled() -> None:
-    response = request("POST", "/api/v1/events/missing-event/replay")
     assert response.status_code == 409
 
 
-def test_workflow_status_reports_disabled_temporal() -> None:
+def test_unknown_workflow_business_object_is_not_disclosed() -> None:
     response = request("GET", "/api/v1/workflows/example-workflow")
-    assert response.status_code == 200
-    assert response.json()["status"] == "disabled"
+    assert response.status_code == 404
 
 
-def test_precontraint_technical_parameters_route_to_material() -> None:
-    assert EngineeringSupervisor.route("Precontraint 502 技术参数来源和版本是什么") == "material"
+def test_budget_reservation_is_idempotent_and_settled() -> None:
+    async def verify() -> None:
+        async with app.router.lifespan_context(app):
+            workflow_id = "budget-test-" + hashlib.sha256(os.urandom(16)).hexdigest()
+            first = await storage.reserve_budget("demo-project", workflow_id, 100)
+            second = await storage.reserve_budget("demo-project", workflow_id, 100)
+            assert first["id"] == second["id"]
+            assert await storage.settle_budget(workflow_id, 42)
+            assert not await storage.settle_budget(workflow_id, 42)
+
+    asyncio.run(verify())
 
 
-def test_comparison_with_material_and_cost_routes_to_multi() -> None:
-    assert EngineeringSupervisor.route("对比入口雨棚案例、材料参数与成本资料") == "multi"
+def test_project_membership_prevents_cross_project_access() -> None:
+    async def verify() -> None:
+        async with app.router.lifespan_context(app):
+            user = await storage.create_user(
+                "member-" + hashlib.sha256(os.urandom(16)).hexdigest()[:16],
+                hash_password("test-password"),
+                "design_engineer",
+            )
+            allowed = await storage.create_project("授权项目", "membrane-company")
+            denied = await storage.create_project("未授权项目", "membrane-company")
+            await storage.add_project_member(allowed["id"], user["id"], "design_engineer")
+            principal = Principal(user["id"], user["username"], "membrane-company", "design_engineer")
+            assert await require_project_role(allowed["id"], principal) == "design_engineer"
+            with pytest.raises(HTTPException) as captured:
+                await require_project_role(denied["id"], principal)
+            assert captured.value.status_code == 404
+
+    asyncio.run(verify())
+
+
+def test_long_evidence_batching_never_drops_units() -> None:
+    evidence = [
+        {"evidence_id": f"evidence-{index}", "token_count": 700, "text": f"text-{index}"}
+        for index in range(25)
+    ]
+    batches = PackageReviewService._batches(evidence, token_budget=2000)
+    flattened = [item["evidence_id"] for batch in batches for item in batch]
+    assert flattened == [item["evidence_id"] for item in evidence]
+    assert all(sum(item["token_count"] for item in batch) <= 2000 for batch in batches)
+
+
+def test_truncated_agent_output_is_rejected() -> None:
+    message = AIMessage(
+        content="partial answer",
+        response_metadata={"finish_reason": "length"},
+    )
+    with pytest.raises(AgentProtocolError, match="truncated"):
+        KnowledgeAgent._answer([message])
+
+
+def test_nonpublic_project_is_rejected_before_cloud_model_call() -> None:
+    class RestrictedStore:
+        async def project_has_nonpublic_documents(self, project_id: str) -> bool:
+            return True
+
+    class ApiProvider:
+        metadata = {"provider": "test", "model": "test", "mode": "api"}
+
+        def langchain_model(self):
+            raise AssertionError("cloud model must not be constructed")
+
+    agent = KnowledgeAgent(store=RestrictedStore(), provider=ApiProvider())
+    principal = Principal("user", "tester", "tenant", "design_engineer")
+    with pytest.raises(AgentProtocolError, match="非公开资料"):
+        asyncio.run(agent._invoke_api(principal, "project", "session", "question", []))

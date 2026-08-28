@@ -1,4 +1,4 @@
-"""Run the frozen evaluation set through the real application API."""
+"""Evaluate v2 retrieval Recall@10 and MRR without generation-model variance."""
 
 from __future__ import annotations
 
@@ -8,96 +8,63 @@ import json
 import statistics
 import sys
 import time
-import uuid
 from pathlib import Path
-
-import httpx
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_settings
+from src.engineering.retrieval import RetrievalService
 from src.main import app
 
-DATASET = Path("data/eval/frozen_v1.jsonl")
-ATTESTATION = Path("data/eval/frozen_v1.sha256")
+DATASET = Path("data/eval/frozen_retrieval_v2.jsonl")
 
 
 def load_frozen() -> list[dict]:
     content = DATASET.read_bytes()
-    expected = ATTESTATION.read_text(encoding="ascii").split()[0]
+    expected = DATASET.with_suffix(".sha256").read_text(encoding="ascii").split()[0]
     actual = hashlib.sha256(content).hexdigest()
     if actual != expected:
-        raise RuntimeError(f"Frozen evaluation SHA mismatch: expected {expected}, actual {actual}")
+        raise RuntimeError("Frozen retrieval SHA mismatch")
     rows = [json.loads(line) for line in content.decode("utf-8").splitlines() if line]
-    if len(rows) != 80:
-        raise RuntimeError(f"Frozen evaluation set must contain 80 rows, got {len(rows)}")
+    if len(rows) != 60:
+        raise RuntimeError(f"Frozen retrieval set must contain 60 rows, got {len(rows)}")
     return rows
 
 
 async def main() -> None:
     settings = get_settings()
-    if settings.MODEL_MODE.lower() != "api" or settings.RUNTIME_MODE.lower() != "full":
-        raise RuntimeError("Frozen evaluation requires Full runtime and real API model mode")
     rows = load_frozen()
-    run_id = uuid.uuid4().hex[:10]
-    semaphore = asyncio.Semaphore(4)
+    service = RetrievalService()
+    results = []
     async with app.router.lifespan_context(app):
-        transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://test", timeout=120) as client:
-            async def evaluate(row: dict) -> dict:
-                async with semaphore:
-                    started = time.perf_counter()
-                    response = await client.post(
-                        "/api/v1/chat",
-                        json={
-                            "user_id": f"frozen-eval-v1-{run_id}",
-                            "session_id": row["eval_id"],
-                            "message": row["query"],
-                        },
-                    )
-                    latency = (time.perf_counter() - started) * 1000
-                if response.status_code != 200:
-                    return {
-                        "eval_id": row["eval_id"],
-                        "route_ok": False,
-                        "source_ok": False,
-                        "answer_present": False,
-                        "latency": latency,
-                        "error": f"HTTP {response.status_code}",
-                    }
-                payload = response.json()
-                source_types = {source["source_type"] for source in payload["sources"]}
-                return {
-                    "eval_id": row["eval_id"],
-                    "route_ok": payload["route"] == row["expected_route"],
-                    "source_ok": set(row["required_source_types"]) <= source_types,
-                    "answer_present": bool(payload["answer"]),
-                    "latency": latency,
-                }
-
-            results = await asyncio.gather(*(evaluate(row) for row in rows))
-    route_passes = sum(result["route_ok"] for result in results)
-    source_passes = sum(result["source_ok"] for result in results)
-    errors = [
-        {key: value for key, value in result.items() if key != "latency"}
-        for result in results
-        if not (result["route_ok"] and result["source_ok"] and result["answer_present"])
-    ]
-    latencies = [result["latency"] for result in results]
+        for row in rows:
+            started = time.perf_counter()
+            packet = await service.retrieve(row["query"], settings.DEFAULT_PROJECT_ID, limit=10)
+            source_ids = [source["source_id"] for source in packet.sources]
+            expected = row["expected_source_id"]
+            rank = source_ids.index(expected) + 1 if expected in source_ids else None
+            results.append({
+                "eval_id": row["eval_id"],
+                "hit": rank is not None,
+                "reciprocal_rank": 1 / rank if rank else 0,
+                "latency_ms": (time.perf_counter() - started) * 1000,
+            })
+    recall = sum(item["hit"] for item in results) / len(results)
+    mrr = statistics.mean(item["reciprocal_rank"] for item in results)
+    latencies = sorted(item["latency_ms"] for item in results)
     summary = {
-        "dataset": "frozen_v1",
-        "run_id": run_id,
+        "dataset": "frozen_retrieval_v2",
         "rows": len(rows),
-        "route_passes": route_passes,
-        "source_passes": source_passes,
-        "errors": len(errors),
+        "recall_at_10": round(recall, 4),
+        "mrr": round(mrr, 4),
         "latency_ms": {
-            "mean": round(statistics.mean(latencies), 2),
-            "p95": round(sorted(latencies)[int(len(latencies) * 0.95) - 1], 2),
+            "p50": round(statistics.median(latencies), 2),
+            "p95": round(latencies[int(len(latencies) * 0.95) - 1], 2),
         },
+        "misses": [item["eval_id"] for item in results if not item["hit"]],
     }
-    if route_passes != len(rows) or source_passes < 76 or errors:
-        raise AssertionError(json.dumps({**summary, "failures": errors[:20]}, ensure_ascii=False))
+    if recall < 0.90:
+        raise AssertionError(json.dumps(summary, ensure_ascii=False))
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
 
 

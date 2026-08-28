@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import time
 from typing import Any
 
 import httpx
@@ -65,7 +66,7 @@ class ModelProvider:
         return {"provider": self.provider, "model": self.model, "mode": self.settings.MODEL_MODE}
 
     def langchain_model(self):
-        """Build a LangChain model for the optional DeepAgents path."""
+        """Build the configured LangChain chat model."""
         if self.provider == "fake":
             raise RuntimeError("Fake mode does not provide a network chat model")
         from langchain_openai import ChatOpenAI
@@ -153,10 +154,15 @@ class ModelProvider:
                 content = payload["choices"][0]["message"].get("content", "")
                 if not isinstance(content, str) or not content.strip():
                     raise ValueError("empty model content")
+                choice = payload["choices"][0]
+                usage = payload.get("usage", {})
                 return content, {
                     "provider": self.provider,
                     "model": self.model,
-                    "usage": payload.get("usage", {}),
+                    "usage": usage,
+                    "input_tokens": int(usage.get("prompt_tokens", usage.get("input_tokens", 0)) or 0),
+                    "output_tokens": int(usage.get("completion_tokens", usage.get("output_tokens", 0)) or 0),
+                    "finish_reason": str(choice.get("finish_reason", "")),
                     "attempts": attempt + 1,
                 }
             except Exception as exc:
@@ -191,6 +197,51 @@ class ModelProvider:
         raise ProviderRequestError(
             f"{provider} embedding request failed ({type(last_error).__name__})"
         ) from last_error
+
+    async def rerank(self, query: str, candidates: list[dict[str, Any]], top_n: int | None = None) -> list[dict[str, Any]]:
+        if not candidates:
+            return []
+        if not self.settings.RERANKER_ENABLED:
+            return candidates[: top_n or self.settings.RERANKER_TOP_N]
+        if not self.settings.RERANKER_API_BASE or not self.settings.RERANKER_API_KEY:
+            raise ProviderConfigurationError("Reranker is enabled but its API configuration is incomplete")
+        documents = [str(item.get("text") or item.get("excerpt") or item)[:12000] for item in candidates]
+        body = {
+            "model": self.settings.RERANKER_MODEL,
+            "query": query,
+            "documents": documents,
+            "top_n": min(top_n or self.settings.RERANKER_TOP_N, len(documents)),
+            "return_documents": False,
+        }
+        headers = {
+            "Authorization": f"Bearer {self.settings.RERANKER_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        started = time.perf_counter()
+        try:
+            async with httpx.AsyncClient(timeout=self.settings.MODEL_TIMEOUT_SECONDS) as client:
+                response = await client.post(self.settings.RERANKER_API_BASE, headers=headers, json=body)
+                response.raise_for_status()
+                payload = response.json()
+        except Exception as exc:
+            raise ProviderRequestError(f"reranker request failed ({type(exc).__name__})") from exc
+        results = payload.get("results") or payload.get("output", {}).get("results") or []
+        reranked: list[dict[str, Any]] = []
+        for rank, result in enumerate(results, 1):
+            index = int(result["index"])
+            if index < 0 or index >= len(candidates):
+                continue
+            item = dict(candidates[index])
+            item["rerank"] = {
+                "model": self.settings.RERANKER_MODEL,
+                "rank": rank,
+                "score": float(result.get("relevance_score", 0)),
+                "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+            }
+            reranked.append(item)
+        if not reranked:
+            raise ProviderRequestError("reranker returned no valid candidates")
+        return reranked
 
     async def health(self) -> dict[str, Any]:
         if self.provider == "fake":

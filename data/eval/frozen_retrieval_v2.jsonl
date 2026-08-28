@@ -1,0 +1,60 @@
+{"category": "material_spec", "eval_id": "spec-001", "expected_source_id": "spec:public-precontraint-502-1013", "query": "查询 Serge Ferrari 型号 502-1013 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-002", "expected_source_id": "spec:public-precontraint-502-1125", "query": "查询 Serge Ferrari 型号 502-1125 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-003", "expected_source_id": "spec:public-precontraint-502-1499", "query": "查询 Serge Ferrari 型号 502-1499 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-004", "expected_source_id": "spec:public-precontraint-502-2012", "query": "查询 Serge Ferrari 型号 502-2012 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-005", "expected_source_id": "spec:public-precontraint-502-2135", "query": "查询 Serge Ferrari 型号 502-2135 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-006", "expected_source_id": "spec:public-precontraint-502-2136", "query": "查询 Serge Ferrari 型号 502-2136 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-007", "expected_source_id": "spec:public-precontraint-502-2137", "query": "查询 Serge Ferrari 型号 502-2137 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-008", "expected_source_id": "spec:public-precontraint-502-2138", "query": "查询 Serge Ferrari 型号 502-2138 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-009", "expected_source_id": "spec:public-precontraint-502-2141", "query": "查询 Serge Ferrari 型号 502-2141 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-010", "expected_source_id": "spec:public-precontraint-502-2144", "query": "查询 Serge Ferrari 型号 502-2144 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-011", "expected_source_id": "spec:public-precontraint-502-2145", "query": "查询 Serge Ferrari 型号 502-2145 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-012", "expected_source_id": "spec:public-precontraint-502-2148", "query": "查询 Serge Ferrari 型号 502-2148 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-013", "expected_source_id": "spec:public-precontraint-502-2149", "query": "查询 Serge Ferrari 型号 502-2149 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-014", "expected_source_id": "spec:public-precontraint-502-2150", "query": "查询 Serge Ferrari 型号 502-2150 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-015", "expected_source_id": "spec:public-precontraint-502-2151", "query": "查询 Serge Ferrari 型号 502-2151 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-016", "expected_source_id": "spec:public-precontraint-502-2152", "query": "查询 Serge Ferrari 型号 502-2152 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-017", "expected_source_id": "spec:public-precontraint-502-2156", "query": "查询 Serge Ferrari 型号 502-2156 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-018", "expected_source_id": "spec:public-precontraint-502-2157", "query": "查询 Serge Ferrari 型号 502-2157 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-019", "expected_source_id": "spec:public-precontraint-502-2158", "query": "查询 Serge Ferrari 型号 502-2158 的规格和版本 Technical features 2024"}
+{"category": "material_spec", "eval_id": "spec-020", "expected_source_id": "spec:public-precontraint-502-2159", "query": "查询 Serge Ferrari 型号 502-2159 的规格和版本 Technical features 2024"}
+{"category": "price", "eval_id": "price-021", "expected_source_id": "price:synthetic-price-001", "query": "查询 华东 synthetic PTFE 2024-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-022", "expected_source_id": "price:synthetic-price-002", "query": "查询 华东 synthetic PTFE 2024-07 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-023", "expected_source_id": "price:synthetic-price-003", "query": "查询 华东 synthetic PTFE 2025-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-024", "expected_source_id": "price:synthetic-price-004", "query": "查询 华南 synthetic PTFE 2024-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-025", "expected_source_id": "price:synthetic-price-005", "query": "查询 华南 synthetic PTFE 2024-07 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-026", "expected_source_id": "price:synthetic-price-006", "query": "查询 华南 synthetic PTFE 2025-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-027", "expected_source_id": "price:synthetic-price-007", "query": "查询 华北 synthetic PTFE 2024-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-028", "expected_source_id": "price:synthetic-price-008", "query": "查询 华北 synthetic PTFE 2024-07 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-029", "expected_source_id": "price:synthetic-price-009", "query": "查询 华北 synthetic PTFE 2025-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-030", "expected_source_id": "price:synthetic-price-010", "query": "查询 西南 synthetic PTFE 2024-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-031", "expected_source_id": "price:synthetic-price-011", "query": "查询 西南 synthetic PTFE 2024-07 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-032", "expected_source_id": "price:synthetic-price-012", "query": "查询 西南 synthetic PTFE 2025-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-033", "expected_source_id": "price:synthetic-price-013", "query": "查询 华东 synthetic PVC/PVDF 2024-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-034", "expected_source_id": "price:synthetic-price-014", "query": "查询 华东 synthetic PVC/PVDF 2024-07 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-035", "expected_source_id": "price:synthetic-price-015", "query": "查询 华东 synthetic PVC/PVDF 2025-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-036", "expected_source_id": "price:synthetic-price-016", "query": "查询 华南 synthetic PVC/PVDF 2024-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-037", "expected_source_id": "price:synthetic-price-017", "query": "查询 华南 synthetic PVC/PVDF 2024-07 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-038", "expected_source_id": "price:synthetic-price-018", "query": "查询 华南 synthetic PVC/PVDF 2025-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-039", "expected_source_id": "price:synthetic-price-019", "query": "查询 华北 synthetic PVC/PVDF 2024-01 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "price", "eval_id": "price-040", "expected_source_id": "price:synthetic-price-020", "query": "查询 华北 synthetic PVC/PVDF 2024-07 CNY/m2 synthetic synthetic 历史价格"}
+{"category": "case", "eval_id": "case-041", "expected_source_id": "case:synthetic-case-0001", "query": "查找案例 上海体育场001，地点 上海，结构 索膜结构，膜材 PTFE"}
+{"category": "case", "eval_id": "case-042", "expected_source_id": "case:synthetic-case-0002", "query": "查找案例 苏州入口雨棚002，地点 苏州，结构 张拉膜结构，膜材 PVC/PVDF"}
+{"category": "case", "eval_id": "case-043", "expected_source_id": "case:synthetic-case-0003", "query": "查找案例 杭州交通连廊003，地点 杭州，结构 骨架式，膜材 ETFE"}
+{"category": "case", "eval_id": "case-044", "expected_source_id": "case:synthetic-case-0004", "query": "查找案例 南京停车棚004，地点 南京，结构 气枕式，膜材 PTFE"}
+{"category": "case", "eval_id": "case-045", "expected_source_id": "case:synthetic-case-0005", "query": "查找案例 嘉兴景观廊架005，地点 嘉兴，结构 索膜结构，膜材 PVC/PVDF"}
+{"category": "case", "eval_id": "case-046", "expected_source_id": "case:synthetic-case-0006", "query": "查找案例 宁波环保设施006，地点 宁波，结构 张拉膜结构，膜材 ETFE"}
+{"category": "case", "eval_id": "case-047", "expected_source_id": "case:synthetic-case-0007", "query": "查找案例 上海体育场007，地点 上海，结构 骨架式，膜材 PTFE"}
+{"category": "case", "eval_id": "case-048", "expected_source_id": "case:synthetic-case-0008", "query": "查找案例 苏州入口雨棚008，地点 苏州，结构 气枕式，膜材 PVC/PVDF"}
+{"category": "case", "eval_id": "case-049", "expected_source_id": "case:synthetic-case-0009", "query": "查找案例 杭州交通连廊009，地点 杭州，结构 索膜结构，膜材 ETFE"}
+{"category": "case", "eval_id": "case-050", "expected_source_id": "case:synthetic-case-0010", "query": "查找案例 南京停车棚010，地点 南京，结构 张拉膜结构，膜材 PTFE"}
+{"category": "case", "eval_id": "case-051", "expected_source_id": "case:synthetic-case-0011", "query": "查找案例 嘉兴景观廊架011，地点 嘉兴，结构 骨架式，膜材 PVC/PVDF"}
+{"category": "case", "eval_id": "case-052", "expected_source_id": "case:synthetic-case-0012", "query": "查找案例 宁波环保设施012，地点 宁波，结构 气枕式，膜材 ETFE"}
+{"category": "case", "eval_id": "case-053", "expected_source_id": "case:synthetic-case-0013", "query": "查找案例 上海体育场013，地点 上海，结构 索膜结构，膜材 PTFE"}
+{"category": "case", "eval_id": "case-054", "expected_source_id": "case:synthetic-case-0014", "query": "查找案例 苏州入口雨棚014，地点 苏州，结构 张拉膜结构，膜材 PVC/PVDF"}
+{"category": "case", "eval_id": "case-055", "expected_source_id": "case:synthetic-case-0015", "query": "查找案例 杭州交通连廊015，地点 杭州，结构 骨架式，膜材 ETFE"}
+{"category": "case", "eval_id": "case-056", "expected_source_id": "case:synthetic-case-0016", "query": "查找案例 南京停车棚016，地点 南京，结构 气枕式，膜材 PTFE"}
+{"category": "case", "eval_id": "case-057", "expected_source_id": "case:synthetic-case-0017", "query": "查找案例 嘉兴景观廊架017，地点 嘉兴，结构 索膜结构，膜材 PVC/PVDF"}
+{"category": "case", "eval_id": "case-058", "expected_source_id": "case:synthetic-case-0018", "query": "查找案例 宁波环保设施018，地点 宁波，结构 张拉膜结构，膜材 ETFE"}
+{"category": "case", "eval_id": "case-059", "expected_source_id": "case:synthetic-case-0019", "query": "查找案例 上海体育场019，地点 上海，结构 骨架式，膜材 PTFE"}
+{"category": "case", "eval_id": "case-060", "expected_source_id": "case:synthetic-case-0020", "query": "查找案例 苏州入口雨棚020，地点 苏州，结构 气枕式，膜材 PVC/PVDF"}

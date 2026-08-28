@@ -27,7 +27,7 @@ def test_health_and_fake_chat() -> None:
     )
     assert response.status_code == 200
     payload = response.json()
-    assert payload["route"] == "material"
+    assert payload["route"] == "knowledge"
     assert payload["sources"]
     assert "provider" in payload["usage"]
 

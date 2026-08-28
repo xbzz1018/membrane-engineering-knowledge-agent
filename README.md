@@ -1,18 +1,24 @@
-# 膜结构工程知识助手
+# 膜结构企业资料审查平台
 
-本机 Docker Compose 求职演示项目，支持膜结构案例、膜材规格、synthetic 历史价格、上传资料与项目记忆检索。项目不进行结构安全计算，不生成正式报价。
+面向膜结构公司内部设计、膜材采购和项目审核人员的后端演示系统。系统提供项目级资料隔离、工程知识问答、文档解析、三领域资料审查、证据引用、人工审批与长期任务恢复。不进行结构安全计算，不生成正式报价。
 
-## 能力
+## 架构边界
 
-- LangGraph 路由设计、膜材、价格与复合问题。
-- PDF、DOCX、XLSX、TXT、Markdown 上传、解析、版本与页码证据。
-- Full 模式使用 PostgreSQL、Redis、MinIO、Milvus、Neo4j，并返回可解释的多源融合结果。
-- DeepAgents 设计/膜材/价格三子 Agent 受限资料包审查。
-- Temporal 长任务、审批/拒绝、取消、幂等与恢复。
-- Kafka PostgreSQL Outbox Relay、Inbox 幂等、DLQ 与 event_id 重放。
-- 37 条单元/接口测试、30 份文档 fixture、80 条 SHA 锁定评测集。
+- FastAPI 提供 JWT、RBAC、项目、文档、问答、审查、工作流和记忆 API。
+- LangChain `create_agent` 实现一个 KnowledgeAgent 和设计、膜材、价格三个审查 Worker。
+- LangGraph 是 Agent 运行时；Full 模式使用 Redis Checkpointer 保存 24 小时短期会话状态。
+- Temporal 是唯一后台任务系统，负责解析、批量导入、审查、重试、Heartbeat、Query、Signal 和 Cancellation。
+- PostgreSQL 保存业务事实、审查报告、记忆权威记录、预算与运行摘要；MinIO 保存原文件和派生图片；Milvus 保存文档及已确认记忆向量。
+- 项目不使用 DeepAgents、Neo4j、Kafka、RabbitMQ、A2A 或 Kubernetes。
 
-## 快速验证
+## 文档与证据
+
+- PDF 强制使用 MinerU 时支持 `auto/text/ocr`，失败显式进入 `failed`。
+- DOCX/XLSX 原生提取正文、标题、表格和单元格；嵌入栅格图片交给 MinerU OCR。
+- EvidenceUnit 保存稳定 ID、页码或 Office 定位、版本、解析器、OCR 标记和 SHA-256。
+- Cloud Provider 只能处理 `public` 资料；项目包含 `internal/restricted` 资料时显式拒绝云调用。
+
+## 本地验证
 
 ```powershell
 cd F:\code\homework\project\membrane-engineering-knowledge-agent
@@ -20,18 +26,17 @@ $python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
 
 $env:RUNTIME_MODE = 'local'
 $env:MODEL_MODE = 'fake'
-$env:DEEPAGENTS_ENABLED = 'false'
+$env:PARSER_MODE = 'basic'
 $env:TEMPORAL_ENABLED = 'false'
-$env:KAFKA_ENABLED = 'false'
+$env:AUTH_ENABLED = 'false'
 
 & $python -m pytest -q
 & $python -m ruff check src scripts test alembic
+& $python -m pip check
 & $python scripts\validate_data.py
 ```
 
 ## Full 模式
-
-安全复用本地模型配置（只导入白名单变量，不显示值）：
 
 ```powershell
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\import_api_env.ps1 `
@@ -39,53 +44,36 @@ $env:KAFKA_ENABLED = 'false'
   -TargetFile .env -EnableApiMode
 
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure_full_local.ps1 `
-  -TargetFile .env -EnableDeepAgents -EnableTemporal -EnableKafka
-```
+  -TargetFile .env -EnableTemporal
 
-启动依赖：
-
-```powershell
-docker compose up -d postgres redis minio etcd milvus neo4j
+docker compose up -d postgres redis minio etcd milvus
 docker compose --profile temporal up -d temporal
-docker compose --profile kafka up -d kafka
-
 & F:\code\homework\conda-envs\agent-membrane\Scripts\alembic.exe upgrade head
+& $python scripts\run_temporal_worker.py
 & $python -m uvicorn src.main:app --host 127.0.0.1 --port 8080
 ```
 
-Worker/Relay 使用独立终端：
+Full 存储/模型链路与 Temporal 恢复链路分别运行：
 
 ```powershell
-& $python scripts\run_temporal_worker.py
-& $python scripts\run_kafka_relay.py
-& $python scripts\run_kafka_consumer.py
+# Full 验证时临时设置 TEMPORAL_ENABLED=false
+& $python scripts\validate_full_runtime.py
+
+# Temporal 验证时设置 TEMPORAL_ENABLED=true，并确保 Worker 可启动
+& $python scripts\validate_temporal.py
 ```
 
 ## API
 
-| Area | Endpoints |
+| 范围 | 主要端点 |
 |---|---|
-| Health | `GET /health`, `GET /health/deps` |
-| Chat | `POST /api/v1/chat`, `POST /api/v1/chat/stream` |
-| Documents | `POST /api/v1/documents/upload`, `POST /api/v1/documents/{id}/index` |
-| Reviews | `POST /api/v1/package-reviews`, `GET /api/v1/package-reviews/{id}` |
-| Workflows | status, approve, reject, cancel under `/api/v1/workflows/{id}` |
-| Memory | list/delete under `/api/v1/memories/{user_id}` |
-| Batch events | `POST /api/v1/batch-imports`, `POST /api/v1/events/{event_id}/replay` |
+| 身份 | `POST /api/v1/auth/login`, `GET /api/v1/auth/me` |
+| 项目 | `GET/POST /api/v1/projects`, `POST /api/v1/projects/{id}/members` |
+| 问答 | `POST /api/v1/chat`, `POST /api/v1/chat/stream` |
+| 文档 | `POST /api/v1/documents/upload`, `POST /api/v1/documents/{id}/index` |
+| 审查 | `POST /api/v1/package-reviews`, `GET /api/v1/package-reviews/{id}`, `GET .../stream` |
+| 批量 | `POST /api/v1/batch-imports`, `GET /api/v1/batch-imports/{id}`, `GET .../stream` |
+| 工作流 | `GET /api/v1/workflows/{id}`, approve/reject/cancel 子路径 |
+| 记忆 | 候选、确认、拒绝、列表和删除 under `/api/v1/memories` |
 
-## 数据门禁
-
-```powershell
-& $python scripts\validate_data.py
-& $python scripts\run_frozen_eval.py
-```
-
-公开记录包含 URL、许可说明、抓取时间与 SHA-256。价格数据全部标记 `synthetic=true`，不是市场报价。
-
-## 文档
-
-- [Agent 规则](AGENTS.md)
-- [架构与数据模型](docs/architecture.md)
-- [API 接入指南](docs/integration-guide.md)
-- [运维手册](docs/operator-runbook.md)
-- [交接状态](docs/handoff.md)
+完整合同见 [frontend-contract.md](docs/frontend-contract.md)，架构和运行说明见 [architecture.md](docs/architecture.md) 与 [operator-runbook.md](docs/operator-runbook.md)。

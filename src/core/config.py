@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
     RUNTIME_MODE: str = "local"
 
+    AUTH_ENABLED: bool = False
+    JWT_SECRET: str = "local-development-only-change-me"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_TTL_MINUTES: int = Field(default=480, ge=5, le=10080)
+    DEFAULT_TENANT_ID: str = "membrane-company"
+    BOOTSTRAP_ADMIN_USERNAME: str = "admin"
+    BOOTSTRAP_ADMIN_PASSWORD: str = "admin-change-me"
+    DEFAULT_PROJECT_ID: str = "demo-project"
+
     MODEL_MODE: str = "fake"  # fake | api
     MODEL_PROVIDER: str = "auto"  # auto | dashscope | deepseek | gateway | fake
     DASHSCOPE_API_KEY: str = ""
@@ -35,8 +44,14 @@ class Settings(BaseSettings):
     EMBEDDING_API_BASE: str = ""
     EMBEDDING_MODEL: str = "text-embedding-v3"
     EMBEDDING_DIMENSIONS: int = Field(default=1024, ge=1, le=65536)
+    RERANKER_ENABLED: bool = False
+    RERANKER_API_BASE: str = ""
+    RERANKER_API_KEY: str = ""
+    RERANKER_MODEL: str = "qwen3-rerank"
+    RERANKER_TOP_N: int = Field(default=8, ge=1, le=100)
     MODEL_TEMPERATURE: float = Field(default=0.0, ge=0, le=2)
     MODEL_MAX_TOKENS: int = Field(default=2048, ge=128, le=16384)
+    MODEL_CONTEXT_WINDOW: int = Field(default=32768, ge=4096, le=1048576)
     MODEL_TIMEOUT_SECONDS: int = Field(default=60, ge=5, le=600)
     MODEL_RETRY_ATTEMPTS: int = Field(default=2, ge=1, le=5)
     MODEL_RETRY_BACKOFF_SECONDS: float = Field(default=0.5, ge=0, le=10)
@@ -67,10 +82,8 @@ class Settings(BaseSettings):
     MILVUS_PORT: int = 19530
     MILVUS_DOCUMENT_COLLECTION: str = "engineering_document_chunks"
     MILVUS_MEMORY_COLLECTION: str = "engineering_long_term_memory"
-    NEO4J_URI: str = "bolt://localhost:7687"
-    NEO4J_USER: str = "neo4j"
-    NEO4J_PASSWORD: str = "engineering123"
     REDIS_CHECKPOINT_PREFIX: str = "membrane:checkpoint"
+    API_RATE_LIMIT_PER_MINUTE: int = Field(default=60, ge=1, le=10000)
 
     PARSER_MODE: str = "basic"  # basic | mineru
     MINERU_EXECUTABLE: str = r"F:\code\homework\project\1_membrane_project_precheck\runtime\envs\mineru\Scripts\mineru.exe"
@@ -81,16 +94,23 @@ class Settings(BaseSettings):
     MINERU_METHOD: str = "auto"
     MINERU_LANG: str = "ch"
 
-    DEEPAGENTS_ENABLED: bool = False
-    DEEPAGENTS_TIMEOUT_SECONDS: int = Field(default=300, ge=10, le=1800)
     TEMPORAL_ENABLED: bool = False
     TEMPORAL_TARGET: str = "127.0.0.1:7233"
     TEMPORAL_NAMESPACE: str = "default"
     TEMPORAL_TASK_QUEUE: str = "membrane-engineering"
+    TEMPORAL_PARSE_TASK_QUEUE: str = "membrane-document-parse"
+    TEMPORAL_REVIEW_TASK_QUEUE: str = "membrane-agent-review"
+    TEMPORAL_MAINTENANCE_TASK_QUEUE: str = "membrane-maintenance"
     TEMPORAL_ACTIVITY_TEST_DELAY_SECONDS: int = Field(default=0, ge=0, le=120)
-    KAFKA_ENABLED: bool = False
-    KAFKA_BOOTSTRAP_SERVERS: str = "127.0.0.1:9092"
-    KAFKA_TOPIC_PREFIX: str = "membrane"
+    BATCH_DOCUMENT_LIMIT: int = Field(default=100, ge=1, le=500)
+    BATCH_CHILD_CONCURRENCY: int = Field(default=5, ge=1, le=50)
+    DEFAULT_DAILY_TOKEN_LIMIT: int = Field(default=1_000_000, ge=10_000)
+    DEFAULT_MONTHLY_COST_LIMIT_MICROS: int = Field(default=100_000_000, ge=0)
+    DEFAULT_MAX_CONCURRENT_REVIEWS: int = Field(default=3, ge=1, le=100)
+    MODEL_ESTIMATED_COST_MICROS_PER_1K_TOKENS: int = Field(default=2000, ge=0)
+    OTEL_ENABLED: bool = False
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""
+    TRACE_CONTENT: bool = False
     HEALTHCHECK_TIMEOUT_SECONDS: float = Field(default=3.0, ge=0.2, le=30)
 
     LONG_TERM_MEMORY_ENABLED: bool = True

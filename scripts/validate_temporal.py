@@ -17,6 +17,7 @@ from temporalio.client import Client
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_settings
+from src.engineering.storage import storage
 from src.main import app
 
 
@@ -80,6 +81,11 @@ async def wait_state(
                     return last
             elif last.get("status") in expected or last.get("temporal_status") in expected:
                 return last
+            if not cancellation_expected and (
+                last.get("status") in {"failed", "cancelled"}
+                or last.get("temporal_status") in {"failed", "canceled", "terminated", "timed_out"}
+            ):
+                raise RuntimeError(f"Workflow {workflow_id} reached unexpected terminal state: {last}")
         await asyncio.sleep(1)
     raise TimeoutError(f"Workflow {workflow_id} did not reach {expected}; last={last}")
 
@@ -87,6 +93,7 @@ async def wait_state(
 async def upload_and_start_ingest(client: httpx.AsyncClient, filename: str, content: str) -> tuple[str, str]:
     uploaded = await client.post(
         "/api/v1/documents/upload",
+        data={"project_id": get_settings().DEFAULT_PROJECT_ID},
         files={"file": (filename, content.encode("utf-8"), "text/plain")},
     )
     uploaded.raise_for_status()
@@ -112,12 +119,19 @@ async def main() -> None:
         async with app.router.lifespan_context(app):
             transport = httpx.ASGITransport(app=app)
             async with httpx.AsyncClient(transport=transport, base_url="http://test", timeout=600) as client:
+                if settings.AUTH_ENABLED:
+                    login = await client.post("/api/v1/auth/login", json={
+                        "username": settings.BOOTSTRAP_ADMIN_USERNAME,
+                        "password": settings.BOOTSTRAP_ADMIN_PASSWORD,
+                    })
+                    login.raise_for_status()
+                    client.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
                 suffix = uuid.uuid4().hex[:10]
 
                 document_id, ingest_id = await upload_and_start_ingest(
                     client,
                     f"temporal-ingest-{suffix}.txt",
-                    "PTFE temporal document version 1",
+                    f"PTFE temporal document version 1 {suffix}",
                 )
                 ingest_state = await wait_state(client, ingest_id, {"completed"}, timeout=180)
                 duplicate = await client.post(f"/api/v1/documents/{document_id}/index")
@@ -126,10 +140,51 @@ async def main() -> None:
                     raise AssertionError("Document workflow idempotent start did not reuse the workflow")
                 summary["document_ingest"] = ingest_state["status"]
 
+                async def submit_batch(size: int, label: str, document_ids: list[str] | None = None) -> tuple[dict, list[str]]:
+                    batch_ids = list(document_ids or [])
+                    for number in range(len(batch_ids), size):
+                        uploaded = await client.post(
+                            "/api/v1/documents/upload",
+                            data={"project_id": settings.DEFAULT_PROJECT_ID},
+                            files={
+                                "file": (
+                                    f"temporal-batch-{suffix}-{label}-{number}.txt",
+                                    f"Batch evidence {suffix} {label} {number}".encode(),
+                                    "text/plain",
+                                )
+                            },
+                        )
+                        uploaded.raise_for_status()
+                        batch_ids.append(uploaded.json()["document_id"])
+                    batch = await client.post("/api/v1/batch-imports", json={
+                        "project_id": settings.DEFAULT_PROJECT_ID,
+                        "document_ids": batch_ids,
+                    })
+                    batch.raise_for_status()
+                    state = await wait_state(
+                        client,
+                        batch.json()["workflow_id"],
+                        {"completed"},
+                        timeout=600,
+                    )
+                    if state.get("completed_count") != size:
+                        raise AssertionError(f"Batch ingest count mismatch: {state}")
+                    return state, batch_ids
+
+                batch_20, batch_20_ids = await submit_batch(20, "twenty")
+                first_chunk_count = await storage.count_document_chunks(batch_20_ids[0])
+                duplicate_batch, _ = await submit_batch(20, "duplicate", batch_20_ids)
+                if await storage.count_document_chunks(batch_20_ids[0]) != first_chunk_count:
+                    raise AssertionError("Duplicate batch changed indexed chunk count")
+                batch_50, _ = await submit_batch(50, "fifty")
+                summary["batch_20"] = batch_20["status"]
+                summary["batch_20_duplicate"] = duplicate_batch["status"]
+                summary["batch_50"] = batch_50["status"]
+
                 package_document_ids = []
                 for number, text in (
-                    (1, "设计资料 厚度 0.7 mm，版本 1，日期 2025-01。"),
-                    (2, "膜材和价格资料 厚度 0.8 mm，版本 2，日期 2025-02，synthetic 价格。"),
+                    (1, f"设计资料 厚度 0.7 mm，版本 1，日期 2025-01，批次 {suffix}。"),
+                    (2, f"膜材和价格资料 厚度 0.8 mm，版本 2，日期 2025-02，synthetic 价格，批次 {suffix}。"),
                 ):
                     document_id, workflow_id = await upload_and_start_ingest(
                         client,
@@ -143,8 +198,7 @@ async def main() -> None:
                     response = await client.post(
                         "/api/v1/package-reviews",
                         json={
-                            "user_id": f"temporal-user-{suffix}",
-                            "project_id": f"temporal-project-{suffix}",
+                            "project_id": settings.DEFAULT_PROJECT_ID,
                             "document_ids": package_document_ids,
                             "question": "审查设计、膜材和价格并识别厚度冲突。",
                         },
@@ -172,15 +226,14 @@ async def main() -> None:
                 summary["rejected_review"] = (await submit_review("rejected"))["status"]
 
                 stop_worker(worker)
-                worker = start_worker(delay_seconds=30)
+                worker = start_worker(delay_seconds=60)
                 await asyncio.sleep(3)
                 assert_worker_running(worker)
                 _, restart_workflow = await upload_and_start_ingest(
                     client,
                     f"temporal-restart-{suffix}.txt",
-                    "Worker restart recovery document",
+                    f"Worker restart recovery document {suffix}",
                 )
-                await wait_state(client, restart_workflow, {"running"}, timeout=30)
                 await asyncio.sleep(2)
                 stop_worker(worker)
                 worker = start_worker(delay_seconds=0)
@@ -196,7 +249,7 @@ async def main() -> None:
                 _, cancel_id = await upload_and_start_ingest(
                     client,
                     f"temporal-cancel-{suffix}.txt",
-                    "Cancellation test document",
+                    f"Cancellation test document {suffix}",
                 )
                 await wait_state(client, cancel_id, {"running"}, timeout=30)
                 cancelled = await client.post(f"/api/v1/workflows/{cancel_id}/cancel")

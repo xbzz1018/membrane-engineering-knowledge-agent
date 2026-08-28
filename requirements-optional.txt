@@ -1,9 +1,5 @@
-langchain-openai>=1.0,<2
 langchain-community>=0.4,<1
 pymilvus>=2.5,<3
-neo4j>=5.20,<6
 minio>=7.2,<8
-deepagents>=0.7,<1
 temporalio>=1.8,<2
-aiokafka>=0.12,<1
-opentelemetry-sdk>=1.28,<2
+agentevals>=0.0.9,<1

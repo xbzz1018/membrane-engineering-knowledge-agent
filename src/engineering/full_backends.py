@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import io
-import re
 from pathlib import Path
 from typing import Any
 
@@ -20,10 +19,9 @@ class FullBackends:
     def __init__(self, settings: Settings | None = None, provider: ModelProvider | None = None):
         self.settings = settings or get_settings()
         self.provider = provider or get_model_provider()
-        self._neo4j_driver = None
 
     async def initialize(self) -> None:
-        await asyncio.gather(self._init_minio(), self._init_milvus(), self._init_neo4j())
+        await asyncio.gather(self._init_minio(), self._init_milvus())
 
     async def _init_minio(self) -> None:
         from minio import Minio
@@ -68,25 +66,22 @@ class FullBackends:
 
         await asyncio.to_thread(initialize)
 
-    async def _init_neo4j(self) -> None:
-        from neo4j import AsyncGraphDatabase
-
-        self._neo4j_driver = AsyncGraphDatabase.driver(
-            self.settings.NEO4J_URI,
-            auth=(self.settings.NEO4J_USER, self.settings.NEO4J_PASSWORD),
-        )
-        await self._neo4j_driver.verify_connectivity()
-        async with self._neo4j_driver.session() as session:
-            await session.run("CREATE CONSTRAINT project_case_id IF NOT EXISTS FOR (p:Project) REQUIRE p.case_id IS UNIQUE")
-
     async def close(self) -> None:
-        if self._neo4j_driver is not None:
-            await self._neo4j_driver.close()
+        return None
 
-    async def store_document(self, document_id: str, filename: str, content_type: str, content: bytes) -> str:
+    async def store_document(
+        self,
+        document_id: str,
+        filename: str,
+        content_type: str,
+        content: bytes,
+        *,
+        content_sha: str,
+        version: int,
+    ) -> str:
         from minio import Minio
 
-        object_name = f"documents/{document_id}/{Path(filename).name}"
+        object_name = f"documents/{content_sha}/v{version}/{Path(filename).name}"
 
         def upload() -> None:
             client = Minio(
@@ -128,6 +123,40 @@ class FullBackends:
         await asyncio.to_thread(download)
         return cache
 
+    async def store_derived_asset(
+        self,
+        document_sha: str,
+        asset_sha: str,
+        suffix: str,
+        content: bytes,
+    ) -> str:
+        from minio import Minio
+
+        normalized_suffix = suffix.lower() if suffix.startswith(".") else f".{suffix.lower()}"
+        object_name = f"derived/{document_sha}/{asset_sha}{normalized_suffix}"
+
+        def put_if_missing() -> None:
+            client = Minio(
+                self.settings.MINIO_ENDPOINT,
+                access_key=self.settings.MINIO_ACCESS_KEY,
+                secret_key=self.settings.MINIO_SECRET_KEY,
+                secure=self.settings.MINIO_SECURE,
+            )
+            try:
+                client.stat_object(self.settings.MINIO_BUCKET, object_name)
+                return
+            except Exception:
+                client.put_object(
+                    self.settings.MINIO_BUCKET,
+                    object_name,
+                    io.BytesIO(content),
+                    length=len(content),
+                    content_type=f"image/{normalized_suffix.lstrip('.')}",
+                )
+
+        await asyncio.to_thread(put_if_missing)
+        return f"minio://{self.settings.MINIO_BUCKET}/{object_name}"
+
     async def index_document(self, document: dict[str, Any], chunks: list[dict[str, Any]]) -> None:
         rows = []
         for chunk in chunks:
@@ -141,6 +170,16 @@ class FullBackends:
                 "chunk_index": int(chunk["chunk_index"]),
                 "version": int(document.get("version", 1)),
                 "date": document["created_at"].isoformat(),
+                "project_id": document.get("project_id", ""),
+                "tenant_id": document.get("tenant_id", ""),
+                "classification": document.get("data_classification", "public"),
+                "location": str(chunk.get("location", "")),
+                "heading_path": str(chunk.get("heading_path", "")),
+                "sheet_name": str(chunk.get("sheet_name", "")),
+                "anchor": str(chunk.get("anchor", "")),
+                "source_kind": str(chunk.get("source_kind", "text")),
+                "ocr_used": bool(chunk.get("ocr_used", False)),
+                "asset_sha256": str(chunk.get("asset_sha256", "")),
             })
 
         def replace() -> None:
@@ -157,20 +196,25 @@ class FullBackends:
 
         await asyncio.to_thread(replace)
 
-    async def search_documents(self, query: str, limit: int = 8) -> list[dict[str, Any]]:
+    async def search_documents(self, query: str, limit: int = 8, project_id: str = "") -> list[dict[str, Any]]:
         vector = await self.provider.embed(query)
 
         def search() -> list[dict[str, Any]]:
             client = self._milvus_client()
             try:
-                result = client.search(
-                    self.settings.MILVUS_DOCUMENT_COLLECTION,
-                    data=[vector],
-                    limit=limit,
-                    output_fields=[
+                options = {
+                    "collection_name": self.settings.MILVUS_DOCUMENT_COLLECTION,
+                    "data": [vector],
+                    "limit": limit,
+                    "output_fields": [
                         "text", "document_id", "filename", "page_number", "chunk_index", "version", "date",
+                        "project_id", "location", "heading_path", "sheet_name", "anchor", "source_kind", "ocr_used",
+                        "asset_sha256",
                     ],
-                )
+                }
+                if project_id:
+                    options["filter"] = f'project_id == "{_escape_filter(project_id)}"'
+                result = client.search(**options)
             finally:
                 client.close()
             rows = []
@@ -186,7 +230,18 @@ class FullBackends:
 
         return await asyncio.to_thread(search)
 
-    async def index_memory(self, memory_id: str, user_id: str, kind: str, content: str, created_at: str) -> None:
+    async def index_memory(
+        self,
+        memory_id: str,
+        user_id: str,
+        kind: str,
+        content: str,
+        created_at: str,
+        *,
+        tenant_id: str = "",
+        project_id: str = "",
+        scope: str = "user",
+    ) -> None:
         row = {
             "id": memory_id,
             "vector": await self.provider.embed(content),
@@ -194,6 +249,9 @@ class FullBackends:
             "kind": kind,
             "text": content,
             "date": created_at,
+            "tenant_id": tenant_id,
+            "project_id": project_id,
+            "scope": scope,
         }
 
         def insert() -> None:
@@ -205,16 +263,29 @@ class FullBackends:
 
         await asyncio.to_thread(insert)
 
-    async def search_memories(self, user_id: str, query: str, limit: int = 5) -> list[str]:
+    async def search_memories(
+        self,
+        user_id: str,
+        query: str,
+        limit: int = 5,
+        *,
+        tenant_id: str = "",
+        project_id: str = "",
+    ) -> list[str]:
         vector = await self.provider.embed(query)
 
         def search() -> list[str]:
             client = self._milvus_client()
             try:
+                filters = [f'user_id == "{_escape_filter(user_id)}"']
+                if tenant_id:
+                    filters.append(f'tenant_id == "{_escape_filter(tenant_id)}"')
+                if project_id:
+                    filters.append(f'(scope == "user" or project_id == "{_escape_filter(project_id)}")')
                 result = client.search(
                     self.settings.MILVUS_MEMORY_COLLECTION,
                     data=[vector],
-                    filter=f'user_id == "{_escape_filter(user_id)}"',
+                    filter=" and ".join(filters),
                     limit=limit,
                     output_fields=["text"],
                 )
@@ -233,73 +304,6 @@ class FullBackends:
                 client.close()
 
         await asyncio.to_thread(delete)
-
-    async def sync_graph_cases(self, rows: list[dict[str, Any]]) -> None:
-        if self._neo4j_driver is None:
-            raise RuntimeError("Neo4j backend is not initialized")
-        payloads = [
-            {
-                "case_id": str(row.get("case_id", "")),
-                "title": str(row.get("title", "")),
-                "structure": str(row.get("structure_type", "unknown")),
-                "material": str(row.get("membrane_material", "unknown")),
-                "scenario": str(row.get("application", "unknown")),
-                "source_url": str(row.get("source_url", "")),
-                "date": str(row.get("year") or row.get("retrieved_at", "")),
-                "version": str(row.get("source_version", "1")),
-            }
-            for row in rows
-            if row.get("case_id")
-        ]
-        query = """
-        UNWIND $rows AS row
-        MERGE (p:Project {case_id: row.case_id})
-        SET p.title = row.title, p.source_url = row.source_url, p.date = row.date, p.version = row.version
-        MERGE (s:Structure {name: row.structure})
-        MERGE (m:MembraneMaterial {name: row.material})
-        MERGE (a:Scenario {name: row.scenario})
-        MERGE (p)-[:USES_STRUCTURE]->(s)
-        MERGE (p)-[:USES_MATERIAL]->(m)
-        MERGE (p)-[:APPLIES_TO]->(a)
-        """
-        async with self._neo4j_driver.session() as session:
-            await session.run(query, rows=payloads)
-
-    async def search_graph_cases(self, query: str, limit: int = 6) -> list[dict[str, Any]]:
-        if self._neo4j_driver is None:
-            raise RuntimeError("Neo4j backend is not initialized")
-        terms = re.findall(r"[a-z0-9_]+|[\u4e00-\u9fff]{2,}", query.lower())
-        if not terms:
-            return []
-        cypher = """
-        MATCH (p:Project)-[:USES_STRUCTURE]->(s:Structure)
-        MATCH (p)-[:USES_MATERIAL]->(m:MembraneMaterial)
-        MATCH (p)-[:APPLIES_TO]->(a:Scenario)
-        WHERE any(term IN $terms WHERE
-            toLower(p.title) CONTAINS term OR toLower(s.name) CONTAINS term OR
-            toLower(m.name) CONTAINS term OR toLower(a.name) CONTAINS term)
-        RETURN p, s.name AS structure_type, m.name AS membrane_material, a.name AS application
-        LIMIT $limit
-        """
-        async with self._neo4j_driver.session() as session:
-            result = await session.run(cypher, terms=terms, limit=limit)
-            records = [record async for record in result]
-        rows = []
-        for rank, record in enumerate(records, 1):
-            project = dict(record["p"])
-            rows.append({
-                "case_id": project["case_id"],
-                "title": project.get("title", project["case_id"]),
-                "structure_type": record["structure_type"],
-                "membrane_material": record["membrane_material"],
-                "application": record["application"],
-                "source_url": project.get("source_url", ""),
-                "retrieved_at": project.get("date", ""),
-                "source_version": project.get("version", ""),
-                "retrieval": [{"backend": "neo4j", "rank": rank, "score": 1.0}],
-            })
-        return rows
-
 
 _full_backends: FullBackends | None = None
 

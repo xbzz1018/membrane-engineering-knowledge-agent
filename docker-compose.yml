@@ -98,26 +98,6 @@ services:
       timeout: 5s
       retries: 20
 
-  neo4j:
-    image: neo4j:5.20
-    container_name: membrane-neo4j
-    restart: unless-stopped
-    environment:
-      NEO4J_AUTH: neo4j/engineering123
-      NEO4J_PLUGINS: '["apoc"]'
-      NEO4J_dbms_security_procedures_unrestricted: apoc.*
-    ports:
-      - "7474:7474"
-      - "7687:7687"
-    volumes:
-      - ./docker/neo4j_data:/data
-      - ./docker/neo4j_logs:/logs
-    healthcheck:
-      test: ["CMD-SHELL", "cypher-shell -u neo4j -p engineering123 'RETURN 1' >/dev/null 2>&1"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-
   temporal-postgres:
     profiles: ["temporal"]
     image: postgres:17
@@ -152,31 +132,6 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "temporal:7233"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-
-  kafka:
-    profiles: ["kafka"]
-    image: apache/kafka:4.0.0
-    container_name: membrane-kafka
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-    ports:
-      - "9092:9092"
-    volumes:
-      - ./docker/kafka_data:/var/lib/kafka/data
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
       retries: 20

@@ -8,7 +8,8 @@ import httpx
 import pytest
 
 from src.core.config import Settings
-from src.engineering.agents import EngineeringSupervisor
+from src.core.security import Principal
+from src.engineering.knowledge_agent import KnowledgeAgent
 from src.engineering.provider import (
     ModelProvider,
     ProviderConfigurationError,
@@ -136,7 +137,7 @@ def test_uploaded_document_is_searchable_by_filename() -> None:
     uploaded = request(
         "POST",
         "/api/v1/documents/upload",
-        files={"file": (filename, b"PTFE roof evidence", "text/plain")},
+        files={"file": (filename, f"PTFE roof evidence {filename}".encode(), "text/plain")},
     )
     assert uploaded.status_code == 200
     document_id = uploaded.json()["document_id"]
@@ -155,55 +156,56 @@ def test_uploaded_document_is_searchable_by_filename() -> None:
 
 
 class CaptureProvider:
-    metadata = {"provider": "capture", "model": "test", "mode": "fake"}
-
-    def __init__(self):
-        self.prompts: list[str] = []
-
-    async def chat(self, system: str, user: str, json_mode: bool = False):
-        self.prompts.append(user)
-        return "captured answer", self.metadata
+    metadata = {"provider": "capture", "model": "test", "mode": "api"}
 
 
 class MemoryStore:
     def __init__(self):
         self.messages: list[tuple[str, str]] = []
 
-    async def search_cases(self, query: str, limit: int = 6):
-        return [{"case_id": "case-1", "title": "Test case", "source_url": "https://example.invalid"}]
-
-    async def search_chunks(self, query: str, limit: int = 8):
-        return []
-
-    async def search_specs(self, query: str, limit: int = 8):
-        return []
-
-    async def search_prices(self, query: str, limit: int = 8):
-        return []
-
     async def append_message(self, user_id: str, session_id: str, role: str, content: str):
         self.messages.append((role, content))
 
-    async def save_memory(self, user_id: str, content: str, kind: str = "project_context"):
+    async def start_agent_run(self, **_: Any) -> str:
+        return "run-1"
+
+    async def finish_agent_run(self, *_: Any, **__: Any) -> None:
         return None
 
-    async def search_memory(self, user_id: str, query: str, limit: int = 5):
-        return []
+class CaptureMemory:
+    async def search(self, **_: Any) -> list[str]:
+        return ["项目统一使用毫米"]
+
+    async def propose_from_message(self, **_: Any) -> None:
+        return None
 
 
-def test_short_term_memory_saves_user_and_enters_next_prompt() -> None:
+def test_agent_audits_messages_and_passes_confirmed_memory(monkeypatch: pytest.MonkeyPatch) -> None:
     store = MemoryStore()
     provider = CaptureProvider()
-    supervisor = EngineeringSupervisor(store=store, provider=provider)
+    agent = KnowledgeAgent(store=store, provider=provider)
+    agent.memory = CaptureMemory()
     suffix = uuid.uuid4().hex
+    captured: dict[str, Any] = {}
 
-    run(supervisor.ainvoke(f"user-{suffix}", f"session-{suffix}", "第一轮问题"))
-    run(supervisor.ainvoke(f"user-{suffix}", f"session-{suffix}", "第二轮问题"))
+    async def invoke_api(principal, project_id, session_id, query, memories):
+        captured.update({
+            "principal": principal,
+            "project_id": project_id,
+            "session_id": session_id,
+            "query": query,
+            "memories": memories,
+        })
+        return {"answer": "captured answer", "sources": [], "usage": {}}
 
-    assert [role for role, _ in store.messages] == ["user", "assistant", "user", "assistant"]
-    assert "第一轮问题" in provider.prompts[1]
-    assert "captured answer" in provider.prompts[1]
-    assert "第二轮问题" in provider.prompts[1]
+    monkeypatch.setattr(agent, "_invoke_api", invoke_api)
+    principal = Principal(f"user-{suffix}", "tester", "tenant", "design_engineer")
+
+    run(agent.ainvoke(principal, "project", f"session-{suffix}", "资料采用什么单位"))
+
+    assert [role for role, _ in store.messages] == ["user", "assistant"]
+    assert captured["memories"] == ["项目统一使用毫米"]
+    assert captured["principal"] == principal
 
 
 def test_dependency_health_reports_real_checks() -> None:

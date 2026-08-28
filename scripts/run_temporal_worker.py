@@ -13,22 +13,54 @@ async def main() -> None:
 
     from src.core.config import get_settings
     from src.workflows.activities import (
+        compose_package_review_activity,
         finalize_package_review_activity,
-        package_review_activity,
         parse_and_index_activity,
+        review_worker_activity,
+        settle_review_budget_activity,
+        update_batch_activity,
     )
-    from src.workflows.temporal_definitions import DocumentIngestWorkflow, PackageReviewWorkflow
+    from src.workflows.temporal_definitions import (
+        BatchDocumentIngestWorkflow,
+        DocumentIngestWorkflow,
+        PackageReviewWorkflow,
+    )
 
     settings = get_settings()
     client = await Client.connect(settings.TEMPORAL_TARGET, namespace=settings.TEMPORAL_NAMESPACE)
-    worker = Worker(
+    orchestration_worker = Worker(
         client,
         task_queue=settings.TEMPORAL_TASK_QUEUE,
-        workflows=[DocumentIngestWorkflow, PackageReviewWorkflow],
-        activities=[parse_and_index_activity, package_review_activity, finalize_package_review_activity],
+        workflows=[DocumentIngestWorkflow, BatchDocumentIngestWorkflow, PackageReviewWorkflow],
     )
-    print(f"Temporal worker listening on {settings.TEMPORAL_TARGET}")
-    await worker.run()
+    parse_worker = Worker(
+        client,
+        task_queue=settings.TEMPORAL_PARSE_TASK_QUEUE,
+        activities=[parse_and_index_activity],
+        max_concurrent_activities=1,
+    )
+    review_worker = Worker(
+        client,
+        task_queue=settings.TEMPORAL_REVIEW_TASK_QUEUE,
+        activities=[review_worker_activity, compose_package_review_activity],
+        max_concurrent_activities=3,
+    )
+    maintenance_worker = Worker(
+        client,
+        task_queue=settings.TEMPORAL_MAINTENANCE_TASK_QUEUE,
+        activities=[finalize_package_review_activity, update_batch_activity, settle_review_budget_activity],
+    )
+    print(
+        "Temporal workers listening on "
+        f"{settings.TEMPORAL_TARGET} ({settings.TEMPORAL_TASK_QUEUE}, "
+        f"{settings.TEMPORAL_PARSE_TASK_QUEUE}, {settings.TEMPORAL_REVIEW_TASK_QUEUE})"
+    )
+    await asyncio.gather(
+        orchestration_worker.run(),
+        parse_worker.run(),
+        review_worker.run(),
+        maintenance_worker.run(),
+    )
 
 
 if __name__ == "__main__":

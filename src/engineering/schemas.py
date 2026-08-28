@@ -18,7 +18,8 @@ class SourceRef(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    user_id: str = Field(default="anonymous", min_length=1, max_length=64)
+    user_id: str = Field(default="", max_length=64, description="Deprecated; identity comes from JWT")
+    project_id: str = Field(default="demo-project", min_length=1, max_length=128)
     session_id: str = Field(default="default", min_length=1, max_length=128)
     message: str = Field(min_length=1, max_length=4000)
 
@@ -31,6 +32,7 @@ class ChatResponse(BaseModel):
     sources: list[SourceRef] = Field(default_factory=list)
     uncertainties: list[str] = Field(default_factory=list)
     usage: dict = Field(default_factory=dict)
+    memory_candidates: list[dict] = Field(default_factory=list)
 
 
 class DocumentResponse(BaseModel):
@@ -39,6 +41,10 @@ class DocumentResponse(BaseModel):
     version: int
     parser: str
     status: str
+    project_id: str = ""
+    sha256: str = ""
+    data_classification: str = "public"
+    parse_method: str = "auto"
 
 
 class IndexResponse(BaseModel):
@@ -50,8 +56,8 @@ class IndexResponse(BaseModel):
 
 
 class PackageReviewRequest(BaseModel):
-    user_id: str = "anonymous"
-    project_id: str = "default"
+    user_id: str = Field(default="", description="Deprecated; identity comes from JWT")
+    project_id: str = "demo-project"
     document_ids: list[str] = Field(min_length=1, max_length=20)
     question: str = Field(default="比较资料中的设计方案、膜材规格和价格差异", max_length=2000)
 
@@ -65,6 +71,9 @@ class PackageReviewResponse(BaseModel):
     conflicts: list[str] = Field(default_factory=list)
     workflow: dict | None = None
     created_at: str = ""
+    worker_results: dict = Field(default_factory=dict)
+    usage: dict = Field(default_factory=dict)
+    human_review_required: bool = False
 
 
 class MemoryItemResponse(BaseModel):
@@ -74,6 +83,21 @@ class MemoryItemResponse(BaseModel):
     content: str
     source: str
     created_at: str
+    project_id: str = ""
+    scope: str = "user"
+    status: str = "pending"
+
+
+class MemoryCandidateRequest(BaseModel):
+    project_id: str | None = Field(default=None, max_length=128)
+    scope: str = Field(pattern="^(user|project)$")
+    kind: str = Field(default="project_context", min_length=1, max_length=32)
+    content: str = Field(min_length=1, max_length=4000)
+    source_id: str = Field(default="", max_length=128)
+
+
+class MemoryUpdateRequest(BaseModel):
+    content: str = Field(min_length=1, max_length=4000)
 
 
 class WorkflowDecisionRequest(BaseModel):
@@ -82,3 +106,4 @@ class WorkflowDecisionRequest(BaseModel):
 
 class BatchImportRequest(BaseModel):
     document_ids: list[str] = Field(min_length=1, max_length=100)
+    project_id: str = Field(default="demo-project", min_length=1, max_length=128)

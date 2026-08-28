@@ -2,43 +2,37 @@
 
 ## Boundaries
 
-- This repository is a local Docker Compose demonstration, not structural safety software or a quotation system.
-- Do not add A2A or Kubernetes. Do not perform structural safety calculations or generate formal quotations.
-- Do not commit company-internal documents, customer data, contracts, real quotations, `.env`, API keys, or model responses containing secrets.
-- Fake mode is allowed only when `MODEL_MODE=fake`. API mode must fail explicitly and must never silently fall back to Fake.
+- This is a single-company Docker Compose demonstration, not structural safety or quotation software.
+- Do not add A2A, Kubernetes, DeepAgents, Neo4j, Kafka, or RabbitMQ.
+- Do not commit internal documents, customer data, real quotations, `.env`, API keys, prompts, or model output containing secrets.
+- Fake mode is explicit. API mode retries and fails; it never silently returns Fake output.
 
-## Backend Ownership
+## Ownership
 
-- PostgreSQL stores business facts, reports, Outbox, and Inbox records.
-- Redis stores short-term conversation state and LangGraph checkpoints. It is not a task queue.
-- MinIO is the authoritative uploaded-file store in Full mode.
-- Milvus stores document-chunk and long-term-memory vectors.
-- Neo4j stores project-to-structure/material/scenario relations.
-- Temporal is authoritative for long-running document and package-review workflows.
-- Kafka distributes batch events through PostgreSQL Outbox Relay; it does not own workflow state.
+- PostgreSQL is authoritative for identities, projects, facts, reports, memory, budget, and safe Agent run summaries.
+- Redis stores LangGraph checkpoints, rate-limit state, and optional cache. It is not a queue and must not keep duplicate chat lists.
+- MinIO is authoritative for original files and derived Office images.
+- Milvus indexes EvidenceUnit and confirmed memory vectors; it is not an authority database.
+- Temporal is the only durable queue and long-running workflow authority.
+- LangChain `create_agent` is the Agent abstraction; LangGraph is the runtime/checkpointer layer.
 
-## Development Rules
+## Engineering Rules
 
-- Preserve the Local/Fake path while changing Full mode.
-- Every external capability must have a real-chain validation before it is described as complete.
-- Public data requires URL, license note, retrieval time, and SHA-256. Synthetic prices must remain explicitly synthetic.
-- Use Alembic for schema changes. Update both PostgreSQL and SQLite migrations.
-- Keep EventEnvelope backward-compatible or increment `schema_version`.
-- Keep DeepAgents on StateBackend with read-only `/evidence/**`; do not expose Shell or arbitrary network tools.
+- Every read and tool call must receive server-derived Principal and ProjectScope.
+- Cloud providers may process only public data. Internal or restricted data requires a configured local provider.
+- MinerU failure is explicit. Do not silently fall back to the basic PDF parser.
+- Every model-produced fact needs a valid evidence ID; memory is context, never evidence.
+- Use Alembic for schema changes. Keep Local/Fake tests isolated from a developer `.env`.
+- Do not claim Full, real-model, MinerU, or Temporal recovery completion without current validation output.
 
-## Commands
+## Verification
 
 ```powershell
 $python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
 & $python -m pytest -q
 & $python -m ruff check src scripts test alembic
+& $python -m pip check
 & $python scripts\validate_data.py
-& $python scripts\run_frozen_eval.py
 ```
 
-## Documentation
-
-- [Architecture](docs/architecture.md)
-- [Integration Guide](docs/integration-guide.md)
-- [Operator Runbook](docs/operator-runbook.md)
-- [Handoff](docs/handoff.md)
+See `docs/architecture.md`, `docs/frontend-contract.md`, and `docs/operator-runbook.md`.

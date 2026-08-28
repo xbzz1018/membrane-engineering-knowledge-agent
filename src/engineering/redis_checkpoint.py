@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import time
@@ -184,11 +185,40 @@ class RedisCheckpointSaver(BaseCheckpointSaver):
         await self.redis.aclose()
 
 
-_checkpoint_saver: RedisCheckpointSaver | None = None
+_checkpoint_savers: dict[int, RedisCheckpointSaver] = {}
 
 
 def get_redis_checkpointer() -> RedisCheckpointSaver:
-    global _checkpoint_saver
-    if _checkpoint_saver is None:
-        _checkpoint_saver = RedisCheckpointSaver()
-    return _checkpoint_saver
+    try:
+        key = id(asyncio.get_running_loop())
+    except RuntimeError:
+        key = 0
+    if key not in _checkpoint_savers:
+        _checkpoint_savers[key] = RedisCheckpointSaver()
+    return _checkpoint_savers[key]
+
+
+async def close_redis_checkpointers() -> None:
+    savers = list(_checkpoint_savers.values())
+    _checkpoint_savers.clear()
+    for saver in savers:
+        await saver.aclose()
+
+
+async def purge_legacy_short_memory(settings: Settings | None = None) -> int:
+    """Remove the retired duplicate Redis chat-list namespace."""
+    config = settings or get_settings()
+    client = Redis(
+        host=config.REDIS_HOST,
+        port=config.REDIS_PORT,
+        password=config.REDIS_PASSWORD or None,
+        db=config.REDIS_DB,
+        decode_responses=False,
+    )
+    try:
+        keys = [key async for key in client.scan_iter(match="membrane:short:*")]
+        if keys:
+            await client.delete(*keys)
+        return len(keys)
+    finally:
+        await client.aclose()

@@ -5,14 +5,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.routers.auth import router as auth_router
 from src.api.routers.chat import router as chat_router
 from src.api.routers.documents import router as documents_router
 from src.api.routers.events import router as events_router
 from src.api.routers.memories import router as memories_router
+from src.api.routers.projects import router as projects_router
 from src.api.routers.reviews import router as reviews_router
 from src.api.routers.workflows import router as workflows_router
 from src.core.config import get_settings
-from src.engineering.bootstrap import load_local_data, seed_local_data
+from src.core.observability import configure_telemetry
+from src.engineering.bootstrap import seed_local_data
 from src.engineering.health import dependency_health
 from src.engineering.storage import storage
 
@@ -20,23 +23,24 @@ from src.engineering.storage import storage
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
+    configure_telemetry()
     full_backends = None
     if settings.RUNTIME_MODE.lower() == "full":
         from src.engineering.full_backends import get_full_backends
+        from src.engineering.redis_checkpoint import purge_legacy_short_memory
 
         full_backends = get_full_backends()
         await full_backends.initialize()
+        await purge_legacy_short_memory(settings)
     await storage.init()
     await seed_local_data(storage)
-    if full_backends is not None:
-        await full_backends.sync_graph_cases(load_local_data(storage)["cases"])
     try:
         yield
     finally:
         if full_backends is not None:
-            from src.engineering.redis_checkpoint import get_redis_checkpointer
+            from src.engineering.redis_checkpoint import close_redis_checkpointers
 
-            await get_redis_checkpointer().aclose()
+            await close_redis_checkpointers()
             await full_backends.close()
         await storage.close()
 
@@ -52,6 +56,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(chat_router)
+    app.include_router(auth_router)
+    app.include_router(projects_router)
     app.include_router(documents_router)
     app.include_router(reviews_router)
     app.include_router(memories_router)

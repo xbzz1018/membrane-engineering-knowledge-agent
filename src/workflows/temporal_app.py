@@ -32,11 +32,54 @@ async def submit_document_ingest(document_id: str) -> dict[str, Any]:
     try:
         handle = await client.start_workflow(
             DocumentIngestWorkflow.run,
-            document_id,
+            {
+                "document_id": document_id,
+                "parse_task_queue": get_settings().TEMPORAL_PARSE_TASK_QUEUE,
+            },
             id=workflow_id,
             task_queue=get_settings().TEMPORAL_TASK_QUEUE,
             execution_timeout=timedelta(minutes=30),
             run_timeout=timedelta(minutes=25),
+            task_timeout=timedelta(seconds=10),
+            id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
+        )
+        status = "queued"
+    except WorkflowAlreadyStartedError:
+        handle = client.get_workflow_handle(workflow_id)
+        status = "existing"
+    return {"workflow_id": handle.id, "enabled": True, "status": status}
+
+
+async def submit_batch_ingest(
+    batch_id: str,
+    document_ids: list[str],
+) -> dict[str, Any]:
+    client = await _client()
+    workflow_id = f"batch-ingest:{batch_id}"
+    if client is None:
+        return {"workflow_id": workflow_id, "enabled": False, "status": "local"}
+    from temporalio.common import WorkflowIDReusePolicy
+    from temporalio.exceptions import WorkflowAlreadyStartedError
+
+    from src.workflows.temporal_definitions import BatchDocumentIngestWorkflow
+
+    settings = get_settings()
+    payload = {
+        "batch_id": batch_id,
+        "document_ids": document_ids,
+        "concurrency": settings.BATCH_CHILD_CONCURRENCY,
+        "workflow_task_queue": settings.TEMPORAL_TASK_QUEUE,
+        "parse_task_queue": settings.TEMPORAL_PARSE_TASK_QUEUE,
+        "maintenance_task_queue": settings.TEMPORAL_MAINTENANCE_TASK_QUEUE,
+    }
+    try:
+        handle = await client.start_workflow(
+            BatchDocumentIngestWorkflow.run,
+            payload,
+            id=workflow_id,
+            task_queue=settings.TEMPORAL_TASK_QUEUE,
+            execution_timeout=timedelta(hours=4),
+            run_timeout=timedelta(hours=3),
             task_timeout=timedelta(seconds=10),
             id_reuse_policy=WorkflowIDReusePolicy.REJECT_DUPLICATE,
         )
@@ -53,6 +96,7 @@ async def submit_package_review(
     question: str,
     user_id: str,
     project_id: str,
+    tenant_id: str,
 ) -> dict[str, Any]:
     client = await _client()
     workflow_id = f"package-review:{review_id}"
@@ -69,6 +113,9 @@ async def submit_package_review(
         "question": question,
         "user_id": user_id,
         "project_id": project_id,
+        "tenant_id": tenant_id,
+        "review_task_queue": get_settings().TEMPORAL_REVIEW_TASK_QUEUE,
+        "maintenance_task_queue": get_settings().TEMPORAL_MAINTENANCE_TASK_QUEUE,
     }
     try:
         handle = await client.start_workflow(
