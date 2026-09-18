@@ -17,7 +17,7 @@ from temporalio.client import Client
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_settings
-from src.engineering.storage import storage
+from src.infrastructure.database import storage
 from src.main import app
 
 
@@ -220,6 +220,22 @@ async def main() -> None:
                     stored.raise_for_status()
                     if stored.json()["status"] != action:
                         raise AssertionError(f"Persisted review did not reach {action}")
+                    if "ReviewSupervisorAgent" not in stored.json().get("agents_used", []):
+                        raise AssertionError("Review did not persist the Supervisor Agent")
+                    plan = stored.json().get("review_plan", {})
+                    if not set(plan.get("workers", [])) >= {"design", "material", "price"}:
+                        raise AssertionError(f"Supervisor plan omitted expected workers: {plan}")
+                    issues = await client.get(f"/api/v1/package-reviews/{payload['review_id']}/issues")
+                    issues.raise_for_status()
+                    issue_types = {item.get("issue_type") for item in issues.json().get("issues", [])}
+                    if not {"version_mismatch", "thickness_conflict"} <= issue_types:
+                        raise AssertionError(f"Expected engineering issues were absent: {issue_types}")
+                    if not all(
+                        item.get("evidence_refs")
+                        for item in issues.json().get("issues", [])
+                        if item.get("evidence_ids")
+                    ):
+                        raise AssertionError("Structured issues did not persist evidence locations")
                     return final
 
                 summary["approved_review"] = (await submit_review("approved"))["status"]

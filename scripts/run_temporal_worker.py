@@ -16,6 +16,8 @@ async def main() -> None:
         compose_package_review_activity,
         finalize_package_review_activity,
         parse_and_index_activity,
+        plan_package_review_activity,
+        repair_review_coverage_activity,
         review_worker_activity,
         settle_review_budget_activity,
         update_batch_activity,
@@ -42,7 +44,12 @@ async def main() -> None:
     review_worker = Worker(
         client,
         task_queue=settings.TEMPORAL_REVIEW_TASK_QUEUE,
-        activities=[review_worker_activity, compose_package_review_activity],
+        activities=[
+            plan_package_review_activity,
+            review_worker_activity,
+            repair_review_coverage_activity,
+            compose_package_review_activity,
+        ],
         max_concurrent_activities=3,
     )
     maintenance_worker = Worker(

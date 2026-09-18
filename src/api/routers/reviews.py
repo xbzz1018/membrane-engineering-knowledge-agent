@@ -2,120 +2,55 @@ from __future__ import annotations
 
 import asyncio
 import json
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from src.api.dependencies import current_principal, rate_limited_principal, require_project_role
+from src.application.reviews import ReviewApplicationError, package_review_application
 from src.core.config import get_settings
 from src.core.security import Principal
-from src.engineering.review_agents import run_package_review
-from src.engineering.schemas import PackageReviewRequest, PackageReviewResponse
-from src.engineering.storage import storage
-from src.workflows.temporal_app import get_workflow_state, submit_package_review
+from src.domain.schemas import (
+    PackageReviewRequest,
+    PackageReviewResponse,
+    ReviewIssueStatusRequest,
+)
+from src.infrastructure.database import storage
+from src.workflows.temporal_app import get_workflow_state
 
-router = APIRouter(prefix="/api/v1/package-reviews", tags=["package-review"])
+router = APIRouter(prefix="/api/v1/package-reviews", tags=["多智能体资料审查"])
 TERMINAL = {"completed", "approved", "rejected", "failed", "cancelled", "canceled"}
 
 
-def _estimated_review_tokens(document_count: int) -> int:
-    settings = get_settings()
-    return min(settings.DEFAULT_DAILY_TOKEN_LIMIT, 20_000 + (document_count * 15_000))
-
-
-def _actual_tokens(usage: dict) -> int:
-    return sum(
-        int(item.get("input_tokens", 0) or 0) + int(item.get("output_tokens", 0) or 0)
-        for item in usage.values()
-        if isinstance(item, dict)
+@router.get("", summary="查看项目资料包审查列表")
+async def list_package_reviews(
+    project_id: str = "demo-project",
+    status: str | None = None,
+    limit: int = 50,
+    principal: Principal = Depends(current_principal),
+) -> list[dict]:
+    await require_project_role(project_id, principal)
+    return await storage.list_package_reviews(
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        status=status,
+        limit=max(1, min(limit, 200)),
     )
 
 
-def _estimated_cost(tokens: int) -> int:
-    rate = get_settings().MODEL_ESTIMATED_COST_MICROS_PER_1K_TOKENS
-    return ((max(0, tokens) + 999) // 1000) * rate
-
-
-@router.post("", response_model=PackageReviewResponse)
+@router.post("", response_model=PackageReviewResponse, summary="启动 Supervisor 与三领域智能体审查")
 async def package_review(
     request: PackageReviewRequest,
     principal: Principal = Depends(rate_limited_principal),
 ) -> PackageReviewResponse:
-    await require_project_role(
-        request.project_id,
-        principal,
-        {"admin", "design_engineer", "material_procurement", "reviewer"},
-    )
-    review_id = uuid.uuid4().hex
-    workflow_id = f"package-review:{review_id}"
     try:
-        reserved_tokens = _estimated_review_tokens(len(request.document_ids))
-        await storage.reserve_budget(
-            request.project_id,
-            workflow_id,
-            reserved_tokens,
-            _estimated_cost(reserved_tokens),
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=429, detail=str(exc)) from exc
-    if get_settings().TEMPORAL_ENABLED:
-        queued = {
-            "review_id": review_id,
-            "status": "queued",
-            "engine": "temporal",
-            "report": "",
-            "sources": [],
-            "conflicts": [],
-        }
-        try:
-            await storage.save_package_review(
-                queued,
-                user_id=principal.user_id,
-                project_id=request.project_id,
-                question=request.question,
-                tenant_id=principal.tenant_id,
-            )
-            workflow = await submit_package_review(
-                review_id,
-                request.document_ids,
-                request.question,
-                principal.user_id,
-                request.project_id,
-                principal.tenant_id,
-            )
-        except Exception:
-            await storage.settle_budget(workflow_id, 0, status="failed")
-            raise
-        queued["workflow"] = workflow
-        return PackageReviewResponse(**queued)
-    try:
-        result = await run_package_review(
-            request,
-            tenant_id=principal.tenant_id,
-            user_id=principal.user_id,
-        )
-    except ValueError as exc:
-        await storage.settle_budget(workflow_id, 0, status="failed")
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception:
-        await storage.settle_budget(workflow_id, 0, status="failed")
-        raise
-    result["review_id"] = review_id
-    result["workflow"] = None
-    await storage.save_package_review(
-        result,
-        user_id=principal.user_id,
-        project_id=request.project_id,
-        question=request.question,
-        tenant_id=principal.tenant_id,
-    )
-    actual_tokens = _actual_tokens(result.get("usage", {}))
-    await storage.settle_budget(workflow_id, actual_tokens, _estimated_cost(actual_tokens))
-    return PackageReviewResponse(**result)
+        return PackageReviewResponse(**await package_review_application.start(request, principal))
+    except ReviewApplicationError as exc:
+        status = {"quota": 429, "agent": 422, "invalid_documents": 400}.get(exc.code, 400)
+        raise HTTPException(status_code=status, detail=str(exc)) from exc
 
 
-@router.get("/{review_id}", response_model=PackageReviewResponse)
+@router.get("/{review_id}", response_model=PackageReviewResponse, summary="查看资料包审查报告")
 async def get_package_review(
     review_id: str,
     principal: Principal = Depends(current_principal),
@@ -127,7 +62,96 @@ async def get_package_review(
     return PackageReviewResponse(**result)
 
 
-@router.get("/{review_id}/stream")
+@router.get("/{review_id}/workers", summary="查看三个审查智能体的领域结果")
+async def review_workers(
+    review_id: str,
+    principal: Principal = Depends(current_principal),
+) -> dict:
+    result = await storage.get_package_review(review_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    await require_project_role(result["project_id"], principal)
+    workers = result.get("worker_results", {})
+    return {
+        "review_id": review_id,
+        "orchestrator": result.get("orchestrator", "ReviewSupervisorAgent"),
+        "review_plan": result.get("review_plan", {}),
+        "agents_used": result.get("agents_used", []),
+        "workers": workers,
+        "usage": result.get("usage", {}),
+    }
+
+
+@router.get("/{review_id}/evidence", summary="查看审查引用的全部证据")
+async def review_evidence(
+    review_id: str,
+    principal: Principal = Depends(current_principal),
+) -> dict:
+    result = await storage.get_package_review(review_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    await require_project_role(result["project_id"], principal)
+    return {"review_id": review_id, "evidence": result.get("sources", [])}
+
+
+@router.get("/{review_id}/issues", summary="查看结构化工程审查问题单")
+async def review_issues(
+    review_id: str,
+    principal: Principal = Depends(current_principal),
+) -> dict:
+    result = await storage.get_package_review(review_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    await require_project_role(result["project_id"], principal)
+    return {"review_id": review_id, "issues": result.get("issues", [])}
+
+
+@router.patch("/{review_id}/issues/{issue_id}", summary="审核人更新工程问题单状态")
+async def update_review_issue(
+    review_id: str,
+    issue_id: str,
+    request: ReviewIssueStatusRequest,
+    principal: Principal = Depends(current_principal),
+) -> dict:
+    review = await storage.get_package_review(review_id)
+    if review is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    await require_project_role(review["project_id"], principal, {"reviewer"})
+    try:
+        updated = await storage.update_review_issue_status(
+            review_id,
+            issue_id,
+            request.status,
+            request.expected_lock_version,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="审查问题单不存在") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="审查报告已被其他审核人更新，请刷新后重试") from exc
+    if updated is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    issue, lock_version = updated
+    return {"review_id": review_id, "issue": issue, "lock_version": lock_version}
+
+
+@router.get("/{review_id}/trace", summary="查看审查智能体运行轨迹")
+async def review_trace(
+    review_id: str,
+    principal: Principal = Depends(current_principal),
+) -> dict:
+    result = await storage.get_package_review(review_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    await require_project_role(result["project_id"], principal)
+    runs = await storage.list_agent_runs(
+        tenant_id=principal.tenant_id,
+        project_id=result["project_id"],
+        business_id=review_id,
+    )
+    return {"review_id": review_id, "runs": runs}
+
+
+@router.get("/{review_id}/stream", summary="订阅审查工作流安全进度")
 async def stream_package_review(
     review_id: str,
     principal: Principal = Depends(current_principal),

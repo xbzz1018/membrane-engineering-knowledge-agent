@@ -6,8 +6,9 @@ import uuid
 import httpx
 
 from src.core.config import Settings
-from src.engineering.provider import ModelProvider
-from src.engineering.storage import _fuse_ranked
+from src.infrastructure.database import _fuse_ranked
+from src.infrastructure.full_backends import FullBackends
+from src.infrastructure.model_provider import ModelProvider
 from src.main import app
 
 
@@ -26,24 +27,24 @@ def test_weighted_rrf_merges_backend_explanations() -> None:
         {"id": "shared", "text": "lexical", "retrieval": [{"backend": "postgresql", "rank": 1, "score": 3}]},
         {"id": "sql-only", "text": "sql"},
     ]
-    milvus = [
-        {"id": "shared", "text": "vector", "retrieval": [{"backend": "milvus", "rank": 1, "score": 0.92}]},
+    pgvector = [
+        {"id": "shared", "text": "vector", "retrieval": [{"backend": "pgvector", "rank": 1, "score": 0.92}]},
         {"id": "vector-only", "text": "vector"},
     ]
 
     rows = _fuse_ranked(
-        [("postgresql", 1.0, postgres), ("milvus", 1.3, milvus)],
+        [("postgresql", 1.0, postgres), ("pgvector", 1.3, pgvector)],
         "id",
         10,
     )
 
     assert rows[0]["id"] == "shared"
     assert rows[0]["fusion_method"] == "weighted_rrf(k=60)"
-    assert {item["backend"] for item in rows[0]["retrieval"]} == {"postgresql", "milvus"}
+    assert {item["backend"] for item in rows[0]["retrieval"]} == {"postgresql", "pgvector"}
     assert rows[0]["fusion_score"] > rows[1]["fusion_score"]
 
 
-def test_fake_embedding_matches_configured_milvus_dimension() -> None:
+def test_fake_embedding_matches_configured_vector_dimension() -> None:
     provider = ModelProvider(Settings(
         _env_file=None,
         MODEL_MODE="fake",
@@ -53,6 +54,57 @@ def test_fake_embedding_matches_configured_milvus_dimension() -> None:
     second = asyncio.run(provider.embed("same text"))
     assert len(first) == 48
     assert first == second
+
+
+def test_pgvector_search_filters_tenant_project_classification_and_model() -> None:
+    captured: dict = {}
+
+    class Provider:
+        embedding_model = "embedding-v1"
+
+        async def embed(self, _text: str) -> list[float]:
+            return [0.1, 0.2]
+
+    class Result:
+        def mappings(self):
+            return self
+
+        def all(self):
+            return []
+
+    class Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def execute(self, statement, params):
+            captured["statement"] = str(statement)
+            captured["params"] = params
+            return Result()
+
+    backend = FullBackends(
+        settings=Settings(_env_file=None, EMBEDDING_DIMENSIONS=2),
+        provider=Provider(),
+        session_factory=Session,
+    )
+    rows = asyncio.run(backend.search_documents(
+        "PTFE",
+        project_id="project-a",
+        tenant_id="tenant-a",
+        classifications={"public"},
+    ))
+
+    assert rows == []
+    assert "embedding_model = :embedding_model" in captured["statement"]
+    assert "project_id = :project_id" in captured["statement"]
+    assert "tenant_id = :tenant_id" in captured["statement"]
+    assert "classification IN (:classification_0)" in captured["statement"]
+    assert captured["params"]["embedding_model"] == "embedding-v1"
+    assert captured["params"]["project_id"] == "project-a"
+    assert captured["params"]["tenant_id"] == "tenant-a"
+    assert captured["params"]["classification_0"] == "public"
 
 
 def test_long_term_memory_requires_confirmation_before_use() -> None:

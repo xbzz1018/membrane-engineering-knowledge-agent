@@ -6,11 +6,13 @@ from typing import Any
 
 import httpx
 import pytest
+from langchain_core.messages import AIMessage, ToolMessage
 
+from src.agents.knowledge_agent import AgentProtocolError, KnowledgeAgent
+from src.agents.model_catalog import ModelCapabilityService
 from src.core.config import Settings
 from src.core.security import Principal
-from src.engineering.knowledge_agent import KnowledgeAgent
-from src.engineering.provider import (
+from src.infrastructure.model_provider import (
     ModelProvider,
     ProviderConfigurationError,
     ProviderRequestError,
@@ -80,6 +82,14 @@ def test_provider_uses_separate_chat_and_embedding_endpoints() -> None:
 
     aliased = ModelProvider(api_settings(EMBEDDING_PROVIDER="local"))
     assert aliased._embedding_config()[0] == "embedding"
+    assert aliased.embedding_model == "embedding-test"
+
+
+def test_langchain_model_omits_empty_optional_kwargs() -> None:
+    provider = ModelProvider(api_settings())
+    model = provider.langchain_model()
+    assert model.model_kwargs == {}
+    assert model.extra_body is None
 
 
 def test_api_request_failure_never_falls_back_to_fake(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -96,7 +106,7 @@ def test_api_request_failure_never_falls_back_to_fake(monkeypatch: pytest.Monkey
         async def post(self, *_: Any, **__: Any):
             raise httpx.ConnectError("test connection failure")
 
-    monkeypatch.setattr("src.engineering.provider.httpx.AsyncClient", FailingClient)
+    monkeypatch.setattr("src.infrastructure.model_provider.httpx.AsyncClient", FailingClient)
     provider = ModelProvider(api_settings())
     with pytest.raises(ProviderRequestError, match="chat request failed"):
         run(provider.chat("system", "question"))
@@ -124,7 +134,7 @@ def test_empty_api_response_is_retried_without_fake_fallback(monkeypatch: pytest
                 request=httpx.Request("POST", url),
             )
 
-    monkeypatch.setattr("src.engineering.provider.httpx.AsyncClient", EmptyThenSuccessClient)
+    monkeypatch.setattr("src.infrastructure.model_provider.httpx.AsyncClient", EmptyThenSuccessClient)
     provider = ModelProvider(api_settings(MODEL_RETRY_BACKOFF_SECONDS=0))
     answer, metadata = run(provider.chat("system", "question"))
     assert answer == "real response"
@@ -153,6 +163,26 @@ def test_uploaded_document_is_searchable_by_filename() -> None:
     document_sources = [source for source in response.json()["sources"] if source["source_type"] == "document"]
     assert any(source["title"] == filename for source in document_sources)
     assert all(source["date"] and source["version"] for source in document_sources)
+
+
+def test_duplicate_upload_cannot_downgrade_data_classification() -> None:
+    content = b"restricted membrane design evidence"
+    first = request(
+        "POST",
+        "/api/v1/documents/upload",
+        data={"data_classification": "restricted"},
+        files={"file": ("restricted.txt", content, "text/plain")},
+    )
+    assert first.status_code == 200
+    second = request(
+        "POST",
+        "/api/v1/documents/upload",
+        data={"data_classification": "public"},
+        files={"file": ("same-content.txt", content, "text/plain")},
+    )
+    assert second.status_code == 200
+    assert second.json()["document_id"] == first.json()["document_id"]
+    assert second.json()["data_classification"] == "restricted"
 
 
 class CaptureProvider:
@@ -208,6 +238,127 @@ def test_agent_audits_messages_and_passes_confirmed_memory(monkeypatch: pytest.M
     assert captured["principal"] == principal
 
 
+def test_knowledge_agent_uses_one_selected_function_tool_without_prefetch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Provider:
+        metadata = {"provider": "capture", "model": "test", "mode": "api"}
+
+        def langchain_model(self):
+            return object()
+
+    class Store(MemoryStore):
+        async def project_has_nonpublic_documents(self, _project_id: str) -> bool:
+            return False
+
+    class Queries:
+        calls: list[str] = []
+
+        async def search_documents(self, *_args, **_kwargs):
+            self.calls.append("search_project_documents")
+            return {
+                "tool": "search_project_documents",
+                "evidence": [{"evidence_id": "doc-1", "text": "PTFE"}],
+                "sources": [{"source_id": "doc-1", "title": "design.pdf"}],
+                "uncertainties": [],
+            }
+
+        async def query_material_specs(self, *_args, **_kwargs):
+            raise AssertionError("unselected tool was called")
+
+        async def query_price_records(self, *_args, **_kwargs):
+            raise AssertionError("unselected tool was called")
+
+        async def get_document_evidence(self, *_args, **_kwargs):
+            raise AssertionError("unselected tool was called")
+
+    class CompiledAgent:
+        def __init__(self, tools):
+            self.tools = tools
+
+        async def ainvoke(self, *_args, **_kwargs):
+            assert [item.name for item in self.tools] == [
+                "search_project_documents",
+                "query_material_specs",
+                "query_price_records",
+                "get_document_evidence",
+            ]
+            content = await self.tools[0].ainvoke({"query": "PTFE", "limit": 8})
+            return {
+                "messages": [
+                    ToolMessage(content=content, tool_call_id="call-1", name="search_project_documents"),
+                    AIMessage(content="资料采用PTFE [doc-1]"),
+                ]
+            }
+
+    monkeypatch.setattr(
+        "src.agents.knowledge_agent.create_agent",
+        lambda **kwargs: CompiledAgent(kwargs["tools"]),
+    )
+    agent = KnowledgeAgent(store=Store(), provider=Provider())
+    queries = Queries()
+    agent.queries = queries
+    result = run(agent._invoke_api(
+        Principal("user", "tester", "tenant", "design_engineer"),
+        "project",
+        "session",
+        "PTFE资料",
+        [],
+    ))
+
+    assert queries.calls == ["search_project_documents"]
+    assert result["sources"][0]["source_id"] == "doc-1"
+
+
+def test_knowledge_agent_rejects_invalid_evidence_citation(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Provider:
+        metadata = {"provider": "capture", "model": "test", "mode": "api"}
+
+        def langchain_model(self):
+            return object()
+
+    class Store(MemoryStore):
+        async def project_has_nonpublic_documents(self, _project_id: str) -> bool:
+            return False
+
+    class Queries:
+        async def search_documents(self, *_args, **_kwargs):
+            return {
+                "tool": "search_project_documents",
+                "evidence": [{"evidence_id": "allowed", "text": "PTFE"}],
+                "sources": [],
+                "uncertainties": [],
+            }
+
+    class CompiledAgent:
+        def __init__(self, tools):
+            self.tool = tools[0]
+
+        async def ainvoke(self, *_args, **_kwargs):
+            content = await self.tool.ainvoke({"query": "PTFE", "limit": 8})
+            return {
+                "messages": [
+                    ToolMessage(content=content, tool_call_id="call-1", name=self.tool.name),
+                    AIMessage(content="无效引用 [invented]"),
+                ]
+            }
+
+    monkeypatch.setattr(
+        "src.agents.knowledge_agent.create_agent",
+        lambda **kwargs: CompiledAgent(kwargs["tools"]),
+    )
+    agent = KnowledgeAgent(store=Store(), provider=Provider())
+    agent.queries = Queries()
+    with pytest.raises(AgentProtocolError, match="invalid evidence citations"):
+        run(agent._invoke_api(
+            Principal("user", "tester", "tenant", "design_engineer"),
+            "project",
+            "session",
+            "PTFE资料",
+            [],
+        ))
+
+
 def test_dependency_health_reports_real_checks() -> None:
     response = request("GET", "/health/deps")
     assert response.status_code == 200
@@ -217,3 +368,55 @@ def test_dependency_health_reports_real_checks() -> None:
     assert payload["checks"]["model"]["healthy"] is True
     assert payload["checks"]["upload_storage"]["healthy"] is True
     assert payload["checks"]["redis"]["enabled"] is False
+
+
+def test_vector_rerank_catalog_contains_17_models() -> None:
+    settings = Settings(_env_file=None, MODEL_MODE="fake")
+    service = ModelCapabilityService(provider=ModelProvider(settings), settings=settings)
+    overview = service.overview()
+    assert overview["catalog_count"] == 17
+    assert {item["model_code"] for item in overview["vector_rerank_catalog"]} >= {
+        "qwen3-rerank",
+        "qwen3-vl-rerank",
+        "text-embedding-v4",
+    }
+
+
+def test_qwen3_reranker_response_is_mapped_without_document_content(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class RerankClient:
+        def __init__(self, **_: Any):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_: Any):
+            return None
+
+        async def post(self, url: str, **kwargs: Any):
+            assert url.endswith("/compatible-api/v1/reranks")
+            assert kwargs["json"]["model"] == "qwen3-rerank"
+            assert "instruct" in kwargs["json"]
+            return httpx.Response(
+                200,
+                json={"results": [{"index": 1, "relevance_score": 0.91}]},
+                request=httpx.Request("POST", url),
+            )
+
+    settings = api_settings(
+        RERANKER_ENABLED=True,
+        RERANKER_PROVIDER="dashscope",
+        RERANKER_API_BASE="https://workspace.invalid/compatible-api/v1/reranks",
+        RERANKER_API_KEY="reranker-test-key",
+        RERANKER_MODEL="qwen3-rerank",
+    )
+    monkeypatch.setattr("src.infrastructure.model_provider.httpx.AsyncClient", RerankClient)
+    ranked = run(ModelProvider(settings).rerank(
+        "膜材规格",
+        [{"text": "价格", "id": "price"}, {"text": "PTFE厚度", "id": "material"}],
+        top_n=1,
+    ))
+    assert ranked[0]["id"] == "material"
+    assert ranked[0]["rerank"]["provider"] == "dashscope"

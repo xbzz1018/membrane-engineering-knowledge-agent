@@ -19,7 +19,7 @@ def _retry_policy():
         backoff_coefficient=2.0,
         maximum_interval=timedelta(seconds=30),
         maximum_attempts=3,
-        non_retryable_error_types=["ValueError", "ParserConfigurationError"],
+        non_retryable_error_types=["ValueError", "ParserConfigurationError", "ReviewAgentError"],
     )
 
 
@@ -162,6 +162,8 @@ if workflow:
             self._state = {
                 "status": "created",
                 "approval": "not_required",
+                "supervisor": "queued",
+                "review_plan": None,
                 "workers": {"design": "queued", "material": "queued", "price": "queued"},
                 "result": None,
                 "error": None,
@@ -188,8 +190,32 @@ if workflow:
         async def run(self, payload: dict) -> dict:
             self._state = {**self._state, "status": "running", "review_id": payload["review_id"]}
             try:
-                for worker_name in self._state["workers"]:
-                    self._state["workers"][worker_name] = "running"
+                supervisor = await workflow.execute_activity(
+                    "plan_package_review_activity",
+                    payload,
+                    task_queue=payload.get("review_task_queue", "membrane-agent-review"),
+                    schedule_to_close_timeout=timedelta(minutes=10),
+                    start_to_close_timeout=timedelta(minutes=5),
+                    heartbeat_timeout=timedelta(seconds=30),
+                    retry_policy=_retry_policy(),
+                    cancellation_type=workflow.ActivityCancellationType.TRY_CANCEL,
+                )
+                plan = dict(supervisor.get("plan") or {})
+                worker_names = [
+                    worker for worker in plan.get("workers", [])
+                    if worker in {"design", "material", "price"}
+                ]
+                if not worker_names:
+                    raise ValueError("review supervisor returned no valid workers")
+                self._state = {
+                    **self._state,
+                    "supervisor": "completed",
+                    "review_plan": plan,
+                    "workers": {
+                        worker: "queued" if worker in worker_names else "skipped"
+                        for worker in ("design", "material", "price")
+                    },
+                }
                 worker_outputs = await asyncio.gather(*(
                     workflow.execute_activity(
                         "review_worker_activity",
@@ -201,13 +227,34 @@ if workflow:
                         retry_policy=_retry_policy(),
                         cancellation_type=workflow.ActivityCancellationType.TRY_CANCEL,
                     )
-                    for worker_name in ("design", "material", "price")
+                    for worker_name in worker_names
                 ))
-                for worker_name in self._state["workers"]:
+                for worker_name in worker_names:
                     self._state["workers"][worker_name] = "completed"
+                coverage_result = await workflow.execute_activity(
+                    "repair_review_coverage_activity",
+                    {
+                        **payload,
+                        "worker_outputs": worker_outputs,
+                        "review_plan": plan,
+                    },
+                    task_queue=payload.get("review_task_queue", "membrane-agent-review"),
+                    schedule_to_close_timeout=timedelta(minutes=30),
+                    start_to_close_timeout=timedelta(minutes=25),
+                    heartbeat_timeout=timedelta(seconds=30),
+                    retry_policy=_retry_policy(),
+                    cancellation_type=workflow.ActivityCancellationType.TRY_CANCEL,
+                )
+                worker_outputs = coverage_result["worker_outputs"]
                 result = await workflow.execute_activity(
                     "compose_package_review_activity",
-                    {**payload, "worker_outputs": worker_outputs},
+                    {
+                        **payload,
+                        "worker_outputs": worker_outputs,
+                        "review_plan": plan,
+                        "supervisor_usage": supervisor.get("usage", {}),
+                        "coverage": coverage_result.get("coverage", {}),
+                    },
                     task_queue=payload.get("review_task_queue", "membrane-agent-review"),
                     start_to_close_timeout=timedelta(minutes=5),
                     retry_policy=_retry_policy(),

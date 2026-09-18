@@ -10,14 +10,13 @@ from pathlib import Path
 
 import httpx
 from minio import Minio
-from pymilvus import MilvusClient
 from redis.asyncio import Redis
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_settings
-from src.engineering.storage import SessionFactory, agent_runs, documents, memory_items
+from src.infrastructure.database import SessionFactory, agent_runs, documents, memory_items
 from src.main import app
 
 
@@ -64,6 +63,8 @@ async def main() -> None:
             indexed.raise_for_status()
             if indexed.json()["chunks"] < 1:
                 raise AssertionError("Document indexing produced no chunks")
+            if not indexed.json()["parser"].startswith("mineru:"):
+                raise AssertionError(f"Full PDF indexing did not use MinerU: {indexed.json()}")
 
             first = await client.post("/api/v1/chat", headers=headers, json={
                 "project_id": settings.DEFAULT_PROJECT_ID,
@@ -136,22 +137,13 @@ async def main() -> None:
         object_name = f"documents/{uploaded_payload['sha256']}/v{version}/{filename}"
         object_stat = await asyncio.to_thread(minio.stat_object, settings.MINIO_BUCKET, object_name)
 
-        milvus = MilvusClient(uri=f"http://{settings.MILVUS_HOST}:{settings.MILVUS_PORT}")
-        try:
-            document_vectors = milvus.query(
-                settings.MILVUS_DOCUMENT_COLLECTION,
-                filter=f'document_id == "{document_id}"',
-                output_fields=["id"],
-                limit=100,
-            )
-            memory_vectors = milvus.query(
-                settings.MILVUS_MEMORY_COLLECTION,
-                filter=f'id == "{memory_id}"',
-                output_fields=["id"],
-                limit=10,
-            )
-        finally:
-            milvus.close()
+        async with SessionFactory() as session:
+            document_vectors = await session.scalar(text(
+                "SELECT count(*) FROM document_embeddings WHERE document_id = :document_id"
+            ), {"document_id": document_id})
+            memory_vectors = await session.scalar(text(
+                "SELECT count(*) FROM memory_embeddings WHERE id = :memory_id"
+            ), {"memory_id": memory_id})
 
         summary = {
             "postgresql": {
@@ -164,9 +156,10 @@ async def main() -> None:
                 "duplicate_short_history_keys": len(duplicate_short_keys),
             },
             "minio": {"object_size": object_stat.size},
-            "milvus": {
-                "document_vectors": len(document_vectors),
-                "memory_vectors": len(memory_vectors),
+            "parser": indexed.json()["parser"],
+            "pgvector": {
+                "document_vectors": document_vectors,
+                "memory_vectors": memory_vectors,
             },
             "health": health["status"],
         }
@@ -177,8 +170,8 @@ async def main() -> None:
             len(checkpoint_keys) >= 1,
             len(duplicate_short_keys) == 0,
             object_stat.size > 0,
-            len(document_vectors) >= 1,
-            len(memory_vectors) == 1,
+            document_vectors >= 1,
+            memory_vectors == 1,
         )
         if not all(required):
             raise AssertionError(f"Full runtime validation failed: {summary}")

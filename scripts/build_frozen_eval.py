@@ -1,4 +1,4 @@
-"""Build attested v2 retrieval and package-review evaluation sets."""
+"""Build the attested v3 retrieval and package-review evaluation sets."""
 
 from __future__ import annotations
 
@@ -7,49 +7,12 @@ import json
 from pathlib import Path
 
 ROOT = Path("data/eval")
-RETRIEVAL_OUTPUT = ROOT / "frozen_retrieval_v2.jsonl"
-PACKAGE_OUTPUT = ROOT / "frozen_packages_v2.jsonl"
+PACKAGE_OUTPUT = ROOT / "frozen_package_review_v3.jsonl"
+DIFFICULT_OUTPUT = ROOT / "frozen_difficult_retrieval_v3.jsonl"
 
 
 def _read(path: str) -> list[dict]:
     return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines() if line]
-
-
-def build_retrieval() -> list[dict]:
-    rows: list[dict] = []
-    for item in _read("data/processed/material_specs.jsonl")[:20]:
-        rows.append({
-            "eval_id": f"spec-{len(rows) + 1:03d}",
-            "category": "material_spec",
-            "query": (
-                f"查询 {item['manufacturer']} 型号 {item['product_reference']} 的规格和版本 "
-                f"{item['source_version']}"
-            ),
-            "expected_source_id": f"spec:{item['spec_id']}",
-        })
-    for item in _read("data/processed/price_records.jsonl")[:20]:
-        rows.append({
-            "eval_id": f"price-{len(rows) + 1:03d}",
-            "category": "price",
-            "query": (
-                f"查询 {item['region']} {item['material']} {item['effective_date']} "
-                f"{item['unit']} synthetic 历史价格"
-            ),
-            "expected_source_id": f"price:{item['price_id']}",
-        })
-    for item in _read("data/processed/synthetic_cases.jsonl")[:20]:
-        rows.append({
-            "eval_id": f"case-{len(rows) + 1:03d}",
-            "category": "case",
-            "query": (
-                f"查找案例 {item['title']}，地点 {item['location']}，结构 {item['structure_type']}，"
-                f"膜材 {item['membrane_material']}"
-            ),
-            "expected_source_id": f"case:{item['case_id']}",
-        })
-    if len(rows) != 60:
-        raise AssertionError(f"retrieval set must contain 60 rows, got {len(rows)}")
-    return rows
 
 
 def build_packages() -> list[dict]:
@@ -67,6 +30,49 @@ def build_packages() -> list[dict]:
     ]
 
 
+def build_difficult_retrieval() -> list[dict]:
+    materials = ["PTFE", "ETFE", "PVC/PVDF", "PTFE网格膜", "PVDF膜材"]
+    applications = ["交通枢纽雨棚", "体育场看台", "商业入口", "停车棚", "景观连廊"]
+    rows = []
+    for index in range(1, 31):
+        material = materials[(index - 1) % len(materials)]
+        application = applications[(index - 1) % len(applications)]
+        distractor = materials[index % len(materials)]
+        code = f"MSE-{index:03d}"
+        version = f"D{(index % 4) + 1}"
+        thickness = round(0.5 + ((index % 6) * 0.1), 1)
+        archive_alias = hashlib.sha256(f"archive-alias-{index}".encode()).hexdigest()[:10]
+        filename = f"工程归档-{archive_alias}.txt"
+        content = (
+            f"工程编号：{code}。项目场景：{application}。采用膜材：{material}。"
+            f"设计版本：{version}。名义厚度：{thickness}毫米。"
+            "本记录仅用于检索评测，不构成结构安全结论或正式报价。"
+        )
+        common = {
+            "document_key": code,
+            "filename": filename,
+            "content": content,
+            "business_version": 5000 + index,
+        }
+        rows.append({
+            **common,
+            "eval_id": f"filename-{index:03d}",
+            "difficulty": "filename_and_version",
+            "query": f"请定位文件 {filename}，其中记录的设计版本是什么？",
+        })
+        rows.append({
+            **common,
+            "eval_id": f"paraphrase-{index:03d}",
+            "difficulty": "paraphrase_with_distractor",
+            "query": (
+                f"编号 {code} 的{application}不是采用{distractor}，实际膜材、设计版次和名义厚度分别是什么？"
+            ),
+        })
+    if len(rows) != 60:
+        raise AssertionError(f"difficult retrieval set must contain 60 rows, got {len(rows)}")
+    return rows
+
+
 def _write(path: Path, rows: list[dict]) -> str:
     payload = "\n".join(json.dumps(row, ensure_ascii=False, sort_keys=True) for row in rows) + "\n"
     encoded = payload.encode("utf-8")
@@ -79,8 +85,11 @@ def _write(path: Path, rows: list[dict]) -> str:
 def main() -> None:
     ROOT.mkdir(parents=True, exist_ok=True)
     summary = {
-        "retrieval": {"rows": 60, "sha256": _write(RETRIEVAL_OUTPUT, build_retrieval())},
-        "packages": {"rows": 20, "sha256": _write(PACKAGE_OUTPUT, build_packages())},
+        "package_review": {"rows": 20, "sha256": _write(PACKAGE_OUTPUT, build_packages())},
+        "difficult_retrieval": {
+            "rows": 60,
+            "sha256": _write(DIFFICULT_OUTPUT, build_difficult_retrieval()),
+        },
     }
     print(json.dumps(summary, sort_keys=True))
 

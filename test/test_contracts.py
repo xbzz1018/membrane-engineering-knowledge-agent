@@ -15,12 +15,12 @@ from scripts.build_document_fixtures import build as build_documents
 from scripts.build_synthetic_cases import build as build_cases
 from scripts.build_synthetic_prices import build as build_prices
 from scripts.validate_data import read_jsonl, validate
+from src.agents.knowledge_agent import AgentProtocolError, KnowledgeAgent
+from src.agents.review_agents import PackageReviewService
 from src.api.dependencies import require_project_role
 from src.core.config import Settings
 from src.core.security import Principal, create_access_token, decode_access_token, hash_password, verify_password
-from src.engineering.knowledge_agent import AgentProtocolError, KnowledgeAgent
-from src.engineering.review_agents import PackageReviewService
-from src.engineering.storage import storage
+from src.infrastructure.database import prices, specs, storage
 from src.main import app
 from src.workflows import temporal_app
 from src.workflows.temporal_definitions import _retry_policy
@@ -52,6 +52,59 @@ def test_synthetic_case_dataset_is_detailed() -> None:
     required = {"area_m2", "design_goal", "material_selection_reason", "license", "source_sha256"}
     assert len(rows) >= 100
     assert sum(required <= row.keys() for row in rows) >= 100
+
+
+def test_business_case_count_excludes_hand_authored_fixtures() -> None:
+    public = read_jsonl(Path("data/processed/public_cases.jsonl"))
+    synthetic = read_jsonl(Path("data/processed/synthetic_cases.jsonl"))
+    fixtures = read_jsonl(Path("data/fixtures/cases.jsonl"))
+    assert len(public) + len(synthetic) == 200
+    assert len(fixtures) == 5
+    assert not ({row["case_id"] for row in public + synthetic} & {row["case_id"] for row in fixtures})
+
+
+def test_catalog_records_have_enterprise_scope() -> None:
+    specs = read_jsonl(Path("data/processed/material_specs.jsonl"))
+    prices = read_jsonl(Path("data/processed/price_records.jsonl"))
+    assert all(row["tenant_id"] == "membrane-company" and row["visibility"] == "public" for row in specs)
+    assert all(row["tenant_id"] == "membrane-company" and row["visibility"] == "public" for row in prices)
+    assert all("project_id" in row for row in prices)
+
+
+def test_catalog_search_is_tenant_and_project_scoped() -> None:
+    async def verify() -> None:
+        async with app.router.lifespan_context(app):
+            suffix = hashlib.sha256(os.urandom(16)).hexdigest()[:12]
+            await storage.seed_payloads(specs, [{
+                "spec_id": f"foreign-spec-{suffix}",
+                "material": "FOREIGN-MATERIAL",
+                "tenant_id": "other-tenant",
+                "visibility": "public",
+            }], "spec_id")
+            await storage.seed_payloads(prices, [{
+                "price_id": f"foreign-price-{suffix}",
+                "material": "FOREIGN-PRICE",
+                "tenant_id": "membrane-company",
+                "project_id": "other-project",
+                "visibility": "internal",
+                "synthetic": True,
+            }], "price_id")
+
+            spec_rows = await storage.search_specs(
+                "FOREIGN-MATERIAL",
+                tenant_id="membrane-company",
+                visibility={"public"},
+            )
+            price_rows = await storage.search_prices(
+                "FOREIGN-PRICE",
+                tenant_id="membrane-company",
+                project_id="demo-project",
+                visibility={"public"},
+            )
+            assert all(row.get("spec_id") != f"foreign-spec-{suffix}" for row in spec_rows)
+            assert all(row.get("price_id") != f"foreign-price-{suffix}" for row in price_rows)
+
+    asyncio.run(verify())
 
 
 def test_public_material_specs_are_traceable() -> None:
@@ -157,6 +210,60 @@ def test_budget_reservation_is_idempotent_and_settled() -> None:
     asyncio.run(verify())
 
 
+def test_local_budget_concurrency_respects_project_review_limit() -> None:
+    async def verify() -> None:
+        async with app.router.lifespan_context(app):
+            async def reserve(index: int) -> str:
+                workflow_id = f"concurrency-test-{index}-{hashlib.sha256(os.urandom(16)).hexdigest()}"
+                try:
+                    await storage.reserve_budget("demo-project", workflow_id, 100)
+                    return f"reserved:{workflow_id}"
+                except ValueError as exc:
+                    assert "concurrent review quota" in str(exc)
+                    return "rejected"
+
+            outcomes = await asyncio.gather(*(reserve(index) for index in range(6)))
+            reserved = [item for item in outcomes if item.startswith("reserved:")]
+            assert len(reserved) == 3
+            assert outcomes.count("rejected") == 3
+            for item in reserved:
+                await storage.settle_budget(item.split(":", 1)[1], 0, status="cancelled")
+
+    asyncio.run(verify())
+
+
+def test_review_approval_allows_only_the_first_concurrent_decision() -> None:
+    async def verify() -> None:
+        async with app.router.lifespan_context(app):
+            review_id = "approval-test-" + hashlib.sha256(os.urandom(16)).hexdigest()
+            await storage.save_package_review(
+                {
+                    "review_id": review_id,
+                    "status": "awaiting_approval",
+                    "engine": "deterministic-fake",
+                    "report": "待审核",
+                    "sources": [],
+                    "conflicts": ["版本冲突"],
+                    "worker_results": {},
+                    "issues": [],
+                    "usage": {},
+                    "human_review_required": True,
+                },
+                user_id="approval-user",
+                project_id="demo-project",
+                question="并发审批测试",
+            )
+            approved, rejected = await asyncio.gather(
+                storage.update_package_review_status(review_id, "approved"),
+                storage.update_package_review_status(review_id, "rejected"),
+            )
+            assert int(approved) + int(rejected) == 1
+            stored = await storage.get_package_review(review_id)
+            assert stored and stored["status"] in {"approved", "rejected"}
+
+    asyncio.run(verify())
+
+
 def test_project_membership_prevents_cross_project_access() -> None:
     async def verify() -> None:
         async with app.router.lifespan_context(app):
@@ -212,3 +319,32 @@ def test_nonpublic_project_is_rejected_before_cloud_model_call() -> None:
     principal = Principal("user", "tester", "tenant", "design_engineer")
     with pytest.raises(AgentProtocolError, match="非公开资料"):
         asyncio.run(agent._invoke_api(principal, "project", "session", "question", []))
+
+
+def test_agent_run_is_linked_to_business_and_steps() -> None:
+    async def verify() -> None:
+        async with app.router.lifespan_context(app):
+            admin = await storage.get_user_by_username("admin")
+            run_id = await storage.start_agent_run(
+                tenant_id="membrane-company",
+                project_id="demo-project",
+                user_id=admin["id"],
+                business_id="review-test",
+                run_type="package_review_design",
+                provider="fake",
+                model="deterministic",
+            )
+            assert run_id
+            await storage.add_agent_step(run_id, "design_review", "invoke_agent", "completed", input_tokens=10)
+            await storage.finish_agent_run(run_id, status="completed", input_tokens=10, output_tokens=2)
+            rows = await storage.list_agent_runs(
+                tenant_id="membrane-company",
+                project_id="demo-project",
+                business_id="review-test",
+            )
+            assert [item["id"] for item in rows] == [run_id]
+            detail = await storage.get_agent_run(run_id, "membrane-company")
+            assert detail["business_id"] == "review-test"
+            assert detail["steps"][0]["step_name"] == "design_review"
+
+    asyncio.run(verify())

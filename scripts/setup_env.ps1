@@ -3,7 +3,7 @@ param(
     [string]$EnvRoot = "F:\code\homework\conda-envs\agent-membrane",
     [string]$PackageRoot = "F:\code\homework\conda-pkgs",
     [string]$PipCache = "F:\code\homework\pip-cache",
-    [switch]$InstallOptional
+    [switch]$Minimal
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,12 +14,13 @@ New-Item -ItemType Directory -Force -Path $PipCache | Out-Null
 $env:CONDA_PKGS_DIRS = $PackageRoot
 $env:PIP_CACHE_DIR = $PipCache
 
-& $CondaExe create --prefix $EnvRoot python=3.12.13 pip -y
-& $CondaExe run --prefix $EnvRoot python -m pip install --upgrade pip
-& $CondaExe run --prefix $EnvRoot python -m pip install -r "$(Join-Path $PSScriptRoot '..\requirements-dev.txt')"
-
-if ($InstallOptional) {
-    & $CondaExe run --prefix $EnvRoot python -m pip install -r "$(Join-Path $PSScriptRoot '..\requirements-optional.txt')"
+if (-not (Test-Path -LiteralPath (Join-Path $EnvRoot "python.exe"))) {
+    & $CondaExe create --prefix $EnvRoot python=3.12.13 pip -y
 }
+& $CondaExe run --prefix $EnvRoot python -m pip install --upgrade pip
+$requirements = if ($Minimal) { "requirements-dev.txt" } else { "requirements-full.txt" }
+& $CondaExe run --prefix $EnvRoot python -m pip install -r "$(Join-Path $PSScriptRoot "..\$requirements")"
 
-Write-Host "Environment ready: $EnvRoot"
+& $CondaExe run --prefix $EnvRoot python -m pip check
+
+Write-Host "Environment ready: $EnvRoot ($requirements)"

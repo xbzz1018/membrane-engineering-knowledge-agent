@@ -12,7 +12,7 @@
 - PostgreSQL is authoritative for identities, projects, facts, reports, memory, budget, and safe Agent run summaries.
 - Redis stores LangGraph checkpoints, rate-limit state, and optional cache. It is not a queue and must not keep duplicate chat lists.
 - MinIO is authoritative for original files and derived Office images.
-- Milvus indexes EvidenceUnit and confirmed memory vectors; it is not an authority database.
+- PostgreSQL + pgvector indexes EvidenceUnit and confirmed memory vectors; vector tables are rebuildable indexes, not business authority.
 - Temporal is the only durable queue and long-running workflow authority.
 - LangChain `create_agent` is the Agent abstraction; LangGraph is the runtime/checkpointer layer.
 

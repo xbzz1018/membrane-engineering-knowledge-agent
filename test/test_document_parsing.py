@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from src.engineering import parsing
+from src.documents import parsing
 
 FIXTURES = Path("data/fixtures/documents")
 
@@ -30,6 +30,40 @@ def test_basic_parser_supports_pdf_docx_and_xlsx(filename: str, marker: str) -> 
 def test_pdf_fixture_preserves_page_numbers() -> None:
     chunks = parsing.parse_basic(FIXTURES / "synthetic-membrane-document-01.pdf")
     assert {chunk["page_number"] for chunk in chunks} == {1, 2}
+
+
+def test_pdf_parser_preserves_all_nonempty_pages(tmp_path: Path) -> None:
+    import pymupdf
+
+    path = tmp_path / "two-page.pdf"
+    document = pymupdf.open()
+    document.new_page().insert_text((72, 72), "page one membrane evidence")
+    document.new_page().insert_text((72, 72), "page two price evidence")
+    document.save(path)
+    document.close()
+
+    chunks = parsing.parse_basic(path)
+    assert {chunk["page_number"] for chunk in chunks} == {1, 2}
+    assert "page two price evidence" in "\n".join(chunk["text"] for chunk in chunks)
+
+
+def test_empty_pdf_produces_no_false_evidence(tmp_path: Path) -> None:
+    import pymupdf
+
+    path = tmp_path / "scan-only.pdf"
+    document = pymupdf.open()
+    document.new_page()
+    document.save(path)
+    document.close()
+
+    assert parsing.parse_basic(path) == []
+
+
+def test_corrupt_document_fails_explicitly(tmp_path: Path) -> None:
+    path = tmp_path / "broken.pdf"
+    path.write_bytes(b"not a PDF")
+    with pytest.raises(Exception):
+        parsing.parse_basic(path)
 
 
 def test_docx_embedded_image_is_located_and_ocr_merged(

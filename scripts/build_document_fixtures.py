@@ -123,7 +123,7 @@ def build(output_dir: Path) -> list[dict]:
             filename = f"synthetic-membrane-document-{index:02d}.{suffix}"
             path = output_dir / filename
             builder(path, index)
-            manifest.append({
+            manifest_row = {
                 "document_id": f"fixture-document-{index:02d}",
                 "filename": filename,
                 "format": suffix,
@@ -134,7 +134,10 @@ def build(output_dir: Path) -> list[dict]:
                 "retrieved_at": FIXED_TIME.isoformat(),
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 "synthetic": True,
-            })
+            }
+            if suffix == "pdf":
+                manifest_row["page_count"] = 2
+            manifest.append(manifest_row)
     return manifest
 
 

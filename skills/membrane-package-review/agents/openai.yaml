@@ -1,0 +1,13 @@
+interface:
+  display_name: "膜结构资料审查"
+  short_description: "通过 MCP 检索项目证据并执行受控的资料包审查流程"
+  default_prompt: "Use $membrane-package-review to review a membrane engineering document package."
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "membrane-engineering"
+      description: "膜结构企业资料平台的受控查询与审查工具"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:8090/mcp"
+policy:
+  allow_implicit_invocation: true

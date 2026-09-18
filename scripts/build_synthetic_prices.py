@@ -17,6 +17,7 @@ MATERIALS = [
 REGIONS = ["华东 synthetic", "华南 synthetic", "华北 synthetic", "西南 synthetic"]
 DATES = ["2024-01", "2024-07", "2025-01"]
 GENERATED_AT = "2026-08-27T00:00:00+00:00"
+TENANT_ID = "membrane-company"
 
 
 def _sha256(record: dict) -> str:
@@ -48,6 +49,9 @@ def build() -> list[dict]:
                     "license": "Project-generated synthetic fixture; repository LICENSE applies.",
                     "retrieved_at": GENERATED_AT,
                     "synthetic": True,
+                    "tenant_id": TENANT_ID,
+                    "project_id": "",
+                    "visibility": "public",
                 }
                 row["source_sha256"] = _sha256(row)
                 rows.append(row)

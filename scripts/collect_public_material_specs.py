@@ -17,6 +17,7 @@ LICENSE_NOTE = (
     "Public manufacturer datasheet; factual technical values only. "
     "Copyright remains with Serge Ferrari; verify the current datasheet before engineering use."
 )
+TENANT_ID = "membrane-company"
 
 
 def _record_sha256(record: dict) -> str:
@@ -26,13 +27,18 @@ def _record_sha256(record: dict) -> str:
 
 def parse_datasheet(content: bytes, retrieved_at: str) -> list[dict]:
     document = pymupdf.open(stream=content, filetype="pdf")
-    text = "\n".join(page.get_text("text") for page in document)
+    page_texts = [page.get_text("text") for page in document]
+    text = "\n".join(page_texts)
     optical_rows = re.findall(
         r"(?m)^(502-\d{4})\s*\n(\d+(?:\.\d+)?)\s*\n(\d+(?:\.\d+)?)\s*\n(\d+(?:\.\d+)?)\s*$",
         text,
     )
     if len(optical_rows) != 40:
         raise ValueError(f"Expected 40 Precontraint 502 references, parsed {len(optical_rows)}")
+    reference_pages: dict[str, int] = {}
+    for page_number, page_text in enumerate(page_texts, 1):
+        for reference in re.findall(r"502-\d{4}", page_text):
+            reference_pages.setdefault(reference, page_number)
     source_sha256 = hashlib.sha256(content).hexdigest()
     rows = []
     for reference, transmission, reflection, absorption in optical_rows:
@@ -51,10 +57,14 @@ def parse_datasheet(content: bytes, retrieved_at: str) -> list[dict]:
             "source_url": SOURCE_URL,
             "source_type": "manufacturer_datasheet",
             "source_version": "Technical features 2024",
+            "source_page": reference_pages.get(reference, 0),
+            "source_page_count": len(page_texts),
             "license": LICENSE_NOTE,
             "retrieved_at": retrieved_at,
             "source_sha256": source_sha256,
             "synthetic": False,
+            "tenant_id": TENANT_ID,
+            "visibility": "public",
         })
     return rows
 
@@ -68,6 +78,8 @@ def _enrich_synthetic(rows: list[dict]) -> list[dict]:
             **original,
             "license": original.get("license") or "Project-generated synthetic fixture; repository LICENSE applies.",
             "retrieved_at": original.get("retrieved_at") or "2026-08-27T00:00:00+00:00",
+            "tenant_id": original.get("tenant_id") or TENANT_ID,
+            "visibility": original.get("visibility") or "public",
         }
         row["source_sha256"] = original.get("source_sha256") or _record_sha256(row)
         enriched.append(row)

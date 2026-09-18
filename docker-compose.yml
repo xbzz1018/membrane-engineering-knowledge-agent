@@ -2,7 +2,7 @@ name: membrane-engineering-agent
 
 services:
   postgres:
-    image: postgres:17
+    image: pgvector/pgvector:0.8.6-pg17
     container_name: membrane-postgres
     restart: unless-stopped
     environment:
@@ -34,25 +34,6 @@ services:
       timeout: 5s
       retries: 5
 
-  etcd:
-    image: quay.io/coreos/etcd:v3.5.25
-    container_name: membrane-milvus-etcd
-    environment:
-      ETCD_AUTO_COMPACTION_MODE: revision
-      ETCD_AUTO_COMPACTION_RETENTION: "1000"
-      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
-      ETCD_SNAPSHOT_COUNT: "50000"
-    command: >-
-      etcd --advertise-client-urls=http://etcd:2379
-      --listen-client-urls=http://0.0.0.0:2379 --data-dir=/etcd
-    volumes:
-      - ./docker/etcd_data:/etcd
-    healthcheck:
-      test: ["CMD", "etcdctl", "endpoint", "health"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   minio:
     image: minio/minio:latest
     container_name: membrane-minio
@@ -71,32 +52,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-
-  milvus:
-    image: milvusdb/milvus:v2.6.13
-    container_name: membrane-milvus
-    command: ["milvus", "run", "standalone"]
-    security_opt:
-      - seccomp:unconfined
-    environment:
-      ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
-      MQ_TYPE: woodpecker
-    ports:
-      - "19530:19530"
-      - "9091:9091"
-    volumes:
-      - ./docker/milvus_data:/var/lib/milvus
-    depends_on:
-      etcd:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
 
   temporal-postgres:
     profiles: ["temporal"]

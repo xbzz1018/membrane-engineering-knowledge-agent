@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from src.api.dependencies import current_principal, require_project_role
 from src.core.security import Principal
-from src.engineering.schemas import WorkflowDecisionRequest
-from src.engineering.storage import storage
+from src.domain.schemas import WorkflowDecisionRequest
+from src.infrastructure.database import storage
 from src.workflows.temporal_app import cancel_workflow, get_workflow_state, signal_workflow
 
-router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
+router = APIRouter(prefix="/api/v1/workflows", tags=["长任务工作流"])
 
 
 async def _authorize(workflow_id: str, principal: Principal, *, decision: bool = False) -> None:
@@ -31,10 +31,10 @@ async def _authorize(workflow_id: str, principal: Principal, *, decision: bool =
 def _http_error(exc: Exception) -> HTTPException:
     if isinstance(exc, ValueError):
         return HTTPException(status_code=409, detail=str(exc))
-    return HTTPException(status_code=502, detail=f"Temporal operation failed: {type(exc).__name__}")
+    return HTTPException(status_code=502, detail=f"Temporal操作失败: {type(exc).__name__}")
 
 
-@router.get("/{workflow_id}")
+@router.get("/{workflow_id}", summary="查询Temporal工作流状态")
 async def workflow_status(
     workflow_id: str,
     principal: Principal = Depends(current_principal),
@@ -46,7 +46,7 @@ async def workflow_status(
         raise _http_error(exc) from exc
 
 
-@router.post("/{workflow_id}/approve")
+@router.post("/{workflow_id}/approve", summary="审核人批准资料包审查")
 async def approve_workflow(
     workflow_id: str,
     principal: Principal = Depends(current_principal),
@@ -58,7 +58,7 @@ async def approve_workflow(
         raise _http_error(exc) from exc
 
 
-@router.post("/{workflow_id}/reject")
+@router.post("/{workflow_id}/reject", summary="审核人退回资料包审查")
 async def reject_workflow(
     workflow_id: str,
     request: WorkflowDecisionRequest,
@@ -71,7 +71,7 @@ async def reject_workflow(
         raise _http_error(exc) from exc
 
 
-@router.post("/{workflow_id}/cancel", status_code=202)
+@router.post("/{workflow_id}/cancel", status_code=202, summary="取消未完成工作流")
 async def cancel_workflow_request(
     workflow_id: str,
     principal: Principal = Depends(current_principal),

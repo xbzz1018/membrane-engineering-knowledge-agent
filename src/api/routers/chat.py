@@ -5,15 +5,15 @@ import json
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
+from src.agents.registry import get_knowledge_agent
 from src.api.dependencies import rate_limited_principal, require_project_role
 from src.core.security import Principal
-from src.engineering.agents import get_knowledge_agent
-from src.engineering.schemas import ChatRequest, ChatResponse
+from src.domain.schemas import ChatRequest, ChatResponse
 
-router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+router = APIRouter(prefix="/api/v1/chat", tags=["项目知识问答"])
 
 
-@router.post("", response_model=ChatResponse)
+@router.post("", response_model=ChatResponse, summary="基于项目证据进行知识问答")
 async def chat(
     request: ChatRequest,
     principal: Principal = Depends(rate_limited_principal),
@@ -34,7 +34,7 @@ async def chat(
     )
 
 
-@router.post("/stream")
+@router.post("/stream", summary="流式返回知识问答结果")
 async def chat_stream(
     request: ChatRequest,
     principal: Principal = Depends(rate_limited_principal),

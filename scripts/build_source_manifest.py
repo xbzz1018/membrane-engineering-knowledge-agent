@@ -23,7 +23,6 @@ def main() -> None:
     processed = ROOT / "data" / "processed"
     documents = ROOT / "data" / "manifests" / "document_fixtures.jsonl"
     groups = [
-        ("fixture_cases", "cases.jsonl", "commit small fixture"),
         ("synthetic_cases", "synthetic_cases.jsonl", "commit generated JSONL with synthetic=true"),
         ("public_cases", "public_cases.jsonl", "store metadata and source links only"),
         ("material_specs", "material_specs.jsonl", "store factual fields; do not commit manufacturer PDF"),
@@ -42,6 +41,17 @@ def main() -> None:
             "dataset_sha256": _sha(path),
             "local_policy": policy,
         })
+    case_fixtures = ROOT / "data" / "fixtures" / "cases.jsonl"
+    first_case_fixture = _first(case_fixtures)
+    rows.append({
+        "record_group": "fixture_cases",
+        "source_type": first_case_fixture["source_type"],
+        "source_url": first_case_fixture["source_url"],
+        "license_note": first_case_fixture["license"],
+        "retrieved_at": first_case_fixture["retrieved_at"],
+        "dataset_sha256": _sha(case_fixtures),
+        "local_policy": "commit small fixture outside the business case catalog",
+    })
     first_document = _first(documents)
     rows.append({
         "record_group": "document_fixtures",

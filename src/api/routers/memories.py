@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from src.api.dependencies import current_principal, require_project_role
 from src.core.security import Principal
-from src.engineering.schemas import MemoryCandidateRequest, MemoryItemResponse, MemoryUpdateRequest
-from src.engineering.storage import storage
+from src.domain.schemas import MemoryCandidateRequest, MemoryItemResponse, MemoryUpdateRequest
+from src.infrastructure.database import storage
 
-router = APIRouter(prefix="/api/v1/memories", tags=["memories"])
+router = APIRouter(prefix="/api/v1/memories", tags=["长期记忆"])
 
 
 def _response(row: dict) -> MemoryItemResponse:
@@ -24,7 +24,7 @@ def _response(row: dict) -> MemoryItemResponse:
     )
 
 
-@router.get("", response_model=list[MemoryItemResponse])
+@router.get("", response_model=list[MemoryItemResponse], summary="查看当前用户的长期记忆")
 async def list_current_memories(
     project_id: str | None = Query(default=None),
     status: str | None = Query(default=None, pattern="^(pending|confirmed|rejected|superseded)$"),
@@ -36,7 +36,7 @@ async def list_current_memories(
     return [_response(row) for row in rows]
 
 
-@router.get("/{user_id}", response_model=list[MemoryItemResponse], deprecated=True)
+@router.get("/{user_id}", response_model=list[MemoryItemResponse], deprecated=True, summary="兼容旧版记忆列表")
 async def list_memories_compat(
     user_id: str,
     principal: Principal = Depends(current_principal),
@@ -46,7 +46,7 @@ async def list_memories_compat(
     return [_response(row) for row in await storage.list_memories(user_id)]
 
 
-@router.post("/candidates", response_model=MemoryItemResponse, status_code=201)
+@router.post("/candidates", response_model=MemoryItemResponse, status_code=201, summary="创建待确认记忆候选")
 async def create_candidate(
     request: MemoryCandidateRequest,
     principal: Principal = Depends(current_principal),
@@ -67,7 +67,7 @@ async def create_candidate(
     return _response(row)
 
 
-@router.post("/{memory_id}/confirm", response_model=MemoryItemResponse)
+@router.post("/{memory_id}/confirm", response_model=MemoryItemResponse, summary="确认并索引长期记忆")
 async def confirm_memory(
     memory_id: str,
     principal: Principal = Depends(current_principal),
@@ -78,7 +78,7 @@ async def confirm_memory(
     return _response(row)
 
 
-@router.post("/{memory_id}/reject", response_model=MemoryItemResponse)
+@router.post("/{memory_id}/reject", response_model=MemoryItemResponse, summary="拒绝长期记忆候选")
 async def reject_memory(
     memory_id: str,
     principal: Principal = Depends(current_principal),
@@ -89,7 +89,7 @@ async def reject_memory(
     return _response(row)
 
 
-@router.patch("/{memory_id}", response_model=MemoryItemResponse)
+@router.patch("/{memory_id}", response_model=MemoryItemResponse, summary="更新记忆并重新进入待确认状态")
 async def update_memory(
     memory_id: str,
     request: MemoryUpdateRequest,
@@ -101,7 +101,7 @@ async def update_memory(
     return _response(row)
 
 
-@router.delete("/{memory_id}", status_code=204)
+@router.delete("/{memory_id}", status_code=204, summary="删除当前用户的长期记忆")
 async def delete_current_memory(
     memory_id: str,
     principal: Principal = Depends(current_principal),
@@ -110,7 +110,7 @@ async def delete_current_memory(
         raise HTTPException(status_code=404, detail="长期记忆不存在")
 
 
-@router.delete("/{user_id}/{memory_id}", status_code=204, deprecated=True)
+@router.delete("/{user_id}/{memory_id}", status_code=204, deprecated=True, summary="兼容旧版记忆删除")
 async def delete_memory_compat(
     user_id: str,
     memory_id: str,

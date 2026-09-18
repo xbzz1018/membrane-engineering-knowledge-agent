@@ -97,6 +97,7 @@ async def submit_package_review(
     user_id: str,
     project_id: str,
     tenant_id: str,
+    review_mode: str = "full",
 ) -> dict[str, Any]:
     client = await _client()
     workflow_id = f"package-review:{review_id}"
@@ -114,6 +115,7 @@ async def submit_package_review(
         "user_id": user_id,
         "project_id": project_id,
         "tenant_id": tenant_id,
+        "review_mode": review_mode,
         "review_task_queue": get_settings().TEMPORAL_REVIEW_TASK_QUEUE,
         "maintenance_task_queue": get_settings().TEMPORAL_MAINTENANCE_TASK_QUEUE,
     }

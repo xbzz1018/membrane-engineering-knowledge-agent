@@ -39,20 +39,27 @@ class Settings(BaseSettings):
     GATEWAY_MODEL: str = ""
     GATEWAY_EMBEDDING_MODEL: str = ""
     CHAT_MODEL: str = "deepseek-chat"
+    REVIEW_API_BASE: str = ""
+    REVIEW_API_KEY: str = ""
+    REVIEW_MODEL: str = "qwen3.7-flash"
+    REVIEW_MAX_TOKENS: int = Field(default=8192, ge=512, le=16384)
+    REVIEW_SUPERVISOR_ENABLED: bool = True
     EMBEDDING_PROVIDER: str = "auto"  # auto | embedding/local/custom/openai | dashscope | gateway | fake
     EMBEDDING_API_KEY: str = ""
     EMBEDDING_API_BASE: str = ""
     EMBEDDING_MODEL: str = "text-embedding-v3"
     EMBEDDING_DIMENSIONS: int = Field(default=1024, ge=1, le=65536)
     RERANKER_ENABLED: bool = False
+    RERANKER_PROVIDER: str = "dashscope"
     RERANKER_API_BASE: str = ""
     RERANKER_API_KEY: str = ""
     RERANKER_MODEL: str = "qwen3-rerank"
     RERANKER_TOP_N: int = Field(default=8, ge=1, le=100)
+    RERANKER_INSTRUCT: str = "Given an engineering question, retrieve passages that directly answer it."
     MODEL_TEMPERATURE: float = Field(default=0.0, ge=0, le=2)
     MODEL_MAX_TOKENS: int = Field(default=2048, ge=128, le=16384)
     MODEL_CONTEXT_WINDOW: int = Field(default=32768, ge=4096, le=1048576)
-    MODEL_TIMEOUT_SECONDS: int = Field(default=60, ge=5, le=600)
+    MODEL_TIMEOUT_SECONDS: int = Field(default=180, ge=5, le=600)
     MODEL_RETRY_ATTEMPTS: int = Field(default=2, ge=1, le=5)
     MODEL_RETRY_BACKOFF_SECONDS: float = Field(default=0.5, ge=0, le=10)
 
@@ -78,12 +85,18 @@ class Settings(BaseSettings):
     MINIO_SECRET_KEY: str = "minioadmin"
     MINIO_BUCKET: str = "engineering-docs"
     MINIO_SECURE: bool = False
-    MILVUS_HOST: str = "localhost"
-    MILVUS_PORT: int = 19530
-    MILVUS_DOCUMENT_COLLECTION: str = "engineering_document_chunks"
-    MILVUS_MEMORY_COLLECTION: str = "engineering_long_term_memory"
     REDIS_CHECKPOINT_PREFIX: str = "membrane:checkpoint"
     API_RATE_LIMIT_PER_MINUTE: int = Field(default=60, ge=1, le=10000)
+
+    MCP_ENABLED: bool = False
+    MCP_HOST: str = "127.0.0.1"
+    MCP_PORT: int = Field(default=8090, ge=1, le=65535)
+    MCP_AUDIENCE: str = "membrane-mcp"
+    MCP_CLIENT_ID: str = "membrane-enterprise-client"
+    MCP_TOKEN_TTL_MINUTES: int = Field(default=60, ge=5, le=1440)
+    MCP_RESOURCE_SERVER_URL: str = "http://127.0.0.1:8090/mcp"
+    MCP_ISSUER_URL: str = "http://127.0.0.1:8080"
+    MCP_ALLOWED_ORIGINS: str = "http://127.0.0.1:*,http://localhost:*"
 
     PARSER_MODE: str = "basic"  # basic | mineru
     MINERU_EXECUTABLE: str = r"F:\code\homework\project\1_membrane_project_precheck\runtime\envs\mineru\Scripts\mineru.exe"

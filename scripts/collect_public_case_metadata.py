@@ -19,6 +19,11 @@ PROJECT_PATTERN = re.compile(
     r'<a\s+href="(?P<href>/index\.php/projects-database/projects/(?P<id>\d+))"(?P<body>.*?)</a>',
     re.IGNORECASE | re.DOTALL,
 )
+DETAIL_PATTERN = re.compile(
+    r'<span\s+class="project-subtitle">\s*(?P<label>.*?)\s*</span>\s*'
+    r'<h5[^>]*>\s*(?P<value>.*?)\s*</h5>',
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 def _text(pattern: str, body: str) -> str:
@@ -27,6 +32,53 @@ def _text(pattern: str, body: str) -> str:
         return ""
     value = re.sub(r"<[^>]+>", " ", match.group(1))
     return re.sub(r"\s+", " ", html.unescape(value)).strip()
+
+
+def parse_project_detail(content: str) -> dict[str, str]:
+    """Extract the stable label/value pairs from a TensiNet project page."""
+    fields: dict[str, str] = {}
+    for match in DETAIL_PATTERN.finditer(content):
+        label = re.sub(r"\s+", " ", html.unescape(match.group("label"))).strip()
+        value = re.sub(
+            r"\s+",
+            " ",
+            html.unescape(re.sub(r"<[^>]+>", " ", match.group("value"))),
+        ).strip()
+        if label and value and label not in fields:
+            fields[label] = value
+    return fields
+
+
+def enrich_project(row: dict, detail: dict[str, str], detail_url: str, detail_content: str) -> dict:
+    """Merge detail-page facts while retaining the original listing provenance."""
+    address = detail.get("Location address", "")
+    country = detail.get("Location country", "")
+    if address:
+        row["location_address"] = address
+    if country:
+        row["location_country"] = country
+    if address or country:
+        row["location"] = ", ".join(value for value in (address, country) if value)
+
+    year_match = re.search(r"\b(19|20)\d{2}\b", detail.get("Year of construction", ""))
+    if year_match:
+        row["year"] = int(year_match.group(0))
+    row["application"] = detail.get("Function of building", row.get("application", ""))
+    row["structure_type"] = detail.get(
+        "Cable-net/Fabric/Hybrid/Foil", row.get("structure_type", "")
+    )
+    material = detail.get("Material Fabric/Foil", "")
+    coating = detail.get("Material coating", "")
+    if material and coating:
+        row["membrane_material"] = f"{material} / {coating}"
+    elif material:
+        row["membrane_material"] = material
+    row["cover_type"] = detail.get("Type (code)", "")
+    row["detail_source_url"] = detail_url
+    row["detail_source_sha256"] = hashlib.sha256(detail_content.encode("utf-8")).hexdigest()
+    row["detail_retrieved_at"] = datetime.now(UTC).isoformat()
+    row["detail_status"] = "ok"
+    return row
 
 
 def parse_projects(content: str, source_page_url: str = BASE_URL, source_sha256: str = "") -> list[dict]:
@@ -58,6 +110,18 @@ def fetch(opener, url: str, data: bytes | None = None) -> str:
         request = Request(url, data=data, headers={"User-Agent": "membrane-engineering-knowledge-agent/0.1"})
     with opener.open(request, timeout=30) as response:
         return response.read().decode("utf-8", errors="replace")
+
+
+def fetch_with_retry(opener, url: str, delay: float, attempts: int = 3) -> str:
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            return fetch(opener, url)
+        except Exception as exc:
+            last_error = exc
+            if attempt + 1 < attempts:
+                time.sleep(min(2.0, max(delay, 0.2) * (2**attempt)))
+    raise last_error or RuntimeError("detail fetch failed")
 
 
 def collect(limit: int, delay: float) -> list[dict]:
@@ -94,7 +158,17 @@ def collect(limit: int, delay: float) -> list[dict]:
         if len(rows) >= limit:
             break
         time.sleep(max(delay, 0))
-    return list(rows.values())[:limit]
+    collected = list(rows.values())[:limit]
+    for index, row in enumerate(collected):
+        try:
+            detail_content = fetch_with_retry(opener, row["source_url"], delay)
+            enrich_project(row, parse_project_detail(detail_content), row["source_url"], detail_content)
+        except Exception as exc:
+            row["detail_status"] = "failed"
+            row["detail_error"] = type(exc).__name__
+        if index + 1 < len(collected):
+            time.sleep(max(delay, 0))
+    return collected
 
 
 def main() -> None:

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 from src.core.config import get_settings
-from src.engineering.storage import metadata
+from src.infrastructure.database import metadata
 
 config = context.config
 if config.config_file_name is not None:

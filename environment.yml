@@ -1,8 +1,8 @@
 name: agent-membrane
 channels:
-  - conda-forge
+  - defaults
 dependencies:
   - python=3.12.13
   - pip
   - pip:
-      - -r requirements-core.txt
+      - -r requirements-full.txt

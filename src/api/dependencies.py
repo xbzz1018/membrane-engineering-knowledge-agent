@@ -6,9 +6,10 @@ from collections.abc import Iterable
 import jwt
 from fastapi import Depends, Header, HTTPException
 
+from src.application.authorization import ProjectAccessError, project_authorization
 from src.core.config import get_settings
 from src.core.security import Principal, decode_access_token
-from src.engineering.storage import storage
+from src.infrastructure.database import storage
 
 
 async def current_principal(authorization: str | None = Header(default=None)) -> Principal:
@@ -86,9 +87,9 @@ async def require_project_role(
     principal: Principal,
     roles: Iterable[str] | None = None,
 ) -> str:
-    role = await storage.project_access(project_id, principal.user_id, principal.tenant_id, principal.role)
-    if role is None:
-        raise HTTPException(status_code=404, detail="项目不存在或无访问权限")
-    if roles is not None and role not in set(roles) and principal.role != "admin":
-        raise HTTPException(status_code=403, detail="当前项目角色无权执行此操作")
-    return role
+    try:
+        scope = await project_authorization.authorize(principal, project_id, roles)
+    except ProjectAccessError as exc:
+        status_code = 404 if exc.code == "not_found" else 403
+        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+    return scope.role
