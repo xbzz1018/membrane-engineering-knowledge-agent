@@ -17,6 +17,7 @@
 
 | 检查 | 实测及边界 |
 |---|---|
+| GitHub Linux CI | **154 passed / 2 skipped，47.494秒**；[JUnit](validation-artifacts/github-linux-ci-tests.xml)；Ubuntu/Python 3.12、提交`87cdc2e`；前端Node 22 lint/2测试/类型构建亦通过 |
 | GitHub发布副本全量 | **154 passed / 2 skipped，139.66秒**；[JUnit](validation-artifacts/github-publication-tests.xml)；Heartbeat修复及角色/接口同步后重新运行 |
 | 角色/上下文/Markdown后端全量 | **154 passed / 2 skipped，108.01秒**；见[JUnit](validation-artifacts/README.md)；在后续Heartbeat修复之前 |
 | Heartbeat修复后定向回归 | **29 passed，21.95秒**；工作流生命周期、审批与部署门禁；见[JUnit](validation-artifacts/README.md)，不与全量相加 |
@@ -77,7 +78,7 @@
 
 ## 部署和未完成项
 
-已提供Compose、前后端Dockerfile、随机凭据初始化、启动门禁及真实HTTP/pgvector/Temporal验收入口，见[部署说明](deployment.md)。18项部署门禁已测，Compose可解析；本机Linux Engine未运行，容器镜像和完整栈没有成功记录，GitHub Actions尚未运行。可分享记录另见[安全摘要](validation-artifacts/README.md)。
+已提供Compose、前后端Dockerfile、随机凭据初始化、启动门禁及真实HTTP/pgvector/Temporal验收入口，见[部署说明](deployment.md)。18项部署门禁已测，Compose可解析；本机Linux Engine未运行，容器镜像和完整栈没有成功记录。[GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)已通过后端和前端检查，Compose smoke此次跳过。首次CI在提交`27e8d14`因缺少greenlet失败，修复依赖声明为`sqlalchemy[asyncio]`后通过；[失败记录](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41603661769)保留。可分享记录另见[安全摘要](validation-artifacts/README.md)。
 
 真实PostgreSQL/pgvector、Redis、MinIO整栈，真实Embedding/新强弱模型对照，MinerU/OCR，专家独立标注与实际业务试用均待验收。当前模型通过API接入，没有微调、LoRA权重或GPU推理服务部署。
 

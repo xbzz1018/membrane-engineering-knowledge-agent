@@ -75,7 +75,7 @@ docker compose --env-file deploy/.env -f deploy/compose.yaml --profile validatio
 
 | 检查 | 结果 | 说明 |
 | --- | --- | --- |
-| 后端全量 | 154通过、2跳过 | 2026-11-03发布副本重新运行；MinerU/OCR未实际验收 |
+| 后端全量 | 154通过、2跳过 | 本机发布副本与GitHub Ubuntu/Python 3.12均通过；MinerU/OCR未实际验收 |
 | 最终定向回归 | 54通过 | 接口、角色与部署门禁；不与全量相加 |
 | 真实Temporal | 故障用例通过、5份历史重放 | SQLite/Fake/TXT；强杀恢复、提交后重试、离线审批及取消 |
 | 业务开发回归v3 | 24/24 | 人工合成、Fake、规则参与，不是模型准确率 |
@@ -103,4 +103,4 @@ npm test
 npm run build
 ```
 
-GitHub Actions提供后端/前端检查；完整Compose smoke为手动触发选项，成功状态以实际工作流记录为准。请勿提交`.env`、内部资料、真实报价、上传文件、运行库或完整模型响应。来源与分发边界见[数据清单](data/manifests/sources.csv)及[公开资料索引](data/manifests/public-references-v1.json)。
+[GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)已在提交`87cdc2e`通过后端/前端检查；完整Compose smoke为手动触发选项，此次跳过。请勿提交`.env`、内部资料、真实报价、上传文件、运行库或完整模型响应。来源与分发边界见[数据清单](data/manifests/sources.csv)及[公开资料索引](data/manifests/public-references-v1.json)。

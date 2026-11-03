@@ -19,3 +19,10 @@
 发布副本后端重新运行 **154 passed / 2 skipped**；Ruff、依赖检查、数据检查与仓库检查通过。JUnit 已归档并脱敏主机名。GitHub Actions 状态以远端实际运行记录为准；完整容器栈及新强弱模型验收另行记录，不以单元测试替代。
 
 提交范围排除 `.env`、密钥、上传资料、运行数据库、完整模型响应、缓存及依赖目录。保留原 `.github/dependabot.yml` 和规划文件。评测数据与验证归档按原始字节保存，避免跨平台换行改变冻结哈希。详细模式、分母、失败记录和当前限制见[当前验证](current-validation.md)。
+
+## 远端结果
+
+- [个人主页](https://github.com/xbzz1018)经[PR #1](https://github.com/xbzz1018/xbzz1018/pull/1)合并到main，中英文与横幅已发布，发布后的[检查](https://github.com/xbzz1018/xbzz1018/actions/runs/41603952361)通过。
+- [项目PR #22](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/pull/22)已推送，保留供审阅，项目main未合并。
+- 提交`87cdc2e`的[项目CI](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)前后端通过；Ubuntu/Python 3.12后端154通过/2跳过，Node 22前端lint/2测试/类型构建通过。首次CI缺少greenlet，已通过`sqlalchemy[asyncio]`声明修复，不删除失败记录。
+- 仓库简介与技术topics已更新，可见性保持私有；完整Compose smoke此次跳过，新模型组合尚待验收。

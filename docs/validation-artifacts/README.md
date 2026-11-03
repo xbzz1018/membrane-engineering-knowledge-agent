@@ -1,11 +1,12 @@
 # 可分享的验证摘要
 
-这里保存经过内容检查的合成开发验收摘要，不包含密钥、业务数据库、原始上传、完整模型响应或用户资料。它们是历史运行证据，不表示当前所有源码均重新运行了同一实验；各次源码 SHA 与模式以记录为准。部署镜像构建及整栈验收尚未完成，GitHub Actions 尚未运行。
+这里保存经过内容检查的合成开发验收摘要，不包含密钥、业务数据库、原始上传、完整模型响应或用户资料。它们是历史运行证据，不表示当前所有源码均重新运行了同一实验；各次源码 SHA 与模式以记录为准。部署镜像构建及整栈验收尚未完成；[GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)已通过后端及前端，Compose smoke此次跳过。
 
 ## 2026-11-03 新角色与上下文增量
 
 | 记录 | 实际范围 |
 |---|---|
+| [GitHub Linux CI JUnit](github-linux-ci-tests.xml) | 提交87cdc2e，Ubuntu/Python 3.12，154通过/2跳过，47.494秒；前端lint/2测试/类型构建亦通过 |
 | [GitHub发布全量JUnit](github-publication-tests.xml) | 154通过/2跳过，修复及接口同步后的发布副本重新运行，139.66秒 |
 | [新角色全量JUnit](role-context-markdown-tests.xml) | 154通过/2跳过，Heartbeat修复前 |
 | [恢复修复定向JUnit](role-recovery-followup-tests.xml) | 29通过，不与全量相加 |
