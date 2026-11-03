@@ -25,8 +25,66 @@ export interface SourceRef {
   url?: string
 }
 
+export type DocumentType = 'design' | 'material' | 'price' | 'other'
+
+export interface DocumentBusinessMetadata {
+  engineering_model: string
+  applicable_revision: string
+  document_type: DocumentType
+  effective_from: string | null
+  effective_to: string | null
+  source_note: string
+  declared_by: string
+  updated_at: string
+  provenance: 'user_declared'
+}
+
+export interface DocumentBusinessMetadataResponse {
+  document_id: string
+  business_metadata: DocumentBusinessMetadata | null
+}
+
+export interface DocumentBusinessMetadataPayload {
+  engineering_model: string
+  applicable_revision: string
+  document_type: DocumentType
+  effective_from: string | null
+  effective_to: string | null
+  source_note: string
+  expected_lock_version: number
+}
+
+export interface DocumentSearchFilters {
+  engineering_model?: string
+  applicable_revision?: string
+  upload_version?: number
+  effective_on?: string
+  document_type?: DocumentType
+}
+
+export interface DocumentSearchEvidence {
+  evidence_id: string
+  text: string
+}
+
+export interface DocumentSearchSource {
+  source_id: string
+  title: string
+  location: string
+  excerpt: string
+  version: string
+}
+
+export interface DocumentSearchResponse {
+  evidence: DocumentSearchEvidence[]
+  sources: DocumentSearchSource[]
+  uncertainties: string[]
+  applied_filters: DocumentSearchFilters
+}
+
 export interface DocumentItem {
   id: string
+  lock_version: number
   document_id?: string
   filename: string
   content_type: string
@@ -36,6 +94,7 @@ export interface DocumentItem {
   parse_method: string
   data_classification: string
   version: number
+  lock_version: number
   sha256: string
   embedding_model?: string
   created_at?: string

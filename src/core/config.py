@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     REVIEW_API_KEY: str = ""
     REVIEW_MODEL: str = "qwen3.7-flash"
     REVIEW_MAX_TOKENS: int = Field(default=8192, ge=512, le=16384)
+    REVIEW_MAX_EVIDENCE_UNITS: int = Field(default=1000, ge=1, le=10000)
+    REVIEW_MAX_EVIDENCE_TOKENS: int = Field(default=100_000, ge=1000, le=1_000_000)
     REVIEW_SUPERVISOR_ENABLED: bool = True
     EMBEDDING_PROVIDER: str = "auto"  # auto | embedding/local/custom/openai | dashscope | gateway | fake
     EMBEDDING_API_KEY: str = ""
@@ -99,7 +101,9 @@ class Settings(BaseSettings):
     MCP_ALLOWED_ORIGINS: str = "http://127.0.0.1:*,http://localhost:*"
 
     PARSER_MODE: str = "basic"  # basic | mineru
-    MINERU_EXECUTABLE: str = r"F:\code\homework\project\1_membrane_project_precheck\runtime\envs\mineru\Scripts\mineru.exe"
+    MINERU_EXECUTABLE: str = (
+        r"F:\code\homework\project\1_membrane_project_precheck\runtime\envs\mineru\Scripts\mineru.exe"
+    )
     MINERU_API_URL: str = ""
     MINERU_WORK_ROOT: str = r"F:\code\homework\model-cache\mineru"
     MINERU_TIMEOUT: int = Field(default=900, ge=30, le=3600)
@@ -146,10 +150,7 @@ class Settings(BaseSettings):
         if self.RUNTIME_MODE.lower() == "local":
             db_path.parent.mkdir(parents=True, exist_ok=True)
             return f"sqlite+aiosqlite:///{db_path.as_posix()}"
-        return (
-            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
-            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
-        )
+        return f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
     def data_path(self) -> Path:

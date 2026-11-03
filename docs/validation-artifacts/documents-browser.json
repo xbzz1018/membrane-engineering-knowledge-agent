@@ -1,0 +1,19 @@
+{
+  "validated_at": "2026-11-02T11:53:04.009Z",
+  "mode": "real browser / HTTP / local fake model; actual document status polled",
+  "project_id": "e5749f2df9e54941b97c8e9719a0b03f",
+  "document_ids": [
+    "eef65329bd01455993354ecfe4d67eda",
+    "0acfa0f881ca47a88960f05de1f83b17"
+  ],
+  "checks": {
+    "metadata_save_reload": "passed",
+    "exact_model_search": "passed",
+    "evidence_drawer": "passed",
+    "stale_save_409": "passed",
+    "conflict_reload": "passed",
+    "no_answer": "passed",
+    "mobile_no_horizontal_overflow": "passed"
+  },
+  "page_errors": []
+}

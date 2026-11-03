@@ -50,7 +50,9 @@ def test_upload_index_and_package_review() -> None:
         json={"document_ids": [document_id], "question": "比较资料中的膜材规格"},
     )
     assert review.status_code == 200
-    assert review.json()["status"] == "completed"
+    assert review.json()["status"] == "awaiting_approval"
+    assert review.json()["human_review_required"]
+    assert any(item["issue_type"] == "missing_domain_evidence" for item in review.json()["issues"])
     assert "ReviewSupervisorAgent" in review.json()["agents_used"]
     assert set(review.json()["review_plan"]["workers"]) == {"design", "material", "price"}
     persisted = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}")

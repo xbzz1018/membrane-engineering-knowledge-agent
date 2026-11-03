@@ -5,9 +5,11 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from src.api.dependencies import rate_limited_principal, require_project_role
+from src.application.knowledge import KnowledgeQueryService
 from src.core.config import get_settings
 from src.core.security import Principal
 from src.documents.parsing import parse_document
+from src.domain.document_search import DocumentBusinessMetadata, DocumentSearchRequest
 from src.domain.schemas import DocumentResponse, IndexResponse
 from src.infrastructure.database import storage
 from src.workflows.temporal_app import submit_document_ingest
@@ -15,6 +17,43 @@ from src.workflows.temporal_app import submit_document_ingest
 router = APIRouter(prefix="/api/v1/documents", tags=["工程资料"])
 ALLOWED_SUFFIXES = {".pdf", ".docx", ".xlsx", ".xlsm", ".txt", ".md"}
 MAX_BYTES = 25 * 1024 * 1024
+
+
+@router.post("/search", summary="按明确型号、适用版本及业务生效日期检索资料")
+async def search_documents(request: DocumentSearchRequest,
+                           principal: Principal = Depends(rate_limited_principal)) -> dict:
+    await require_project_role(request.project_id, principal)
+    return await KnowledgeQueryService().search_documents(
+        principal, request.project_id, request.query, filters=request.filters, limit=request.limit,
+        classifications={"public"},
+    )
+
+
+@router.put("/{document_id}/business-metadata", summary="声明有来源依据的资料业务条件")
+async def declare_business_metadata(document_id: str, request: DocumentBusinessMetadata,
+                                    principal: Principal = Depends(rate_limited_principal)) -> dict:
+    from src.infrastructure.document_metadata import declare_metadata
+
+    document = await storage.get_document(document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="资料不存在")
+    await require_project_role(document["project_id"], principal, {"admin", "design_engineer", "material_procurement"})
+    try:
+        return await declare_metadata(storage, document_id, request, principal.user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/{document_id}/business-metadata", summary="查看业务条件及声明来源")
+async def business_metadata(document_id: str,
+                            principal: Principal = Depends(rate_limited_principal)) -> dict:
+    from src.infrastructure.document_metadata import get_metadata
+
+    document = await storage.get_document(document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="资料不存在")
+    await require_project_role(document["project_id"], principal)
+    return {"document_id": document_id, "business_metadata": await get_metadata(storage, document_id)}
 
 
 @router.get("", summary="查看项目资料列表")

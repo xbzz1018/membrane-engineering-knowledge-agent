@@ -1,0 +1,15 @@
+{
+  "validated_at": "2026-11-02T11:53:25.866Z",
+  "mode": "real browser / real Temporal / Fake Agents",
+  "checks": {
+    "persisted_report_after_server_restart": "passed",
+    "submission_queued": "passed",
+    "automatic_report_refresh": "passed",
+    "decision_pending": "passed",
+    "automatic_final_state_refresh": "passed",
+    "terminal_actions_hidden": "passed"
+  },
+  "reviewed_copy_id": "26d4f4d0b5c84c08aaaa46ccd1bee087",
+  "retained_demo_id": "c8bc39b592424488b9bbeb462df874c1",
+  "page_errors": []
+}

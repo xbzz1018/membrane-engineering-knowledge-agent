@@ -1,6 +1,19 @@
 # 膜结构企业资料审查平台
 
+> 独立工程复现，验证范围见[当前记录](docs/current-validation.md)。已验证 Local/Fake 下的业务、权限、领域工具、真实 Temporal 开发服务恢复与历史重放；真实 Embedding 端点曾返回 403，尚无 Full 栈部署成功或真实语义质量记录。合成开发集不能证明简历历史内部指标。
+
 面向膜结构公司设计、膜材采购和项目审核人员的企业工程资料智能审查平台。系统提供项目级资料隔离、工程知识问答、文档解析、三领域资料审查、证据引用、人工审批与长任务恢复。
+
+## Docker Compose 快速开始
+
+```bash
+python3 scripts/init_deployment.py
+docker compose --env-file deploy/.env -f deploy/compose.yaml config --quiet
+docker compose --env-file deploy/.env -f deploy/compose.yaml up -d --build
+docker compose --env-file deploy/.env -f deploy/compose.yaml --profile validation run --rm smoke
+```
+
+访问 `http://127.0.0.1:8088`，管理员密码从生成的 `deploy/.env` 读取。默认使用真实 PostgreSQL/pgvector、Redis、MinIO 与 Temporal，模型为显式 Fake；基础镜像不含 MinerU。当前包已做配置/脚本检查，容器构建和整栈运行尚待 Docker Engine 可用后验收。完整命令、真实模型配置、备份和限制见[部署说明](docs/deployment.md)，仓库更新见[GitHub 更新方案](docs/github-update.md)。
 
 ## 项目定位
 
@@ -8,12 +21,12 @@
 
 项目明确不做结构安全计算、正式报价、施工设计或自动安全审批；模型输出必须绑定证据，云 Provider 只能处理公开资料，内部或受限资料需要本地 Provider。
 
-项目背景、技术栈、评测口径和可点击源码导航见 [面试准备-膜构智审-综合版.md](面试准备-膜构智审-综合版.md)。
+项目背景、技术栈与面试追问见 [面试准备-膜构智审-综合版.md](面试准备-膜构智审-综合版.md)。业务前提见 [业务范围](docs/business-boundaries.md)，实验分母、数据性质和复跑方式见 [评测协议](docs/evaluation-protocol.md)。
 
 ## 架构边界
 
 - FastAPI 提供 JWT、RBAC、项目、文档、问答、审查、工作流和记忆 API。
-- LangChain `create_agent` 实现 KnowledgeAgent、ReviewSupervisorAgent 以及设计、膜材、价格三个审查 Worker；Supervisor 只生成受限审查计划，不直接操作权限或数据。
+- LangChain create_agent实现KnowledgeAgent、ReviewSupervisorAgent及三个领域Worker；full由固定业务策略选三领域，focused才由模型受限规划，在线Supervisor通过领域工具调用子Agent。
 - LangGraph 是 Agent 运行时；Full 模式使用 Redis Checkpointer 保存 24 小时短期会话状态。
 - Temporal 是唯一后台任务系统，负责解析、批量导入、审查、重试、Heartbeat、Query、Signal 和 Cancellation。
 - PostgreSQL 保存业务事实、审查报告、记忆权威记录、预算与运行摘要，并通过 pgvector 保存文档及已确认记忆向量；MinIO 保存原文件和派生图片。
@@ -33,8 +46,20 @@
 
 ## 本地验证
 
+本机演示已经运行在http://127.0.0.1:5173，开发账号**admin / admin-change-me**。重启持久异步演示：
+
 ```powershell
-cd F:\code\homework\project\membrane-engineering-knowledge-agent
+cd 'F:\工作\04项目资料\简历项目\资料智能审查落地版'
+& .\scripts\stop_demo.ps1
+& .\scripts\start_demo.ps1 -Temporal -Mcp
+$python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
+& $python scripts\seed_temporal_demo.py
+```
+
+此模式使用SQLite/Fake/Basic及真实Temporal开发Server，业务库与历史保存在data/runtime/temporal-demo-v2，队列采用独立v2名称。首次缺少CLI时先运行scripts/validate_temporal_local.py下载并验收。无-Temporal为另库的同步演示。前端依赖当前是Junction，不要通过它安装或升级。
+
+```powershell
+cd 'F:\工作\04项目资料\简历项目\资料智能审查落地版'
 $python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
 
 $env:RUNTIME_MODE = 'local'
@@ -43,7 +68,8 @@ $env:PARSER_MODE = 'basic'
 $env:TEMPORAL_ENABLED = 'false'
 $env:AUTH_ENABLED = 'false'
 
-& $python -m pytest -q
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
+& $python -m pytest -q -p pytest_asyncio.plugin
 & $python -m ruff check src scripts test alembic
 & $python -m pip check
 & $python scripts\validate_data.py
@@ -56,7 +82,7 @@ $env:AUTH_ENABLED = 'false'
 项目运行时不使用 Conda `base`。完整环境固定在 `F:\code\homework\conda-envs\agent-membrane`；`base` 中的 `conda.exe` 只用于创建或更新该 prefix 环境。
 
 ```powershell
-cd F:\code\homework\project\membrane-engineering-knowledge-agent
+cd 'F:\工作\04项目资料\简历项目\资料智能审查落地版'
 powershell -ExecutionPolicy Bypass -File .\scripts\setup_env.ps1
 powershell -ExecutionPolicy Bypass -File .\scripts\verify_env.ps1
 
@@ -95,7 +121,7 @@ Full 存储/模型链路与 Temporal 恢复链路分别运行：
 & $python scripts\validate_temporal.py
 ```
 
-Full 模式的 PDF 强制走 MinerU；`PARSER_MODE=basic` 仅用于本地 Fake 开发和快速单元测试。
+Full模式的PDF强制走MinerU；`PARSER_MODE=basic`用于Local开发/回归，包括本轮公开合成TXT的真实模型实验，不代表MinerU或生产PDF验收。
 
 ## API
 
@@ -105,7 +131,9 @@ Full 模式的 PDF 强制走 MinerU；`PARSER_MODE=basic` 仅用于本地 Fake �
 | 项目 | `GET/POST /api/v1/projects`, `POST /api/v1/projects/{id}/members` |
 | 问答 | `POST /api/v1/chat`, `POST /api/v1/chat/stream` |
 | 文档 | `POST /api/v1/documents/upload`, `POST /api/v1/documents/{id}/index` |
+| 条件检索/声明 | POST /api/v1/documents/search，GET/PUT /api/v1/documents/{id}/business-metadata；声明需依据与当前锁版本 |
 | 审查 | `POST /api/v1/package-reviews`, `GET /api/v1/package-reviews/{id}`, `GET .../stream` |
+| 复核 | `PATCH .../{id}/issues/{issue_id}`, `POST .../{id}/decision`；都需当前报告锁版本 |
 | 批量 | `POST /api/v1/batch-imports`, `GET /api/v1/batch-imports/{id}`, `GET .../stream` |
 | 工作流 | `GET /api/v1/workflows/{id}`, approve/reject/cancel 子路径 |
 | 记忆 | 候选、确认、拒绝、列表和删除 under `/api/v1/memories` |
@@ -117,7 +145,9 @@ Full 模式的 PDF 强制走 MinerU；`PARSER_MODE=basic` 仅用于本地 Fake �
 
 ## 当前状态
 
-本仓库包含本地 Fake 模式的快速验证、Full 模式的配置和 Temporal/MCP/Kafka 的显式验证脚本。只有在对应服务和数据门禁实际通过后，才能把 Full、MinerU、Temporal 或 Kafka 描述为已验证能力；本 README 不把配置文件存在等同于生产就绪。
+本仓库包含本地 Fake 模式的快速验证、Full 模式的配置和 Temporal/MCP 的显式验证脚本。只有在对应服务和数据门禁实际通过后，才能把 Full、MinerU 或 Temporal 描述为已验证能力；本 README 不把配置文件存在等同于生产就绪。
+
+0014业务声明、0015审查快照、0016解析认领均有Alembic迁移；Full数据库使用alembic upgrade head。新表document_ingest_claims记录执行身份与attempt，片段、向量和状态写入均受围栏保护。TEMPORAL_TARGET及四类TEMPORAL_*TASK_QUEUE配置服务和队列；启动脚本统一设置。真实开发Server验收不等于旧生产历史兼容或生产容灾。
 
 ## 公开仓库边界
 

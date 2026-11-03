@@ -44,6 +44,7 @@ docker/
 
 # Frontend dependencies and generated output
 frontend/node_modules/
+frontend/.vite-cache/
 frontend/dist/
 frontend/.npm-cache/
 frontend/test-results/
@@ -54,3 +55,8 @@ build/
 dist/
 site/
 docs/_build/
+
+# Deployment secrets and generated validation records
+deploy/.env
+deploy/results/
+deployment-eval-results/

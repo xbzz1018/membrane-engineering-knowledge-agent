@@ -19,7 +19,7 @@ def _retry_policy():
         backoff_coefficient=2.0,
         maximum_interval=timedelta(seconds=30),
         maximum_attempts=3,
-        non_retryable_error_types=["ValueError", "ParserConfigurationError", "ReviewAgentError"],
+        non_retryable_error_types=["ValueError", "ParserConfigurationError", "ReviewAgentError", "IngestOwnershipLost"],
     )
 
 
@@ -169,6 +169,7 @@ if workflow:
                 "error": None,
             }
             self._decision: str | None = None
+            self._decision_wake = 0
 
         @workflow.query
         def state(self) -> dict:
@@ -176,15 +177,13 @@ if workflow:
 
         @workflow.signal
         async def approve(self) -> None:
-            if self._state["status"] == "awaiting_approval" and self._decision is None:
-                self._decision = "approved"
-                self._state = {**self._state, "approval": "approved"}
+            # Signals are hints only. The actor, lock and decision are checked
+            # transactionally in the application and read by the Activity.
+            self._decision_wake += 1
 
         @workflow.signal
         async def reject(self, reason: str = "") -> None:
-            if self._state["status"] == "awaiting_approval" and self._decision is None:
-                self._decision = "rejected"
-                self._state = {**self._state, "approval": "rejected", "rejection_reason": reason[:1000]}
+            self._decision_wake += 1
 
         @workflow.run
         async def run(self, payload: dict) -> dict:
@@ -262,15 +261,24 @@ if workflow:
                 self._state = {**self._state, "result": result}
                 if result.get("human_review_required"):
                     self._state = {**self._state, "status": "awaiting_approval", "approval": "pending"}
-                    await workflow.wait_condition(lambda: self._decision is not None)
-                    final_status = self._decision or "rejected"
-                    await workflow.execute_activity(
-                        "finalize_package_review_activity",
-                        {"review_id": payload["review_id"], "status": final_status},
-                        task_queue=payload.get("maintenance_task_queue", "membrane-maintenance"),
-                        start_to_close_timeout=timedelta(minutes=2),
-                        retry_policy=_retry_policy(),
-                    )
+                    while True:
+                        wake = self._decision_wake
+                        receipt = await workflow.execute_activity(
+                            "finalize_package_review_activity",
+                            {"review_id": payload["review_id"]},
+                            task_queue=payload.get("maintenance_task_queue", "membrane-maintenance"),
+                            start_to_close_timeout=timedelta(minutes=2),
+                            retry_policy=_retry_policy(),
+                        )
+                        if receipt:
+                            final_status = receipt["status"]
+                            self._state["decision_command_id"] = receipt["command_id"]
+                            break
+                        try:
+                            await workflow.wait_condition(lambda: self._decision_wake != wake,
+                                                          timeout=timedelta(seconds=15))
+                        except TimeoutError:
+                            pass
                     self._state = {**self._state, "status": final_status, "approval": final_status}
                 else:
                     self._state = {**self._state, "status": "completed", "approval": "not_required"}
@@ -278,29 +286,39 @@ if workflow:
             except asyncio.CancelledError:
                 self._state = {**self._state, "status": "cancelled"}
                 try:
-                    await asyncio.shield(workflow.execute_activity(
+                    outcome = await asyncio.shield(workflow.execute_activity(
                         "settle_review_budget_activity",
                         {"review_id": payload["review_id"], "status": "cancelled", "actual_tokens": 0},
                         task_queue=payload.get("maintenance_task_queue", "membrane-maintenance"),
                         start_to_close_timeout=timedelta(minutes=1),
                         retry_policy=_retry_policy(),
                     ))
-                except Exception:
-                    pass
+                    if outcome.get("decision"):
+                        self._state.update(status=outcome["decision"]["status"], approval=outcome["decision"]["status"])
+                        return self._state
+                    if not outcome.get("terminal_synced"):
+                        self._state["terminal_sync_error"] = "database_terminal_conflict"
+                except Exception as sync_error:
+                    self._state["terminal_sync_error"] = type(sync_error).__name__
                 raise
             except Exception as exc:
                 status = "cancelled" if workflow.cancellation_reason() is not None else "failed"
                 self._state = {**self._state, "status": status, "error": type(exc).__name__}
                 try:
-                    await asyncio.shield(workflow.execute_activity(
+                    outcome = await asyncio.shield(workflow.execute_activity(
                         "settle_review_budget_activity",
                         {"review_id": payload["review_id"], "status": status, "actual_tokens": 0},
                         task_queue=payload.get("maintenance_task_queue", "membrane-maintenance"),
                         start_to_close_timeout=timedelta(minutes=1),
                         retry_policy=_retry_policy(),
                     ))
-                except Exception:
-                    pass
+                    if outcome.get("decision"):
+                        self._state.update(status=outcome["decision"]["status"], approval=outcome["decision"]["status"])
+                        return self._state
+                    if not outcome.get("terminal_synced"):
+                        self._state["terminal_sync_error"] = "database_terminal_conflict"
+                except Exception as sync_error:
+                    self._state["terminal_sync_error"] = type(sync_error).__name__
                 raise
 else:
     DocumentIngestWorkflow = None

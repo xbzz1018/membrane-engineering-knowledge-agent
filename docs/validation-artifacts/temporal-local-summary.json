@@ -1,0 +1,63 @@
+{
+  "run_id": "20261102T114136Z-3a7a519f",
+  "started_at": "2026-11-02T11:41:44.783332+00:00",
+  "code_sha256_at_start": "2c5508ec95fefdc82d943f27548e5e4c03f02152ab8e8cc9240ae48be92d9f0c",
+  "mode": "real Temporal dev server / SQLite business storage / Fake Agents / TXT parser",
+  "checks": {
+    "process_kill_after_ingest_claim": {
+      "passed": true,
+      "attempts": [
+        2
+      ]
+    },
+    "duplicate_workflow_submission": {
+      "passed": true
+    },
+    "report_commit_failure_then_early_human_decision": {
+      "passed": true,
+      "activity_attempts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1
+      ],
+      "review_id": "9cb07cbb3b34453d912bd2ef1227f80c",
+      "human_events": 2
+    },
+    "signal_cannot_approve_restart_waiting_then_cancel": {
+      "passed": true
+    },
+    "approval_committed_while_worker_down": {
+      "passed": true
+    },
+    "cancel_during_review_activity": {
+      "passed": true
+    },
+    "recorded_histories_replay": {
+      "passed": true,
+      "n": 5
+    }
+  },
+  "not_validated": [
+    "PostgreSQL/pgvector",
+    "real LLM quality",
+    "MinerU",
+    "production failover",
+    "old production history migration"
+  ],
+  "project_id": "0140551848bf46c6a528fdcc8532007a",
+  "passed": true,
+  "history_files": {
+    "document-ingest:72204029ff384b3f80c9c453d58e181b": "history-0.json",
+    "package-review:9cb07cbb3b34453d912bd2ef1227f80c": "history-1.json",
+    "package-review:aae5430bd4cb4039a637c4bcac5df470": "history-2.json",
+    "package-review:a02599fe3e7a4373bded58dd3427e70c": "history-3.json",
+    "package-review:d88611bdc57c43dfa0a3381283a2e40a": "history-4.json"
+  },
+  "finished_at": "2026-11-02T11:44:05.785327+00:00",
+  "code_sha256_at_end": "2c5508ec95fefdc82d943f27548e5e4c03f02152ab8e8cc9240ae48be92d9f0c",
+  "source_changed_during_run": false
+}

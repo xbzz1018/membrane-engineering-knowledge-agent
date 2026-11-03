@@ -17,23 +17,25 @@ def _item(evidence_id: str, filename: str, text: str, version: int = 1) -> dict:
 
 def test_rules_create_version_thickness_alignment_and_price_issues() -> None:
     evidence = [
-        _item("design-1", "design-v1.pdf", "结构方案采用 PTFE，版本 v1"),
-        _item("material-1", "material-v2.pdf", "PTFE 膜材厚度 0.7 mm，版本 v2"),
-        _item("material-2", "material-v2.pdf", "PTFE 膜材厚度 0.8 mm，版本 v2"),
-        _item("price-1", "price.xlsx", "历史价格 300 CNY/m2，日期 2025-01"),
-        _item("price-2", "price.xlsx", "历史价格 320 USD/m2，日期 2026-01"),
+        _item("design-1", "design-v1.pdf", "结构方案采用 PTFE-502，文件编号 D01，版本 v1"),
+        _item("material-1", "material-v2.pdf", "膜材规格 PTFE-502，厚度 0.7 mm，适用版本 R1，文件编号 D01，版本 v2"),
+        _item("material-2", "material-v2.pdf", "膜材规格 PTFE-502，厚度 0.8 mm，适用版本 R1，版本 v2"),
+        _item("price-1", "price.xlsx", "历史价格 PTFE-502，300 CNY/m2，地区 上海，含税，日期 2025-01"),
+        _item("price-2", "price.xlsx", "历史价格 PTFE-502，320 USD/m2，地区 上海，含税，日期 2026-01"),
     ]
     issues = validate_evidence(evidence, ("design", "material", "price"))
     types = {issue.issue_type for issue in issues}
     assert {"version_mismatch", "thickness_conflict", "price_unit_mismatch"} <= types
-    assert all(issue.issue_id and issue.evidence_ids for issue in issues if issue.issue_type != "missing_domain_evidence")
+    assert all(
+        issue.issue_id and issue.evidence_ids for issue in issues if issue.issue_type != "missing_domain_evidence"
+    )
     assert all(issue.status == "pending_human" for issue in issues if issue.requires_human)
 
 
 def test_rules_do_not_raise_for_coherent_evidence() -> None:
     evidence = [
-        _item("design-1", "design-v1.pdf", "结构方案采用 PTFE，版本 v1"),
-        _item("material-1", "material-v1.pdf", "PTFE 膜材厚度 0.8 mm，版本 v1"),
+        _item("design-1", "design-v1.pdf", "结构方案采用 PTFE-502，文件编号 D01，版本 v1"),
+        _item("material-1", "material-v1.pdf", "膜材规格 PTFE-502，厚度 0.8 mm，版本 v1"),
         _item("price-1", "price.xlsx", "历史价格 300 元/平方米，日期 2025-01"),
     ]
     issues = validate_evidence(evidence, ("design", "material", "price"))
@@ -49,12 +51,14 @@ def test_issue_refs_are_hydrated_from_evidence() -> None:
     service = PackageReviewService(provider=type("Provider", (), {"metadata": {"mode": "fake"}})())
     review = WorkerReview(
         worker="material",
-        findings=[{
-            "summary": "规格需要人工确认",
-            "issue_id": "issue-1",
-            "domain": "material",
-            "evidence_ids": ["e1"],
-        }],
+        findings=[
+            {
+                "summary": "规格需要人工确认",
+                "issue_id": "issue-1",
+                "domain": "material",
+                "evidence_ids": ["e1"],
+            }
+        ],
         processed_evidence_ids=["e1"],
     )
     result = service.compose(
@@ -74,11 +78,13 @@ def test_issue_refs_are_hydrated_from_evidence() -> None:
 def test_cloud_review_rejects_restricted_documents() -> None:
     class Store:
         async def list_documents(self, *_args, **_kwargs):
-            return [{
-                "id": "restricted-1",
-                "filename": "internal.pdf",
-                "data_classification": "restricted",
-            }]
+            return [
+                {
+                    "id": "restricted-1",
+                    "filename": "internal.pdf",
+                    "data_classification": "restricted",
+                }
+            ]
 
         async def list_document_chunks(self, *_args, **_kwargs):
             return []
@@ -147,13 +153,15 @@ def test_uncovered_evidence_is_rerouted_once_to_selected_workers(monkeypatch) ->
         )
 
     monkeypatch.setattr(service, "run_worker", repair_worker)
-    repaired, coverage = asyncio.run(service.repair_evidence_coverage(
-        ("design", "material", "price"),
-        "完整审查",
-        evidence,
-        [],
-        initial_outputs,
-    ))
+    repaired, coverage = asyncio.run(
+        service.repair_evidence_coverage(
+            ("design", "material", "price"),
+            "完整审查",
+            evidence,
+            [],
+            initial_outputs,
+        )
+    )
 
     assert coverage["attempted"] is True
     assert coverage["passes"] == 1

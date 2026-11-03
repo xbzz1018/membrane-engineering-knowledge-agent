@@ -117,10 +117,12 @@ class MCPGateway:
 
     async def search_project_documents(
         self, identity: MCPIdentity, project_id: str, query: str, limit: int = 8,
+        filters=None,
     ) -> dict[str, Any]:
         self.require_scope(identity, "documents:read")
         return await self._audited(identity, project_id, "search_project_documents", lambda: self.knowledge.search_documents(
             identity.principal, project_id, query, limit=limit, classifications={"public"},
+            **({"filters": filters} if filters is not None else {}),
         ))
 
     async def query_material_specs(

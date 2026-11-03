@@ -195,6 +195,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 按明确型号、适用版本及业务生效日期检索资料 */
+        post: operations["search_documents_api_v1_documents_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/business-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查看业务条件及声明来源 */
+        get: operations["business_metadata_api_v1_documents__document_id__business_metadata_get"];
+        /** 声明有来源依据的资料业务条件 */
+        put: operations["declare_business_metadata_api_v1_documents__document_id__business_metadata_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents": {
         parameters: {
             query?: never;
@@ -489,6 +524,23 @@ export interface paths {
         patch: operations["update_review_issue_api_v1_package_reviews__review_id__issues__issue_id__patch"];
         trace?: never;
     };
+    "/api/v1/package-reviews/{review_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 审核人按报告版本批准或退回审查 */
+        post: operations["decide_review_api_v1_package_reviews__review_id__decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/package-reviews/{review_id}/trace": {
         parameters: {
             query?: never;
@@ -777,7 +829,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 审核人批准资料包审查 */
+        /** 审核人按报告版本批准审查 */
         post: operations["approve_workflow_api_v1_workflows__workflow_id__approve_post"];
         delete?: never;
         options?: never;
@@ -794,7 +846,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 审核人退回资料包审查 */
+        /** 审核人按报告版本退回审查 */
         post: operations["reject_workflow_api_v1_workflows__workflow_id__reject_post"];
         delete?: never;
         options?: never;
@@ -1056,6 +1108,29 @@ export interface components {
              */
             role: string;
         };
+        /** DocumentBusinessMetadata */
+        DocumentBusinessMetadata: {
+            /** Engineering Model */
+            engineering_model: string;
+            /** Applicable Revision */
+            applicable_revision: string;
+            /**
+             * Document Type
+             * @enum {string}
+             */
+            document_type: "design" | "material" | "price" | "other";
+            /** Effective From */
+            effective_from?: string | null;
+            /** Effective To */
+            effective_to?: string | null;
+            /**
+             * Source Note
+             * @description 声明依据，如文件页码；不是模型确认事实
+             */
+            source_note: string;
+            /** Expected Lock Version */
+            expected_lock_version: number;
+        };
         /** 工程资料响应 */
         DocumentResponse: {
             /** Document Id */
@@ -1088,6 +1163,35 @@ export interface components {
              * @default auto
              */
             parse_method: string;
+        };
+        /** DocumentSearchFilters */
+        DocumentSearchFilters: {
+            /** Engineering Model */
+            engineering_model?: string | null;
+            /** Applicable Revision */
+            applicable_revision?: string | null;
+            /** Upload Version */
+            upload_version?: number | null;
+            /** Effective On */
+            effective_on?: string | null;
+            /** Document Type */
+            document_type?: ("design" | "material" | "price" | "other") | null;
+        };
+        /** DocumentSearchRequest */
+        DocumentSearchRequest: {
+            /** Project Id */
+            project_id: string;
+            /**
+             * Query
+             * @default
+             */
+            query: string;
+            filters?: components["schemas"]["DocumentSearchFilters"];
+            /**
+             * Limit
+             * @default 8
+             */
+            limit: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1496,6 +1600,21 @@ export interface components {
              */
             role: string;
         };
+        /** ReviewDecisionRequest */
+        ReviewDecisionRequest: {
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approved" | "rejected";
+            /** Expected Lock Version */
+            expected_lock_version: number;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
         /**
          * 工程审查问题单
          * @description 工程资料审查问题单；结论必须能回指到证据片段。
@@ -1575,6 +1694,12 @@ export interface components {
         /** 审查问题处理请求 */
         ReviewIssueStatusRequest: {
             /**
+             * Reason
+             * @description 处理说明；忽略问题时必填
+             * @default
+             */
+            reason: string;
+            /**
              * Status
              * @enum {string}
              */
@@ -1587,6 +1712,18 @@ export interface components {
         };
         /** 证据来源 */
         SourceRef: {
+            /**
+             * Content Sha256
+             * @description 完整证据文本SHA256，用于核对重新解析后的证据
+             * @default
+             */
+            content_sha256: string;
+            /**
+             * Document Sha256
+             * @description 原资料文件SHA256
+             * @default
+             */
+            document_sha256: string;
             /**
              * Source Id
              * @description 稳定证据ID
@@ -1666,6 +1803,11 @@ export interface components {
         };
         /** 工作流决定请求 */
         WorkflowDecisionRequest: {
+            /**
+             * Expected Lock Version
+             * @description 报告当前乐观锁版本
+             */
+            expected_lock_version: number;
             /**
              * Reason
              * @description 退回原因
@@ -2188,6 +2330,117 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_documents_api_v1_documents_search_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    business_metadata_api_v1_documents__document_id__business_metadata_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    declare_business_metadata_api_v1_documents__document_id__business_metadata_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentBusinessMetadata"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -3038,6 +3291,45 @@ export interface operations {
             };
         };
     };
+    decide_review_api_v1_package_reviews__review_id__decision_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     review_trace_api_v1_package_reviews__review_id__trace_get: {
         parameters: {
             query?: never;
@@ -3627,7 +3919,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowDecisionRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

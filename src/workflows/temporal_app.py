@@ -116,6 +116,7 @@ async def submit_package_review(
         "project_id": project_id,
         "tenant_id": tenant_id,
         "review_mode": review_mode,
+        "manifest_required": True,
         "review_task_queue": get_settings().TEMPORAL_REVIEW_TASK_QUEUE,
         "maintenance_task_queue": get_settings().TEMPORAL_MAINTENANCE_TASK_QUEUE,
     }

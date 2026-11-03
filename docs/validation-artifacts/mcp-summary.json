@@ -1,0 +1,23 @@
+{
+  "stdio": {
+    "protocol": "2026-07-28",
+    "tools": 5,
+    "resources": 3,
+    "material_query": "ok"
+  },
+  "streamable_http": {
+    "protocol": "2026-07-28",
+    "tools": 9,
+    "resources": 3,
+    "authenticated_query": "ok",
+    "unauthenticated": 401,
+    "invalid_origin": 403,
+    "elicitation_fail_closed": "ok",
+    "create_idempotency": "ok",
+    "cancel": "requested"
+  },
+  "validated_at": "2026-11-02T11:53:52.212493+00:00",
+  "runtime_mode": "local",
+  "model_mode": "fake",
+  "temporal_enabled": true
+}

@@ -16,6 +16,7 @@ from src.application.memory import get_memory_service
 from src.core.config import get_settings
 from src.core.observability import span
 from src.core.security import Principal
+from src.domain.document_search import DocumentSearchFilters
 from src.infrastructure.database import EngineeringStorage, storage
 from src.infrastructure.model_provider import ModelProvider, get_model_provider
 from src.infrastructure.retrieval import RetrievalService
@@ -61,11 +62,13 @@ class KnowledgeAgent:
             return json.dumps(result, ensure_ascii=False, default=str)
 
         @tool
-        async def search_project_documents(query: str, limit: int = 8) -> str:
-            """检索当前项目的公开文档Evidence，适合文件内容、设计版本和原文定位问题。"""
+        async def search_project_documents(query: str, limit: int = 8,
+                                           filters: DocumentSearchFilters | None = None) -> str:
+            """检索当前项目公开资料。明确型号/适用版本/业务日期放filters，未知条件不要猜测。"""
             return await call_query(
                 lambda: queries.search_documents(
                     principal, project_id, query, limit=limit, classifications={"public"},
+                    **({"filters": filters} if filters is not None else {}),
                 ),
                 "search_project_documents",
             )

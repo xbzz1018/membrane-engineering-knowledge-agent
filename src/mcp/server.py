@@ -14,6 +14,7 @@ from pydantic import AnyHttpUrl, BaseModel, Field
 from mcp.server import MCPServer
 from src.core.config import get_settings
 from src.core.security import MCP_SCOPES, MCPIdentity, Principal
+from src.domain.document_search import DocumentSearchFilters
 from src.infrastructure.bootstrap import seed_local_data
 from src.infrastructure.database import storage
 from src.mcp.auth import MCPTokenVerifier, identity_from_access_token
@@ -102,9 +103,10 @@ def create_mcp_server(*, authenticated: bool, allow_write: bool) -> MCPServer:
     gateway = MCPGateway()
 
     @server.tool()
-    async def search_project_documents(project_id: str, query: str, limit: int = 8) -> dict[str, Any]:
+    async def search_project_documents(project_id: str, query: str, limit: int = 8,
+                                       filters: DocumentSearchFilters | None = None) -> dict[str, Any]:
         """检索已授权项目的公开文档Evidence，返回文件、位置、版本和受限长度摘要。"""
-        return await gateway.search_project_documents(await _identity(), project_id, query, limit)
+        return await gateway.search_project_documents(await _identity(), project_id, query, limit, filters=filters)
 
     @server.tool()
     async def query_material_specs(project_id: str, query: str, limit: int = 8) -> dict[str, Any]:

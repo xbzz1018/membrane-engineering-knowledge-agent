@@ -874,6 +874,195 @@
         }
       }
     },
+    "/api/v1/documents/search": {
+      "post": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "按明确型号、适用版本及业务生效日期检索资料",
+        "operationId": "search_documents_api_v1_documents_search_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Search Documents Api V1 Documents Search Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{document_id}/business-metadata": {
+      "put": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "声明有来源依据的资料业务条件",
+        "operationId": "declare_business_metadata_api_v1_documents__document_id__business_metadata_put",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentBusinessMetadata"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Declare Business Metadata Api V1 Documents  Document Id  Business Metadata Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "查看业务条件及声明来源",
+        "operationId": "business_metadata_api_v1_documents__document_id__business_metadata_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Business Metadata Api V1 Documents  Document Id  Business Metadata Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/documents": {
       "get": {
         "tags": [
@@ -2458,6 +2647,76 @@
         }
       }
     },
+    "/api/v1/package-reviews/{review_id}/decision": {
+      "post": {
+        "tags": [
+          "多智能体资料审查"
+        ],
+        "summary": "审核人按报告版本批准或退回审查",
+        "operationId": "decide_review_api_v1_package_reviews__review_id__decision_post",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Review Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Decide Review Api V1 Package Reviews  Review Id  Decision Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/package-reviews/{review_id}/trace": {
       "get": {
         "tags": [
@@ -3496,7 +3755,7 @@
         "tags": [
           "长任务工作流"
         ],
-        "summary": "审核人批准资料包审查",
+        "summary": "审核人按报告版本批准审查",
         "operationId": "approve_workflow_api_v1_workflows__workflow_id__approve_post",
         "parameters": [
           {
@@ -3525,6 +3784,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowDecisionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3556,7 +3825,7 @@
         "tags": [
           "长任务工作流"
         ],
-        "summary": "审核人退回资料包审查",
+        "summary": "审核人按报告版本退回审查",
         "operationId": "reject_workflow_api_v1_workflows__workflow_id__reject_post",
         "parameters": [
           {
@@ -4303,6 +4572,78 @@
         ],
         "title": "创建企业用户请求"
       },
+      "DocumentBusinessMetadata": {
+        "properties": {
+          "engineering_model": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Engineering Model"
+          },
+          "applicable_revision": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Applicable Revision"
+          },
+          "document_type": {
+            "type": "string",
+            "enum": [
+              "design",
+              "material",
+              "price",
+              "other"
+            ],
+            "title": "Document Type"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective From"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective To"
+          },
+          "source_note": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Source Note",
+            "description": "声明依据，如文件页码；不是模型确认事实"
+          },
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "engineering_model",
+          "applicable_revision",
+          "document_type",
+          "source_note",
+          "expected_lock_version"
+        ],
+        "title": "DocumentBusinessMetadata"
+      },
       "DocumentResponse": {
         "properties": {
           "document_id": {
@@ -4355,6 +4696,111 @@
           "status"
         ],
         "title": "工程资料响应"
+      },
+      "DocumentSearchFilters": {
+        "properties": {
+          "engineering_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engineering Model"
+          },
+          "applicable_revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicable Revision"
+          },
+          "upload_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Version"
+          },
+          "effective_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective On"
+          },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "design",
+                  "material",
+                  "price",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DocumentSearchFilters"
+      },
+      "DocumentSearchRequest": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Project Id"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Query",
+            "default": ""
+          },
+          "filters": {
+            "$ref": "#/components/schemas/DocumentSearchFilters"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 8
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id"
+        ],
+        "title": "DocumentSearchRequest"
       },
       "HTTPValidationError": {
         "properties": {
@@ -5440,6 +5886,35 @@
         ],
         "title": "项目成员请求"
       },
+      "ReviewDecisionRequest": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision",
+          "expected_lock_version"
+        ],
+        "title": "ReviewDecisionRequest"
+      },
       "ReviewIssue": {
         "properties": {
           "issue_id": {
@@ -5545,6 +6020,13 @@
       },
       "ReviewIssueStatusRequest": {
         "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason",
+            "description": "处理说明；忽略问题时必填",
+            "default": ""
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -5570,6 +6052,18 @@
       },
       "SourceRef": {
         "properties": {
+          "content_sha256": {
+            "type": "string",
+            "title": "Content Sha256",
+            "description": "完整证据文本SHA256，用于核对重新解析后的证据",
+            "default": ""
+          },
+          "document_sha256": {
+            "type": "string",
+            "title": "Document Sha256",
+            "description": "原资料文件SHA256",
+            "default": ""
+          },
           "source_id": {
             "type": "string",
             "title": "Source Id",
@@ -5693,6 +6187,12 @@
       },
       "WorkflowDecisionRequest": {
         "properties": {
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version",
+            "description": "报告当前乐观锁版本"
+          },
           "reason": {
             "type": "string",
             "maxLength": 1000,
@@ -5702,6 +6202,9 @@
           }
         },
         "type": "object",
+        "required": [
+          "expected_lock_version"
+        ],
         "title": "工作流决定请求"
       }
     }

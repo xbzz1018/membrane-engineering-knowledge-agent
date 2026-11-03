@@ -11,3 +11,6 @@ When implementing from a selected generated mock, treat that image as the source
 - Use `../data/runtime/design-references/option-1-element-plus.jpg` for navigation, header, table density, spacing, and hierarchy.
 - This is an internal membrane-engineering review workbench, not a sales dashboard. Replace generic analytics with document state, review workflow, issue severity, evidence, budget, and infrastructure health.
 - Use a light gray-white workspace, graphite navigation, teal primary actions, amber warnings, and red only for failures/conflicts.
+- Business metadata is a user declaration with source_note, not verified model fact. Submit the current lock version; reload after conflict.
+- Temporal decision_pending is not approved. Refresh active review states and derive controls from the authoritative response.
+- node_modules is a junction into original dependencies; never install, delete or upgrade through it.

@@ -14,8 +14,9 @@ async def agent_topology(principal: Principal = Depends(current_principal)) -> d
     return {
         "orchestrator": {
             "name": "ReviewSupervisorAgent",
-            "type": "langchain_llm_planner",
-            "description": "根据审查问题和证据目录选择领域 Worker；不决定权限、不修改证据、不写入数据库。",
+            "type": "langchain_supervisor_with_subagent_tools",
+            "description": "规划领域并调用 review_design/review_material/review_price 子Agent工具，服务端汇总证据结果。",
+            "offline_model": "本地 Fake 模式使用显式脚本模型驱动真实 LangChain 工具调用。",
         },
         "knowledge_agent": {
             "name": "KnowledgeAgent",
@@ -26,16 +27,19 @@ async def agent_topology(principal: Principal = Depends(current_principal)) -> d
             {
                 "name": "DesignReviewAgent",
                 "domain": "design",
+                "tool": "review_design",
                 "responsibility": "设计场景、结构形式、节点和版本一致性审查。",
             },
             {
                 "name": "MaterialReviewAgent",
                 "domain": "material",
+                "tool": "review_material",
                 "responsibility": "膜材型号、规格、单位、日期和版本审查。",
             },
             {
                 "name": "PriceReviewAgent",
                 "domain": "price",
+                "tool": "review_price",
                 "responsibility": "历史价格的单位、币种、区域、日期与来源可比性审查。",
             },
         ],

@@ -3,13 +3,16 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from src.agents.review_agents import ReviewAgentError, run_package_review
+from src.agents.review_agents import ReviewAgentError, get_package_review_service, run_package_review
 from src.application.authorization import ProjectAuthorizationService, project_authorization
 from src.core.config import Settings, get_settings
 from src.core.security import Principal
 from src.domain.schemas import PackageReviewRequest
 from src.infrastructure.database import EngineeringStorage, storage
-from src.workflows.temporal_app import cancel_workflow, get_workflow_state, signal_workflow, submit_package_review
+from src.infrastructure.review_decisions import ReviewDecisionRepository
+from src.infrastructure.review_lifecycle import publish_review_once
+from src.infrastructure.review_manifest import freeze_review_manifest
+from src.workflows.temporal_app import cancel_workflow, get_workflow_state, submit_package_review
 
 
 class ReviewApplicationError(RuntimeError):
@@ -46,7 +49,11 @@ class PackageReviewApplicationService:
         )
 
     async def _validate_documents(
-        self, request: PackageReviewRequest, principal: Principal, *, public_only: bool = False,
+        self,
+        request: PackageReviewRequest,
+        principal: Principal,
+        *,
+        public_only: bool = False,
     ) -> None:
         documents = await self.store.list_documents(
             request.document_ids,
@@ -95,7 +102,13 @@ class PackageReviewApplicationService:
                 "review_mode": request.review_mode,
             }
             try:
-                await self.store.save_package_review(
+                documents, evidence, sources = await get_package_review_service().collect_evidence(
+                    request, principal.tenant_id,
+                )
+                await freeze_review_manifest(self.store, review_id, principal.tenant_id, request.project_id,
+                                             documents, evidence, sources)
+                await publish_review_once(
+                    self.store,
                     queued,
                     user_id=principal.user_id,
                     project_id=request.project_id,
@@ -114,6 +127,7 @@ class PackageReviewApplicationService:
                 )
             except Exception:
                 await self.store.settle_budget(workflow_id, 0, status="failed")
+                await self.store.update_package_review_status(review_id, "failed")
                 raise
             queued["workflow"] = workflow
             return queued
@@ -175,7 +189,11 @@ class PackageReviewApplicationService:
         }
 
     async def report(
-        self, review_id: str, principal: Principal, *, public_only: bool = False,
+        self,
+        review_id: str,
+        principal: Principal,
+        *,
+        public_only: bool = False,
     ) -> dict[str, Any]:
         review = await self.store.get_package_review(review_id)
         if review is None:
@@ -185,7 +203,7 @@ class PackageReviewApplicationService:
             raise ReviewApplicationError("not_found", "资料包审查不存在或无访问权限")
         if public_only:
             for source in review.get("sources", []):
-                if source.get("source_type") != "document":
+                if source.get("source_type") not in {"document", "document_fragment"}:
                     continue
                 document_id = str(source.get("source_id", "")).split(":", 1)[0]
                 document = await self.store.get_document(document_id)
@@ -239,12 +257,27 @@ class PackageReviewApplicationService:
         if decision not in {"approved", "rejected"}:
             raise ReviewApplicationError("invalid_decision", "不支持的审查决定")
         if not self.settings.TEMPORAL_ENABLED:
-            raise ReviewApplicationError("workflow", "Temporal未启用")
+            try:
+                return await ReviewDecisionRepository(self.store).mutate(
+                    review_id,
+                    expected_lock_version=expected_lock_version,
+                    actor=principal.user_id,
+                    decision=decision,
+                    reason=reason,
+                )
+            except ValueError as exc:
+                raise ReviewApplicationError("conflict", str(exc)) from exc
         try:
-            state = await signal_workflow(f"package-review:{review_id}", decision, reason)
-        except Exception as exc:
-            raise ReviewApplicationError("workflow", f"提交审查决定失败: {type(exc).__name__}") from exc
-        return {"review_id": review_id, "status": "decision_requested", "decision": decision, "workflow": state}
+            return await ReviewDecisionRepository(self.store).mutate(
+                review_id,
+                expected_lock_version=expected_lock_version,
+                actor=principal.user_id,
+                decision=decision,
+                reason=reason,
+                defer_temporal=review.get("status") == "awaiting_approval",
+            )
+        except (LookupError, ValueError) as exc:
+            raise ReviewApplicationError("conflict", str(exc)) from exc
 
 
 package_review_application = PackageReviewApplicationService()
