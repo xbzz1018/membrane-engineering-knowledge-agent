@@ -2,6 +2,22 @@
 
 这里保存经过内容检查的合成开发验收摘要，不包含密钥、业务数据库、原始上传、完整模型响应或用户资料。它们是历史运行证据，不表示当前所有源码均重新运行了同一实验；各次源码 SHA 与模式以记录为准。部署镜像构建及整栈验收尚未完成，GitHub Actions 尚未运行。
 
+## 2026-11-03 新角色与上下文增量
+
+| 记录 | 实际范围 |
+|---|---|
+| [GitHub发布全量JUnit](github-publication-tests.xml) | 154通过/2跳过，修复及接口同步后的发布副本重新运行，139.66秒 |
+| [新角色全量JUnit](role-context-markdown-tests.xml) | 154通过/2跳过，Heartbeat修复前 |
+| [恢复修复定向JUnit](role-recovery-followup-tests.xml) | 29通过，不与全量相加 |
+| [最终接口/角色门禁JUnit](role-final-contract-tests.xml) | 54通过，API角色说明及类型同步后；pytest缓存目录权限提示保留 |
+| [Temporal失败](role-temporal-before-fix.json) / [修复后](role-temporal-summary.json) | 保留离线审批超时；15秒Heartbeat修复后全通过，5份历史replay |
+| [v3业务回归](role-business-v3-summary.json) | Fake、24开发案例（13正常/11人工）、24通过，不代表新模型质量 |
+| [上下文off](contextual-off-summary.json) / [on](contextual-on-summary.json) | 同一119资料/30查询，SQLite词项；Recall/MRR均0.869565，3条改写漏召回，无增益结论 |
+| [公开2PDF](public-references-basic.json) | basic页码/字面/MD烟测；非MinerU或准确率评测 |
+| [新演示HTTP](role-demo-http.json) | 新角色、两种MD下载、OpenAPI、前端HTTP；3份历史依赖检查；未重跑浏览器 |
+
+本轮模型名待填，强弱组合真实模型与完整容器栈尚未验收。下面记录是前阶段历史，不覆盖本轮新角色行为。
+
 | 记录 | 范围 |
 |---|---|
 | [部署包阶段 JUnit](deployment-package-tests.xml) | 2026-11-03 后端 144 通过 / 2 跳过；不是容器验收 |

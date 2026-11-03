@@ -4,7 +4,9 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from src.core.config import get_settings
 from src.core.observability import span
+from src.documents.representations import contextual_text
 from src.domain.document_search import DocumentSearchFilters
 from src.domain.schemas import SourceRef
 from src.infrastructure.database import EngineeringStorage, storage
@@ -78,6 +80,8 @@ class RetrievalService:
                     f"位置：{item.get('location') or f'第{item.get('page_number', 1)}页'}\n"
                     f"正文：{item['text']}"
                 )
+                if get_settings().CONTEXTUAL_RETRIEVAL_ENABLED:
+                    candidate_text = contextual_text(item, item)
                 channel_candidates["documents"].append({
                     "evidence_id": str(item["id"]),
                     "source_type": "document",
@@ -137,7 +141,7 @@ class RetrievalService:
             evidence.append({
                 "evidence_id": item["evidence_id"],
                 "source_type": item["source_type"],
-                "text": item["text"][:8000],
+                "text": raw["text"] if item["source_type"] == "document" else item["text"][:8000],
                 "rerank": item.get("rerank", {}),
             })
             sources.append(self._source(item["source_type"], item["evidence_id"], raw))

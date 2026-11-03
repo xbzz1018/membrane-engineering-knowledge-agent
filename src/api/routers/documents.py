@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 
 from src.api.dependencies import rate_limited_principal, require_project_role
 from src.application.knowledge import KnowledgeQueryService
@@ -93,6 +94,25 @@ async def document_evidence(
     return await storage.list_document_chunks(document_id, limit=5000)
 
 
+@router.get("/{document_id}/markdown", summary="下载保留证据定位的资料Markdown派生文本")
+async def export_document_markdown(document_id: str,
+                                   principal: Principal = Depends(rate_limited_principal)) -> Response:
+    from src.documents.representations import document_markdown
+
+    row = await storage.get_document(document_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="文档不存在")
+    await require_project_role(row["project_id"], principal)
+    if row["status"] != "indexed":
+        raise HTTPException(status_code=409, detail="资料尚未完成解析索引")
+    # Do not silently truncate a large export.
+    count = await storage.count_document_chunks(document_id)
+    chunks = await storage.list_document_chunks(document_id, limit=count)
+    return Response(document_markdown(row, chunks), media_type="text/markdown",
+                    headers={"Content-Disposition": f'attachment; filename="document-{document_id}.md"',
+                             "Cache-Control": "no-store"})
+
+
 @router.post("/upload", response_model=DocumentResponse, summary="上传工程资料")
 async def upload_document(
     file: UploadFile = File(...),
@@ -149,9 +169,12 @@ async def index_document(
             status=workflow["status"],
             workflow_id=workflow["workflow_id"],
         )
+    from src.documents.representations import document_index_model
+    from src.infrastructure.model_provider import get_model_provider
+
     refresh_embedding = (
         get_settings().RUNTIME_MODE.lower() == "full"
-        and row.get("embedding_model", "") != get_settings().EMBEDDING_MODEL
+        and row.get("embedding_model", "") != document_index_model(get_model_provider(), get_settings())
     )
     acquired = await storage.acquire_document_ingest(document_id, refresh_embedding=refresh_embedding)
     if not acquired and row["status"] == "indexed":

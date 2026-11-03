@@ -47,7 +47,7 @@ async def run(args, run_dir: Path) -> dict:
     from src.core.config import get_settings
     from src.evaluation.business_checks import match_issues
     from src.evaluation.metrics import binary_metrics, latency_summary
-    from src.infrastructure.model_provider import get_review_model_provider
+    from src.infrastructure.model_provider import get_review_model_provider, get_role_model_provider
     from src.main import app
 
     settings = get_settings()
@@ -59,6 +59,8 @@ async def run(args, run_dir: Path) -> dict:
                 "code_sha256": source_at_start,
                 "started_at": datetime.now(UTC).isoformat(),
                 "model": provider_metadata,
+                "role_models": {role: get_role_model_provider(role).metadata
+                                for role in ("supervisor", "retrieval", "material", "review")},
                 "config": {
                     key: getattr(settings, key)
                     for key in (
@@ -80,8 +82,8 @@ async def run(args, run_dir: Path) -> dict:
         ),
         encoding="utf-8",
     )
-    rows, digest = load_frozen(ROOT / "data/eval/business_review_v1.jsonl")
-    gold_path = ROOT / "data/eval/business_expectations_v2.json"
+    rows, digest = load_frozen(ROOT / "data/eval/business_review_v3.jsonl")
+    gold_path = ROOT / "data/eval/business_expectations_v3.json"
     gold_digest = hashlib.sha256(gold_path.read_bytes()).hexdigest()
     if gold_digest != gold_path.with_suffix(".sha256").read_text(encoding="ascii").split()[0]:
         raise ValueError("Issue expectation SHA mismatch")
@@ -150,7 +152,7 @@ async def run(args, run_dir: Path) -> dict:
                     cited_docs = {eid.split(":", 1)[0] for issue in target_issues for eid in issue["evidence_ids"]}
                     expected_docs = {document_ids[i] for i in row["expected_evidence_documents"]}
                     predicted = payload["human_review_required"]
-                    schema_valid = set(payload["worker_results"]) == {"design", "material", "price"}
+                    schema_valid = set(payload["worker_results"]) == {"retrieval", "material", "review"}
                     issue_checks = match_issues(payload["issues"], gold[row["eval_id"]], document_ids)
                     observation.update(
                         {
@@ -187,8 +189,9 @@ async def run(args, run_dir: Path) -> dict:
     summary = {
         "run_id": run_dir.name,
         "generated_at": datetime.now(UTC).isoformat(),
-        "dataset": "business_review_v1",
-        "protocol": "business_review_v2",
+        "dataset": "business_review_v3",
+        "protocol": "business_review_v3",
+        "policy_change": "Price documents optional; retrieval/material/review roles replace design/material/price",
         "issue_gold_sha256": gold_digest,
         "dataset_sha256": digest,
         "code_sha256": source_at_start,
@@ -236,7 +239,7 @@ def main():
     parser.add_argument("--eval-ids", default="")
     args = parser.parse_args()
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
-    run_dir = ROOT / "data/eval/results/business_review_v2" / run_id
+    run_dir = ROOT / "data/eval/results/business_review_v3" / run_id
     run_dir.mkdir(parents=True)
     os.environ.update(
         {

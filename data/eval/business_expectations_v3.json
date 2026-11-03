@@ -1,0 +1,120 @@
+{
+  "protocol": "business_review_v3",
+  "label_kind": "developer_labeled_synthetic_not_expert_or_heldout",
+  "semantics": "one-to-one blocking issue type + evidence document set; duplicates count as FP; no entailment judge",
+  "cases": {
+    "ok-mm": [],
+    "ok-micrometre": [],
+    "ok-metre": [],
+    "ok-decimal": [],
+    "ok-independent-revisions": [],
+    "ok-other-material": [],
+    "ok-other-applicability": [],
+    "ok-superseded": [],
+    "ok-price-region": [],
+    "ok-price-tax": [],
+    "ok-price-history": [],
+    "ok-alias-currency": [],
+    "bad-thickness": [
+      {
+        "issue_type": "thickness_conflict",
+        "evidence_documents": [
+          0,
+          1
+        ]
+      }
+    ],
+    "bad-unit-converted": [
+      {
+        "issue_type": "thickness_conflict",
+        "evidence_documents": [
+          0,
+          1
+        ]
+      }
+    ],
+    "unclear-unit": [
+      {
+        "issue_type": "thickness_scope_unclear",
+        "evidence_documents": [
+          1
+        ]
+      }
+    ],
+    "unclear-multiple-models": [
+      {
+        "issue_type": "thickness_scope_unclear",
+        "evidence_documents": [
+          1
+        ]
+      }
+    ],
+    "bad-active-revisions": [
+      {
+        "issue_type": "version_mismatch",
+        "evidence_documents": [
+          3,
+          4
+        ]
+      }
+    ],
+    "missing-spec": [
+      {
+        "issue_type": "missing_domain_evidence",
+        "domain": "material",
+        "evidence_documents": []
+      },
+      {
+        "issue_type": "material_reference_missing",
+        "evidence_documents": [
+          0
+        ]
+      }
+    ],
+    "missing-price": [],
+    "bad-model-reference": [
+      {
+        "issue_type": "material_reference_missing",
+        "evidence_documents": [
+          0
+        ]
+      }
+    ],
+    "bad-applicable-reference": [
+      {
+        "issue_type": "material_reference_missing",
+        "evidence_documents": [
+          0
+        ]
+      }
+    ],
+    "unclear-currency": [
+      {
+        "issue_type": "price_unit_mismatch",
+        "evidence_documents": [
+          2,
+          3
+        ]
+      }
+    ],
+    "unclear-tax": [
+      {
+        "issue_type": "price_scope_unclear",
+        "evidence_documents": [
+          2
+        ]
+      }
+    ],
+    "unclear-applicability": [
+      {
+        "issue_type": "thickness_applicability_unclear",
+        "evidence_documents": [
+          0,
+          1
+        ]
+      }
+    ]
+  },
+  "policy_change": "No price document is required for a design/specification review. Existing price records are still checked.",
+  "not_a_held_out_test": true
+}

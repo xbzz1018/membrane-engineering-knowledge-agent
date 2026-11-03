@@ -27,8 +27,11 @@ def validate_configuration(settings) -> None:
             raise ValueError(f"Generate a unique deployment credential for {key} (at least 24 characters)")
     if settings.PARSER_MODE != "mineru":
         raise ValueError("Deployment PDF/OCR must select MinerU; missing MinerU must fail explicitly")
-    from src.infrastructure.model_provider import ModelProvider
+    from src.infrastructure.model_provider import ModelProvider, get_role_model_provider
 
+    if settings.ROLE_MODEL_ROUTING_ENABLED:
+        for role in ("supervisor", "retrieval", "material", "review"):
+            get_role_model_provider(role, settings)
     provider = ModelProvider(settings)
     provider._embedding_config()  # Check completeness without making a paid network call.
     if settings.MODEL_MODE.lower() == "fake":

@@ -68,3 +68,16 @@ export async function streamSse(
     }
   }
 }
+
+
+export async function downloadMarkdown(path: string, filename: string): Promise<void> {
+  const { data } = await api.get<string>(path, { responseType: 'text' })
+  const url = URL.createObjectURL(new Blob([data], { type: 'text/markdown;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}

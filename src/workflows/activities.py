@@ -67,10 +67,11 @@ async def parse_and_index_activity(payload: str | dict) -> dict:
     if not document:
         raise ValueError(f"document not found: {document_id}")
     existing = await storage.count_document_chunks(document_id)
+    from src.documents.representations import document_index_model
     from src.infrastructure.model_provider import get_model_provider
 
     embedding_current = (get_settings().RUNTIME_MODE.lower() != "full"
-                         or document.get("embedding_model", "") == get_model_provider().embedding_model)
+                         or document.get("embedding_model", "") == document_index_model(get_model_provider(), get_settings()))
     if document["status"] == "indexed" and existing and embedding_current:
         return {
             "document_id": document_id,
@@ -126,8 +127,8 @@ async def review_worker_activity(payload: dict) -> dict:
         project_id=payload["project_id"],
         user_id=payload["user_id"],
         run_type=f"package_review_{worker}",
-        provider=str(service.provider.metadata.get("provider", "")),
-        model=str(service.provider.metadata.get("model", "")),
+        provider=str(service.provider_for(worker).metadata.get("provider", "")),
+        model=str(service.provider_for(worker).metadata.get("model", "")),
         business_id=payload["review_id"],
         prompt_name=get_prompt(f"{worker}-review").name,
         prompt_version=get_prompt(f"{worker}-review").version,
@@ -147,7 +148,8 @@ async def review_worker_activity(payload: dict) -> dict:
             project_id=payload["project_id"],
             query=payload["question"],
         )
-        boundary = DomainAgentTools(service, [worker], payload["question"], evidence, memories)
+        boundary = DomainAgentTools(service, [worker], payload["question"], evidence, memories,
+                                    upstream_results=payload.get("upstream_results"))
         await _await_with_heartbeat(
             boundary.tools[0].ainvoke({}),
             f"{worker}-review",
@@ -286,7 +288,7 @@ async def repair_review_coverage_activity(payload: dict) -> dict:
     workers = [
         worker
         for worker in (payload.get("review_plan") or {}).get("workers", [])
-        if worker in {"design", "material", "price"}
+        if worker in {"retrieval", "material", "review"}
     ]
     repaired, coverage = await _await_with_heartbeat(
         service.repair_evidence_coverage(

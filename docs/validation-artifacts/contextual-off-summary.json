@@ -1,0 +1,228 @@
+{
+  "mode": "local-contract",
+  "dataset_sha256": "8de110efe27b9d93a92c498fd682364c39f83094c09813f289de89788111e92b",
+  "dataset_kind": "synthetic_development_fixture",
+  "contextual_retrieval_enabled": false,
+  "contextual_version": null,
+  "not_a_held_out_test": true,
+  "code_sha256_at_start": "828c0e69f989869a02196b08cac86ecbf0ae1e51728c9113e7b112801d0cec3d",
+  "candidate_budget": 30,
+  "ranking_unit": "unique_document_best_chunk_position_top10",
+  "limitations": [
+    "Template-generated distractors and repeated model families",
+    "No domain expert labels",
+    "Semantic no-answer has no calibrated score threshold; empty-return rate is not QA accuracy",
+    "Local SQLite lexical contract only; no vector/RRF/neural quality claim"
+  ],
+  "profiles": {
+    "lexical": {
+      "n": 30,
+      "completed": 30,
+      "failures": 0,
+      "answerable_n": 23,
+      "no_answer_n": 7,
+      "recall_at_10_all_answerable": 0.8695652173913043,
+      "mrr_at_10_all_answerable": 0.8695652173913043,
+      "no_answer_empty_return_rate_all": 1.0,
+      "hard_filter_violations": 0,
+      "latency_ms": {
+        "n": 30,
+        "min": 4.041399999550777,
+        "max": 105.59319999811123,
+        "p50": 5.327150001903647,
+        "p95": 73.12269999965793,
+        "percentile_method": "nearest_rank",
+        "small_sample": false
+      },
+      "by_category": {
+        "effective_date": {
+          "n": 6,
+          "completed": 6,
+          "failures": 0,
+          "answerable_n": 6,
+          "no_answer_n": 0,
+          "recall_at_10_all_answerable": 1.0,
+          "mrr_at_10_all_answerable": 1.0,
+          "no_answer_empty_return_rate_all": null,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 6,
+            "min": 4.359500002465211,
+            "max": 7.675600001675775,
+            "p50": 5.297949999658158,
+            "p95": 7.675600001675775,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "exact_model": {
+          "n": 3,
+          "completed": 3,
+          "failures": 0,
+          "answerable_n": 3,
+          "no_answer_n": 0,
+          "recall_at_10_all_answerable": 1.0,
+          "mrr_at_10_all_answerable": 1.0,
+          "no_answer_empty_return_rate_all": null,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 3,
+            "min": 4.60439999733353,
+            "max": 10.475399998540524,
+            "p50": 6.439599997975165,
+            "p95": 10.475399998540524,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "exact_only": {
+          "n": 3,
+          "completed": 3,
+          "failures": 0,
+          "answerable_n": 3,
+          "no_answer_n": 0,
+          "recall_at_10_all_answerable": 1.0,
+          "mrr_at_10_all_answerable": 1.0,
+          "no_answer_empty_return_rate_all": null,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 3,
+            "min": 4.041399999550777,
+            "max": 5.826099997648271,
+            "p50": 4.542499998933636,
+            "p95": 5.826099997648271,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "multi_relevant": {
+          "n": 3,
+          "completed": 3,
+          "failures": 0,
+          "answerable_n": 3,
+          "no_answer_n": 0,
+          "recall_at_10_all_answerable": 1.0,
+          "mrr_at_10_all_answerable": 1.0,
+          "no_answer_empty_return_rate_all": null,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 3,
+            "min": 5.566299998463364,
+            "max": 7.2396999967168085,
+            "p50": 7.149799999751849,
+            "p95": 7.2396999967168085,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "semantic_paraphrase": {
+          "n": 3,
+          "completed": 3,
+          "failures": 0,
+          "answerable_n": 3,
+          "no_answer_n": 0,
+          "recall_at_10_all_answerable": 0.0,
+          "mrr_at_10_all_answerable": 0.0,
+          "no_answer_empty_return_rate_all": null,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 3,
+            "min": 5.061200001364341,
+            "max": 6.694300001981901,
+            "p50": 5.323000001226319,
+            "p95": 6.694300001981901,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "unanswerable_filter": {
+          "n": 4,
+          "completed": 4,
+          "failures": 0,
+          "answerable_n": 0,
+          "no_answer_n": 4,
+          "recall_at_10_all_answerable": null,
+          "mrr_at_10_all_answerable": null,
+          "no_answer_empty_return_rate_all": 1.0,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 4,
+            "min": 4.875900001934497,
+            "max": 7.525600001827115,
+            "p50": 5.003099999157712,
+            "p95": 7.525600001827115,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "unanswerable_semantic": {
+          "n": 3,
+          "completed": 3,
+          "failures": 0,
+          "answerable_n": 0,
+          "no_answer_n": 3,
+          "recall_at_10_all_answerable": null,
+          "mrr_at_10_all_answerable": null,
+          "no_answer_empty_return_rate_all": 1.0,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 3,
+            "min": 4.588399999192916,
+            "max": 6.060299998353003,
+            "p50": 5.787800000689458,
+            "p95": 6.060299998353003,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "unfiltered": {
+          "n": 2,
+          "completed": 2,
+          "failures": 0,
+          "answerable_n": 2,
+          "no_answer_n": 0,
+          "recall_at_10_all_answerable": 1.0,
+          "mrr_at_10_all_answerable": 1.0,
+          "no_answer_empty_return_rate_all": null,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 2,
+            "min": 73.12269999965793,
+            "max": 105.59319999811123,
+            "p50": 89.35794999888458,
+            "p95": 105.59319999811123,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        },
+        "upload_version": {
+          "n": 3,
+          "completed": 3,
+          "failures": 0,
+          "answerable_n": 3,
+          "no_answer_n": 0,
+          "recall_at_10_all_answerable": 1.0,
+          "mrr_at_10_all_answerable": 1.0,
+          "no_answer_empty_return_rate_all": null,
+          "hard_filter_violations": 0,
+          "latency_ms": {
+            "n": 3,
+            "min": 4.639699996914715,
+            "max": 7.377199999609729,
+            "p50": 4.675799998949515,
+            "p95": 7.377199999609729,
+            "percentile_method": "nearest_rank",
+            "small_sample": true
+          }
+        }
+      }
+    }
+  },
+  "project_id": "5c4c9361b1b34222a666055b14866c8e",
+  "corpus_documents": 119,
+  "queries": 30,
+  "passed_contract": true,
+  "generated_at": "2026-11-03T07:17:35.028480+00:00",
+  "code_sha256_at_end": "828c0e69f989869a02196b08cac86ecbf0ae1e51728c9113e7b112801d0cec3d",
+  "source_changed_during_run": false
+}

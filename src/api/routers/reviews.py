@@ -4,7 +4,7 @@ import asyncio
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 from src.api.dependencies import current_principal, rate_limited_principal, require_project_role
 from src.application.reviews import ReviewApplicationError, package_review_application
@@ -62,6 +62,22 @@ async def get_package_review(
         raise HTTPException(status_code=404, detail="资料包审查不存在")
     await require_project_role(result.get("project_id", "default"), principal)
     return PackageReviewResponse(**result)
+
+
+@router.get("/{review_id}/markdown", summary="下载含当前复核状态及来源的Markdown报告")
+async def export_review_markdown(review_id: str,
+                                 principal: Principal = Depends(current_principal)) -> Response:
+    from src.documents.representations import review_markdown
+
+    result = await storage.get_package_review(review_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    await require_project_role(result["project_id"], principal)
+    if not result.get("report"):
+        raise HTTPException(status_code=409, detail="报告尚未生成")
+    return Response(review_markdown(result), media_type="text/markdown",
+                    headers={"Content-Disposition": f'attachment; filename="review-{review_id}.md"',
+                             "Cache-Control": "no-store"})
 
 
 @router.get("/{review_id}/workers", summary="查看三个审查智能体的领域结果")

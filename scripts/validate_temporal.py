@@ -251,7 +251,7 @@ async def main() -> None:
                     if "ReviewSupervisorAgent" not in stored.json().get("agents_used", []):
                         raise AssertionError("Review did not persist the Supervisor Agent")
                     plan = stored.json().get("review_plan", {})
-                    if not set(plan.get("workers", [])) >= {"design", "material", "price"}:
+                    if not set(plan.get("workers", [])) >= {"retrieval", "material", "review"}:
                         raise AssertionError(f"Supervisor plan omitted expected workers: {plan}")
                     issues = await client.get(f"/api/v1/package-reviews/{payload['review_id']}/issues")
                     issues.raise_for_status()

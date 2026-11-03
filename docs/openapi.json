@@ -3,7 +3,7 @@
   "info": {
     "title": "膜结构企业资料审查平台",
     "summary": "面向膜结构公司的多智能体工程资料审查后端",
-    "description": "按项目隔离工程资料，使用KnowledgeAgent进行可追溯问答，并由设计、膜材、价格三个业务智能体完成资料包审查、结构化问题跟踪与人工复核。",
+    "description": "按项目隔离工程资料，使用KnowledgeAgent进行可追溯问答，并由检索、材料、审查三个业务智能体完成资料包审查、结构化问题跟踪与人工复核。",
     "version": "0.2.0"
   },
   "paths": {
@@ -1250,6 +1250,62 @@
         }
       }
     },
+    "/api/v1/documents/{document_id}/markdown": {
+      "get": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "下载保留证据定位的资料Markdown派生文本",
+        "operationId": "export_document_markdown_api_v1_documents__document_id__markdown_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/documents/upload": {
       "post": {
         "tags": [
@@ -2372,6 +2428,62 @@
                 "schema": {
                   "$ref": "#/components/schemas/PackageReviewResponse"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/package-reviews/{review_id}/markdown": {
+      "get": {
+        "tags": [
+          "多智能体资料审查"
+        ],
+        "summary": "下载含当前复核状态及来源的Markdown报告",
+        "operationId": "export_review_markdown_api_v1_package_reviews__review_id__markdown_get",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Review Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -5370,7 +5482,7 @@
             "maxLength": 2000,
             "title": "Question",
             "description": "审查目标",
-            "default": "比较资料中的设计方案、膜材规格和价格差异"
+            "default": "查找资料依据、核验材料参数并审查跨文档一致性"
           },
           "review_mode": {
             "type": "string",
@@ -5379,7 +5491,7 @@
               "focused"
             ],
             "title": "Review Mode",
-            "description": "full固定覆盖三领域，focused由Supervisor选择领域",
+            "description": "full必须覆盖检索/材料/审查，focused由Supervisor受限选择；审查依赖前两角色",
             "default": "full"
           }
         },
@@ -5927,8 +6039,10 @@
           "domain": {
             "type": "string",
             "enum": [
-              "design",
+              "retrieval",
               "material",
+              "review",
+              "design",
               "price",
               "cross_domain"
             ],
@@ -6228,7 +6342,7 @@
     },
     {
       "name": "多智能体资料审查",
-      "description": "设计、膜材、价格三个LangChain智能体并行审查。"
+      "description": "检索与材料Agent并行取证，审查Agent按依赖复核原文。"
     },
     {
       "name": "智能体与执行轨迹",

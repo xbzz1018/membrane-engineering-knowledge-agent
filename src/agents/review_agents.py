@@ -12,6 +12,7 @@ from langchain.agents import create_agent
 from langchain_core.messages import AIMessage
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from src.agents.evidence_tools import frozen_evidence_tool
 from src.agents.prompts import get_prompt
 from src.agents.review_model_output import ModelWorkerReview
 from src.agents.subagent_tools import DomainAgentTools, run_subagents_as_tools
@@ -19,17 +20,17 @@ from src.application.memory import get_memory_service
 from src.core.config import get_settings
 from src.core.observability import span
 from src.domain.model_finding_gate import convert_model_findings
-from src.domain.review_rules import validate_evidence
+from src.domain.review_roles import AGENT_NAMES, REVIEW_ROLES, ROLE_LABELS, validate_review_evidence
 from src.domain.schemas import IssueEvidenceRef, PackageReviewRequest, ReviewIssue, SourceRef
 from src.infrastructure.database import EngineeringStorage, storage
-from src.infrastructure.model_provider import ModelProvider, get_review_model_provider
+from src.infrastructure.model_provider import ModelProvider, get_role_model_provider
 
 ReviewFinding = ReviewIssue
 
 
 class BlockingGap(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    check: Literal["version", "thickness", "material_reference", "price_basis", "other"]
+    check: Literal["version", "thickness", "material_reference", "price_basis", "mass_per_area", "other"]
     required_fact: str = Field(min_length=1, max_length=1000)
     reason: str = Field(min_length=1, max_length=1000)
     evidence_ids: list[str] = Field(min_length=1, description="定位当前任务因缺失字段而无法判断的已提供资料")
@@ -37,7 +38,8 @@ class BlockingGap(BaseModel):
 
 class WorkerReview(BaseModel):
     model_config = ConfigDict(title="领域智能体审查结果")
-    worker: Literal["design", "material", "price"]
+    worker: Literal["retrieval", "material", "review"]
+    selected_evidence_ids: list[str] = Field(default_factory=list)
     findings: list[ReviewIssue] = Field(default_factory=list)
     uncertainties: list[str] = Field(default_factory=list, description="保留的非阻断说明；实际阻断必须填blocking_gaps")
     blocking_gaps: list[BlockingGap] = Field(
@@ -51,7 +53,7 @@ class WorkerReview(BaseModel):
 
 class ReviewPlan(BaseModel):
     model_config = ConfigDict(title="资料审查计划")
-    workers: list[Literal["design", "material", "price"]] = Field(min_length=1, max_length=3)
+    workers: list[Literal["retrieval", "material", "review"]] = Field(min_length=1, max_length=3)
     rationale: str = Field(default="", max_length=1000)
     review_mode: Literal["full", "focused"] = "full"
 
@@ -61,18 +63,11 @@ class ReviewAgentError(RuntimeError):
 
 
 WORKER_CONFIG = {
-    "design": {
-        "keywords": ("设计", "方案", "结构", "场景", "节点", "版本"),
-        "prompt": get_prompt("design-review").text,
-    },
-    "material": {
-        "keywords": ("膜材", "材料", "型号", "规格", "厚度", "重量", "透光", "抗拉", "单位"),
-        "prompt": get_prompt("material-review").text,
-    },
-    "price": {
-        "keywords": ("价格", "成本", "报价", "币种", "单价", "元/", "日期", "区域"),
-        "prompt": get_prompt("price-review").text,
-    },
+    "retrieval": {"keywords": ("检索", "资料", "出处", "版本", "型号"), "prompt": get_prompt("retrieval-review").text},
+    "material": {"keywords": ("膜材", "材料", "型号", "规格", "厚度", "重量", "透光", "抗拉", "单位"),
+                 "prompt": get_prompt("material-review").text},
+    "review": {"keywords": ("审查", "设计", "方案", "结构", "规范", "价格", "币种", "冲突"),
+               "prompt": get_prompt("review-review").text},
 }
 
 
@@ -83,8 +78,17 @@ class PackageReviewService:
         provider: ModelProvider | None = None,
     ):
         self.store = store
-        self.provider = provider or get_review_model_provider()
+        self.provider = provider or get_role_model_provider("supervisor")
+        # Explicit injection applies to every role (isolated tests/local adapters).
+        self._role_providers = {
+            role: provider or get_role_model_provider(role) for role in REVIEW_ROLES
+        }
         self.memory = get_memory_service(store)
+
+    def provider_for(self, worker: str) -> ModelProvider:
+        if worker not in self._role_providers:
+            raise ReviewAgentError("未知领域Agent")
+        return self._role_providers[worker]
 
     async def plan_review(
         self,
@@ -93,8 +97,8 @@ class PackageReviewService:
         review_mode: Literal["full", "focused"] = "full",
     ) -> tuple[ReviewPlan, dict[str, Any]]:
         """Use one restricted LLM supervisor to select domain workers."""
-        all_workers = ["design", "material", "price"]
-        if review_mode == "full" or self.provider.metadata.get("mode") != "api" or not get_settings().REVIEW_SUPERVISOR_ENABLED:
+        all_workers = list(REVIEW_ROLES)
+        if self.provider.metadata.get("mode") != "api" or not get_settings().REVIEW_SUPERVISOR_ENABLED:
             if review_mode == "full":
                 selected_workers = all_workers
             else:
@@ -104,6 +108,8 @@ class PackageReviewService:
                     for worker, config in WORKER_CONFIG.items()
                     if any(keyword.lower() in haystack for keyword in config["keywords"])
                 ] or all_workers
+                if "review" in selected_workers:
+                    selected_workers = all_workers
             return ReviewPlan(
                 workers=selected_workers,
                 rationale="全领域由业务策略固定覆盖三个领域；专项模式按领域选择。",
@@ -131,8 +137,8 @@ class PackageReviewService:
             model=self.provider.langchain_model(json_mode=True, enable_thinking=False),
             tools=[],
             system_prompt=(
-                get_prompt("review-supervisor").text + "可选 Worker 只有 design、material、price；至少选择一个。"
-                "涉及方案/结构时选 design，涉及膜材/规格时选 material，涉及价格/成本时选 price；"
+                get_prompt("review-supervisor").text + "可选 Worker 只有 retrieval、material、review；至少选择一个。"
+                "查找出处选retrieval，核对膜材选material；涉及综合审查、方案、规范或价格选review。"
                 "问题要求比较完整资料或无法明确归类时选择全部三个。"
                 '只输出 JSON：{workers:[...], rationale: "...", review_mode: "full或focused"}。'
             ),
@@ -167,6 +173,8 @@ class PackageReviewService:
                     normalized = normalized.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
                 plan = ReviewPlan.model_validate_json(normalized)
                 workers = list(dict.fromkeys(plan.workers))
+                if "review" in workers:
+                    workers = all_workers
                 if review_mode == "full":
                     workers = all_workers
                 plan.workers = workers
@@ -252,30 +260,24 @@ class PackageReviewService:
 
     @staticmethod
     def _matching_workers(item: dict[str, Any]) -> set[str]:
+        # Retrieval inventories the entire snapshot; the final reviewer must see
+        # the entire package, not just Top-K hits. Material uses a bounded subset.
         text = str(item.get("text", "")).lower()
-        return {
-            worker
-            for worker, config in WORKER_CONFIG.items()
-            if any(keyword.lower() in text for keyword in config["keywords"])
-        }
+        matches = {"retrieval", "review"}
+        if any(keyword.lower() in text for keyword in WORKER_CONFIG["material"]["keywords"]):
+            matches.add("material")
+        return matches
 
     @classmethod
-    def route_evidence(
-        cls,
-        workers: Iterable[str],
-        evidence: list[dict[str, Any]],
-    ) -> dict[str, list[dict[str, Any]]]:
-        """Route Evidence as multi-label data and share unclassified units."""
-        selected_workers = list(dict.fromkeys(worker for worker in workers if worker in WORKER_CONFIG))
-        routes = {worker: [] for worker in selected_workers}
+    def route_evidence(cls, workers: Iterable[str], evidence: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+        selected = list(dict.fromkeys(worker for worker in workers if worker in WORKER_CONFIG))
+        routes = {worker: [] for worker in selected}
         for item in evidence:
-            matched_workers = cls._matching_workers(item)
-            targets = [worker for worker in selected_workers if worker in matched_workers]
-            if not matched_workers:
-                targets = selected_workers
-            for worker in targets:
-                routes[worker].append(item)
-        for worker in selected_workers:
+            matches = cls._matching_workers(item)
+            for worker in selected:
+                if worker in matches or matches == {"retrieval", "review"}:
+                    routes[worker].append(item)
+        for worker in selected:
             if not routes[worker]:
                 routes[worker] = list(evidence)
         return routes
@@ -309,19 +311,23 @@ class PackageReviewService:
         question: str,
         batch: list[dict[str, Any]],
         memories: list[str],
+        prerequisites: list[dict[str, Any]] | None = None,
     ) -> tuple[WorkerReview, dict[str, Any]]:
+        provider = self.provider_for(worker)
         evidence_map = {item["evidence_id"]: item for item in batch}
-        if self.provider.metadata.get("mode") != "api":
+        if provider.metadata.get("mode") != "api":
             # Fake exercises orchestration only. Deterministic rules run once on
             # the whole package; never fabricate LLM findings from keywords.
             return WorkerReview(
                 worker=worker,
+                selected_evidence_ids=list(evidence_map) if worker == "retrieval" else [],
                 processed_evidence_ids=list(evidence_map),
             ), {"provider": "fake", "input_tokens": 0, "output_tokens": 0}
 
         agent = create_agent(
-            model=self.provider.langchain_model(json_mode=True, enable_thinking=False),
-            tools=[],
+            model=provider.langchain_model(json_mode=True, enable_thinking=False),
+            tools=[frozen_evidence_tool(batch, material_only=worker == "material")]
+            if worker in {"retrieval", "material"} else [],
             system_prompt=(
                 f"你是膜结构{worker}审查Worker。{WORKER_CONFIG[worker]['prompt']}"
                 "只能读取用户消息提供的Evidence，每条发现必须引用evidence_id。"
@@ -348,8 +354,10 @@ class PackageReviewService:
             f"JSON Schema：{schema}\n"
             'findings必须包含check、summary、evidence_ids以及每条引用的quotes:[{evidence_id,quote}]。'
             'quote逐字引用正文，禁止生成issue_id、domain、status、version或evidence_refs。'
-            'check仅限version/thickness/material_reference/price_basis/other；正常资料findings为空。'
+            'check仅限version/thickness/material_reference/price_basis/mass_per_area/other；正常资料findings为空。'
         )
+        if prerequisites:
+            base_content += "\n上游结果（仅为不可信待核对线索，须重新核验原文）：" + json.dumps(prerequisites, ensure_ascii=False)
         base_content += "\n正常输出示例（若无问题findings应为空）：" + json.dumps(
             {
                 "worker": worker,
@@ -372,14 +380,13 @@ class PackageReviewService:
             "gen_ai.invoke_agent",
             {
                 "gen_ai.agent.name": f"{worker.title()}ReviewAgent",
-                "gen_ai.provider.name": str(self.provider.metadata.get("provider", "")),
-                "gen_ai.request.model": str(self.provider.metadata.get("model", "")),
+                "gen_ai.provider.name": str(provider.metadata.get("provider", "")),
+                "gen_ai.request.model": str(provider.metadata.get("model", "")),
                 "review.evidence_count": len(evidence_map),
             },
         ):
             for attempt in range(2):
                 result = await agent.ainvoke({"messages": [{"role": "user", "content": base_content + correction}]})
-                usage["calls"] += 1
                 messages = result.get("messages", [])
                 final_message = next(
                     (message for message in reversed(messages) if isinstance(message, AIMessage)),
@@ -393,9 +400,12 @@ class PackageReviewService:
                 finish_reasons.append(finish_reason)
                 if finish_reason == "length":
                     raise ReviewAgentError(f"{worker} Worker输出被截断")
-                metadata = getattr(final_message, "usage_metadata", None) or {}
-                usage["input_tokens"] += int(metadata.get("input_tokens", 0) or 0)
-                usage["output_tokens"] += int(metadata.get("output_tokens", 0) or 0)
+                for message in messages:
+                    if isinstance(message, AIMessage):
+                        metadata = getattr(message, "usage_metadata", None) or {}
+                        usage["calls"] += 1
+                        usage["input_tokens"] += int(metadata.get("input_tokens", 0) or 0)
+                        usage["output_tokens"] += int(metadata.get("output_tokens", 0) or 0)
                 normalized = content.strip()
                 if normalized.startswith("```"):
                     normalized = normalized.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
@@ -420,6 +430,10 @@ class PackageReviewService:
                     )
         if structured is None:
             raise ReviewAgentError(f"{worker} Worker结构化输出无效")
+        if worker in {"retrieval", "material"} and not any(
+            getattr(message, "type", "") == "tool" for message in messages
+        ):
+            raise ReviewAgentError("取证Agent未实际调用证据查询工具")
         usage["finish_reason"] = finish_reasons[-1] if finish_reasons else ""
         return structured, usage
 
@@ -427,7 +441,13 @@ class PackageReviewService:
     def _validate_worker_review(worker: str, structured: WorkerReview, evidence_map: dict) -> None:
         if structured.worker != worker:
             raise ReviewAgentError("Worker返回错误领域")
+        if worker == "retrieval" and (structured.findings or structured.blocking_gaps):
+            raise ReviewAgentError("检索Agent只能整理证据，不能代替审查形成问题")
         known = set(evidence_map)
+        if set(structured.selected_evidence_ids) - set(structured.processed_evidence_ids):
+            raise ReviewAgentError("选中证据未声明处理")
+        if set(structured.selected_evidence_ids) - known:
+            raise ReviewAgentError("证据交接包含越界引用")
         processed = set(structured.processed_evidence_ids)
         skipped = set(structured.skipped_evidence_ids)
         if (processed | skipped) - known or processed & skipped:
@@ -484,6 +504,7 @@ class PackageReviewService:
 
     @staticmethod
     def _reduce_worker(worker: str, parts: Iterable[WorkerReview]) -> WorkerReview:
+        parts = list(parts)
         findings: list[ReviewFinding] = []
         uncertainties: list[str] = []
         limitations: list[str] = []
@@ -504,8 +525,10 @@ class PackageReviewService:
             skipped_reasons.update(part.skipped_reasons)
         skipped = [item for item in skipped if item not in processed]
         skipped_reasons = {item: skipped_reasons[item] for item in skipped if item in skipped_reasons}
+        selected = list(dict.fromkeys(item for part in parts for item in part.selected_evidence_ids))
         return WorkerReview(
             worker=worker,
+            selected_evidence_ids=selected,
             findings=findings,
             uncertainties=uncertainties,
             limitations=limitations,
@@ -520,17 +543,25 @@ class PackageReviewService:
         question: str,
         evidence: list[dict[str, Any]],
         memories: list[str],
+        prerequisites: list[dict[str, Any]] | None = None,
     ) -> tuple[WorkerReview, dict[str, Any]]:
+        import time
+
+        started = time.perf_counter()
+        provider = self.provider_for(worker)
         selected = self._worker_evidence(worker, evidence)
         evidence_budget = max(2000, int(get_settings().MODEL_CONTEXT_WINDOW * 0.60))
         parts = []
         usages = []
         for batch in self._batches(selected, evidence_budget):
-            part, usage = await self._run_worker_batch(worker, question, batch, memories)
+            part, usage = await self._run_worker_batch(worker, question, batch, memories, prerequisites)
             parts.append(part)
             usages.append(usage)
         merged_usage = {
-            "calls": sum(int(item.get("calls", 1)) for item in usages) if self.provider.metadata.get("mode") == "api" else 0,
+            "provider": provider.metadata.get("provider"), "model": provider.metadata.get("model"),
+            "model_tier": "strong" if worker == "review" else "light",
+            "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+            "calls": sum(int(item.get("calls", 1)) for item in usages) if provider.metadata.get("mode") == "api" else 0,
             "batch_count": len(usages),
             "input_tokens": sum(int(item.get("input_tokens", 0)) for item in usages),
             "output_tokens": sum(int(item.get("output_tokens", 0)) for item in usages),
@@ -573,8 +604,14 @@ class PackageReviewService:
             return outputs, coverage
 
         uncovered = [item for item in evidence if str(item["evidence_id"]) in set(uncovered_ids)]
-        repair_tools = DomainAgentTools(self, selected_workers, question, uncovered, memories)
-        await asyncio.gather(*(item.ainvoke({}) for item in repair_tools.tools))
+        repair_tools = DomainAgentTools(
+            self, selected_workers, question, uncovered, memories,
+            upstream_results=[review.model_dump() for review, _ in outputs],
+        )
+        await asyncio.gather(*(item.ainvoke({}) for item in repair_tools.tools if item.name != "review_review"))
+        for item in repair_tools.tools:
+            if item.name == "review_review":
+                await item.ainvoke({})
         repair_outputs = [repair_tools.outputs[worker] for worker in selected_workers]
         coverage["rerouted_workers"] = selected_workers
 
@@ -583,6 +620,7 @@ class PackageReviewService:
             current_review, current_usage = existing[repair_review.worker]
             merged_review = self._reduce_worker(repair_review.worker, [current_review, repair_review])
             merged_usage = {
+                **current_usage,
                 "calls": int(current_usage.get("calls", 0)) + int(repair_usage.get("calls", 0)),
                 "input_tokens": (int(current_usage.get("input_tokens", 0)) + int(repair_usage.get("input_tokens", 0))),
                 "output_tokens": (
@@ -622,7 +660,7 @@ class PackageReviewService:
             query=request.question,
         )
         plan, supervisor_usage = await self.plan_review(request.question, evidence, request.review_mode)
-        rule_issues = validate_evidence(evidence, plan.workers)
+        rule_issues = validate_review_evidence(evidence, plan.workers)
         worker_outputs, delegation = await run_subagents_as_tools(
             self,
             plan,
@@ -665,7 +703,7 @@ class PackageReviewService:
         outputs = list(worker_outputs)
         workers = {review.worker: review for review, _ in outputs}
         if rule_issues is None and evidence is not None:
-            rule_issues = validate_evidence(
+            rule_issues = validate_review_evidence(
                 evidence,
                 plan.workers if plan else workers.keys(),
             )
@@ -741,13 +779,13 @@ class PackageReviewService:
                     issues.append(finding)
                     seen_issues.add(issue_key(finding))
         conflicts = [issue.summary for issue in issues if issue.severity == "conflict" or issue.requires_human]
-        lines = ["膜结构工程资料包审查报告", "自动审查完成不代表工程批准；规则发现及不确定项需人工确认。"]
+        lines = ["# 膜结构工程资料包审查报告", "自动审查完成不代表工程批准；规则发现及不确定项需人工确认。"]
         if self.provider.metadata.get("mode") != "api":
             lines.append("Fake演示：已运行确定性规则与工具调度，未执行模型语义审查。")
-        for worker in ("design", "material", "price"):
+        for worker in REVIEW_ROLES:
             if worker not in workers:
                 continue
-            lines.append(f"\n{worker}审查：")
+            lines.append(f"\n## {ROLE_LABELS[worker]}")
             review = workers[worker]
             for note in [*review.uncertainties, *review.limitations]:
                 lines.append(f"- 范围说明：{note}")
@@ -773,10 +811,11 @@ class PackageReviewService:
             "worker_results": {key: value.model_dump() for key, value in workers.items()},
             "agents_used": [
                 "ReviewSupervisorAgent",
-                *[f"{worker.title()}ReviewAgent" for worker in workers],
+                *[AGENT_NAMES[worker] for worker in workers],
             ],
             "orchestrator": "ReviewSupervisorAgent",
             "review_plan": {
+                "execution_graph": "retrieval || material -> review",
                 "workers": list(plan.workers) if plan else list(workers),
                 "rationale": plan.rationale if plan else "",
                 "review_mode": plan.review_mode if plan else "full",

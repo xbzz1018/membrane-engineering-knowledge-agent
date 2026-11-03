@@ -77,7 +77,7 @@ class ReviewIssue(BaseModel):
 
     model_config = ConfigDict(title="工程审查问题单")
     issue_id: str = Field(default="", max_length=128, description="稳定问题编号")
-    domain: Literal["design", "material", "price", "cross_domain"] = Field(default="design", description="问题所属领域")
+    domain: Literal["retrieval", "material", "review", "design", "price", "cross_domain"] = Field(default="design", description="问题所属领域")
     issue_type: str = Field(default="finding", max_length=64, description="问题类型")
     summary: str = Field(default="", max_length=1000, description="问题摘要")
     severity: Literal["info", "warning", "conflict"] = "info"
@@ -96,13 +96,13 @@ class PackageReviewRequest(BaseModel):
     project_id: str = Field(default="demo-project", description="项目ID")
     document_ids: list[str] = Field(min_length=1, max_length=20, description="1至20份已索引资料ID")
     question: str = Field(
-        default="比较资料中的设计方案、膜材规格和价格差异",
+        default="查找资料依据、核验材料参数并审查跨文档一致性",
         max_length=2000,
         description="审查目标",
     )
     review_mode: Literal["full", "focused"] = Field(
         default="full",
-        description="full固定覆盖三领域，focused由Supervisor选择领域",
+        description="full必须覆盖检索/材料/审查，focused由Supervisor受限选择；审查依赖前两角色",
     )
 
 

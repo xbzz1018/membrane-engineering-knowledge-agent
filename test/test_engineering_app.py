@@ -54,7 +54,7 @@ def test_upload_index_and_package_review() -> None:
     assert review.json()["human_review_required"]
     assert any(item["issue_type"] == "missing_domain_evidence" for item in review.json()["issues"])
     assert "ReviewSupervisorAgent" in review.json()["agents_used"]
-    assert set(review.json()["review_plan"]["workers"]) == {"design", "material", "price"}
+    assert set(review.json()["review_plan"]["workers"]) == {"retrieval", "material", "review"}
     persisted = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}")
     assert persisted.status_code == 200
     assert persisted.json()["report"] == review.json()["report"]
@@ -67,7 +67,7 @@ def test_upload_index_and_package_review() -> None:
     reviews = request("GET", "/api/v1/package-reviews?project_id=demo-project")
     assert any(item["review_id"] == review.json()["review_id"] for item in reviews.json())
     workers = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}/workers")
-    assert set(workers.json()["workers"]) == {"design", "material", "price"}
+    assert set(workers.json()["workers"]) == {"retrieval", "material", "review"}
     assert workers.json()["review_plan"]["workers"]
     review_evidence = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}/evidence")
     assert review_evidence.status_code == 200 and review_evidence.json()["evidence"]

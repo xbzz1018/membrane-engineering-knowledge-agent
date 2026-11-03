@@ -1,0 +1,36 @@
+{
+  "validated_at": "2026-11-03T07:15:47.638176+00:00",
+  "parser_mode": "basic",
+  "scope": "Two public archived PDFs; parsing/page/Markdown smoke only, not retrieval or review accuracy",
+  "held_out_quality_test": false,
+  "sources": [
+    {
+      "id": "etfe-natural-250",
+      "passed": true,
+      "checks": {
+        "page_1_literal_0": true,
+        "page_1_literal_1": true,
+        "page_count": true
+      },
+      "parser": "basic:pdf",
+      "chunks": 2,
+      "source_sha256": "e5cc0e889833fb4d9b17d3569952c5ffe30bb2899165cf8fc57686463121fd59",
+      "markdown": "etfe-natural-250.md"
+    },
+    {
+      "id": "pvc-precontraint-1002",
+      "passed": true,
+      "checks": {
+        "page_2_literal_0": true,
+        "page_2_literal_1": true,
+        "page_2_literal_2": true,
+        "page_count": true
+      },
+      "parser": "basic:pdf",
+      "chunks": 5,
+      "source_sha256": "1342d28bf638f5596c4095a8fe953e139a09797099e0187fc9a276e5cd4170b7",
+      "markdown": "pvc-precontraint-1002.md"
+    }
+  ],
+  "passed": true
+}

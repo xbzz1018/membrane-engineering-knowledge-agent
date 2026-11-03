@@ -162,7 +162,7 @@ async def exercise(summary: dict) -> None:
         rid = review["review_id"]
         await wait_status(call, "/workflows/package-review:" + rid, "awaiting_approval", timeout=600)
         report = await call("GET", "/package-reviews/" + rid)
-        assert set(report["worker_results"]) == {"design", "material", "price"}
+        assert set(report["worker_results"]) == {"retrieval", "material", "review"}
         decision = await call("POST", f"/package-reviews/{rid}/decision", json={
             "decision": "rejected", "expected_lock_version": report["lock_version"],
             "reason": "SYNTHETIC automated deployment test; incomplete fixture intentionally returned for revision",

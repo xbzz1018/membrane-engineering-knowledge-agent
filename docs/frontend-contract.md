@@ -45,7 +45,7 @@
 
 - `POST /api/v1/documents/upload` 使用 multipart，提交 `file`、`project_id`、`data_classification`、`parse_method=auto|text|ocr` 和业务版本；默认最大 25 MB。
 - `POST /api/v1/chat` 提交 `project_id`、`session_id` 和消息。来源显示稳定 Evidence ID、文件、页码或 Office 位置、日期、版本和检索说明。
-- `POST /api/v1/package-reviews` 接收同一项目的 1 至 20 份已索引资料；`review_mode=full` 固定覆盖三个领域，`focused` 由 Supervisor 从白名单选择领域。
+- `POST /api/v1/package-reviews` 接收同一项目的 1 至 20 份已索引资料；`review_mode=full`覆盖retrieval/material/review，`focused`由Supervisor从白名单选择；review依赖retrieval/material。问题业务domain可以仍为design/price等，与Agent角色不同。
 - 审查可能处于 `queued`、`running`、`awaiting_approval` 或终态。没有有效证据的模型输出只能显示为待人工确认。
 - 记忆由 Agent 提议为 `pending`，用户确认后才写入 pgvector 索引；记忆只辅助理解上下文，不作为审查证据。
 
@@ -68,3 +68,7 @@ FastAPI `/openapi.json` 是字段级权威接口定义；本文件描述跨端�
 资料页切换项目清除旧结果/编辑状态，序列号保护过期响应；搜索结果显示来源、位置、版本、片段并打开真实Evidence抽屉。加载/空/错误状态分开。
 
 审查详情对queued/running/awaiting_approval/decision_pending每6秒安静刷新，卸载时停止；以GET状态更新操作权限。等待审批时可取消，decision_pending冻结人工处理，终态隐藏决定/问题修改操作。浏览器验收覆盖实际异步转换。
+
+## Markdown与角色显示（2026-11-03）
+
+GET /api/v1/documents/{id}/markdown在indexed后返回派生文本；GET /api/v1/package-reviews/{id}/markdown在报告存在后返回生成时正文及当前问题状态。两者使用JWT/项目权限和Cache-Control:no-store，未就绪409，内容为text/markdown。页面通过鉴权请求下载，不能把URL作为公开静态文件分享。审查详情显示检索/材料/审查；历史design/price结果保留历史标签。

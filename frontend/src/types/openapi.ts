@@ -281,6 +281,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/markdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 下载保留证据定位的资料Markdown派生文本 */
+        get: operations["export_document_markdown_api_v1_documents__document_id__markdown_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/upload": {
         parameters: {
             query?: never;
@@ -448,6 +465,23 @@ export interface paths {
         };
         /** 查看资料包审查报告 */
         get: operations["get_package_review_api_v1_package_reviews__review_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/package-reviews/{review_id}/markdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 下载含当前复核状态及来源的Markdown报告 */
+        get: operations["export_review_markdown_api_v1_package_reviews__review_id__markdown_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1414,12 +1448,12 @@ export interface components {
             /**
              * Question
              * @description 审查目标
-             * @default 比较资料中的设计方案、膜材规格和价格差异
+             * @default 查找资料依据、核验材料参数并审查跨文档一致性
              */
             question: string;
             /**
              * Review Mode
-             * @description full固定覆盖三领域，focused由Supervisor选择领域
+             * @description full必须覆盖检索/材料/审查，focused由Supervisor受限选择；审查依赖前两角色
              * @default full
              * @enum {string}
              */
@@ -1632,7 +1666,7 @@ export interface components {
              * @default design
              * @enum {string}
              */
-            domain: "design" | "material" | "price" | "cross_domain";
+            domain: "retrieval" | "material" | "review" | "design" | "price" | "cross_domain";
             /**
              * Issue Type
              * @description 问题类型
@@ -2569,6 +2603,39 @@ export interface operations {
             };
         };
     };
+    export_document_markdown_api_v1_documents__document_id__markdown_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_document_api_v1_documents_upload_post: {
         parameters: {
             query?: never;
@@ -3133,6 +3200,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PackageReviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_review_markdown_api_v1_package_reviews__review_id__markdown_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                review_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

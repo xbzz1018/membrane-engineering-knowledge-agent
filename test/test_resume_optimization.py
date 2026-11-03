@@ -69,15 +69,20 @@ def test_tax_scopes_and_fabricated_quotes_are_not_conflicts():
     assert not {"evidence_refs", "issue_id", "version", "status", "domain"} & fields.keys()
 
 
-def test_full_plan_has_no_planning_llm_call():
+def test_api_supervisor_plans_full_review_but_cannot_drop_required_roles():
+    from langchain_core.messages import AIMessage
+
+    from src.agents.subagent_tools import ScriptedSupervisorModel
+
     class Provider:
         metadata = {"mode": "api"}
 
         def langchain_model(self, **_kwargs):
-            raise AssertionError("full plan must not call a model")
+            return ScriptedSupervisorModel(responses=[AIMessage(content='{"workers":["material"],"rationale":"核验型号"}')])
 
     plan, usage = asyncio.run(PackageReviewService(provider=Provider()).plan_review("全包", [], "full"))
-    assert plan.workers == ["design", "material", "price"] and usage["calls"] == 0
+    assert plan.workers == ["retrieval", "material", "review"]
+    assert usage["calls"] == 1 and usage["mode"] == "llm"
 
 
 def test_exact_filters_are_applied_in_http_and_do_not_fuzz_models():

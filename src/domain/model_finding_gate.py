@@ -10,6 +10,7 @@ from src.domain.review_rules import validate_evidence
 from src.domain.schemas import ReviewIssue
 
 CHECK_TYPES = {
+    "mass_per_area": {"mass_per_area_conflict", "mass_unit_missing"},
     "version": {"version_mismatch"},
     "thickness": {"thickness_conflict", "thickness_scope_unclear", "thickness_applicability_unclear"},
     "material_reference": {"material_reference_missing"},
@@ -39,7 +40,12 @@ def convert_model_findings(model_review, evidence: list[dict]) -> tuple[list[Rev
             limitations.append("材料引用完整性由全包规则校验，领域子集不作缺证结论。")
             continue
         if proposal.check in CHECK_TYPES:
-            candidates = validate_evidence([by_id[i] for i in sorted(ids)], ["design", "material", "price"])
+            scoped = [by_id[i] for i in sorted(ids)]
+            candidates = validate_evidence(scoped, ["design", "material", "price"])
+            if proposal.check == "mass_per_area":
+                from src.domain.material_mass import mass_issues
+
+                candidates.extend(mass_issues(scoped, {"material"}))
             supported = [item for item in candidates if item.issue_type in CHECK_TYPES[proposal.check]]
             if supported:
                 findings.extend(supported)

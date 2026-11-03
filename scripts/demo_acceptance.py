@@ -89,7 +89,7 @@ async def main(base_url: str, skip_mcp: bool) -> dict:
         response.raise_for_status()
         review = response.json()
         trace = review["usage"]["supervisor"]["delegation"]
-        assert set(trace["tool_names"]) == {"review_design", "review_material", "review_price"}
+        assert set(trace["tool_names"]) == {"review_retrieval", "review_material", "review_review"}
         assert trace["tool_calls"] == 3
         assert any(item["issue_type"] == "thickness_conflict" for item in review["issues"])
         assert review["human_review_required"]

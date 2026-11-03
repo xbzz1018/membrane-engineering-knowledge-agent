@@ -922,9 +922,10 @@ class EngineeringStorage:
                 await guard_claim(session, document_id, claim)
             embedding_model = ""
             if settings.RUNTIME_MODE.lower() == "full":
+                from src.documents.representations import document_index_model
                 from src.infrastructure.model_provider import get_model_provider
 
-                embedding_model = get_model_provider().embedding_model
+                embedding_model = document_index_model(get_model_provider(), settings)
             await session.execute(documents.update().where(documents.c.id == document_id).values(
                 status="indexed", embedding_model=embedding_model, error_type=None, updated_at=_now(),
             ))
@@ -967,6 +968,13 @@ class EngineeringStorage:
                 + case((func.lower(document_chunks.c.text).contains(term, autoescape=True), 1), else_=0)
                 for term in terms
             ), 0)
+            if settings.CONTEXTUAL_RETRIEVAL_ENABLED:
+                lexical_score += sum((
+                    case((func.lower(document_chunks.c.heading_path).contains(term, autoescape=True), 2), else_=0)
+                    + case((func.lower(document_chunks.c.sheet_name).contains(term, autoescape=True), 2), else_=0)
+                    + case((func.lower(document_chunks.c.location).contains(term, autoescape=True), 1), else_=0)
+                    for term in terms
+                ), 0)
             if terms:
                 statement = statement.add_columns(lexical_score.label("raw_score")).where(lexical_score > 0)
                 statement = statement.order_by(lexical_score.desc(), document_chunks.c.id)

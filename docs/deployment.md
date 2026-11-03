@@ -135,8 +135,14 @@ MCP 仅回环绑定 8090，Host/Origin 使用本地允许列表；远端使用�
 
 备份范围包括业务 PostgreSQL、MinIO 原件、Temporal PostgreSQL（含 visibility 库）、Redis，以及独立安全保管的 `.env`。维护窗口先排空任务并停止 API/Worker，做数据库逻辑备份及静止对象卷备份；恢复到隔离项目验证文档哈希、证据、报告和工作流后再切换。不要只备份可重建向量表或容器可写层。
 
-升级先保存旧镜像和备份，再迁移、启动、运行 smoke；改变 Workflow 命令序列还须对目标历史 replay，并采用 Worker 版本/队列迁移策略。本包使用独立 `membrane-deploy-v1*` 队列，不消费本机 demo-v2 队列；本次未做生产旧历史升级或备份恢复演练。
+升级先保存旧镜像和备份，再迁移、启动、运行 smoke；改变 Workflow 命令序列还须对目标历史 replay，并采用 Worker 版本/队列迁移策略。本包使用独立 `membrane-deploy-v2*`队列，不消费本机demo-v2/v3队列；本次未做生产旧历史升级或备份恢复演练。
 
 ## PostgreSQL 与 pgvector 的面试表述
 
 型号、适用版次、生效区间是显式业务约束，在词项 SQL 和向量 SQL 中先过滤，再合并候选。PostgreSQL 词项通道目前用参数化 substring 计分与 Top-N，**不是 BM25**；pgvector 用 cosine 检索，两个列表按 `weight/(60+rank)` 做 RRF，随后可选 Reranker 返回带 Evidence 定位的候选。结构化条件解决适用性，向量解决表达差异，重排改善候选次序；不存在可用 Embedding 时不能宣称语义效果。
+
+## 新角色与上下文开关
+
+部署模板包含ROLE_MODEL_ROUTING_ENABLED、STRONG_MODEL_API_BASE/API_KEY、STRONG_MODEL、LIGHT_MODEL_API_BASE/API_KEY、LIGHT_MODEL。填写两组完整配置后启用；Supervisor/Review共用STRONG，检索/材料共用LIGHT。不完整时启动门禁报错。默认仍为Fake，不产生付费模型调用。项目问答/Embedding另保留原GATEWAY/EMBEDDING配置，不能因角色路由填好就认为整个RAG服务可用。
+
+CONTEXTUAL_RETRIEVAL_ENABLED默认false。启用metadata-v1前完成文档向量重建；新旧命名空间隔离，旧向量不混入。新工作流队列为membrane-deploy-v2-*；升级已有部署必须排空旧任务或使用独立部署/卷，不能把新Worker直接接管旧历史。原始厂商PDF及全文派生MD不随部署包分发，可按来源清单在获准环境重取；下载后仍需人工确认项目适用性。

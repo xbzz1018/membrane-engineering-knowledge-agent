@@ -35,6 +35,7 @@ jobs:
       - run: python -m pip check
       - run: python -m ruff check src scripts test alembic deploy
       - run: python scripts/validate_data.py
+      - run: python scripts/validate_repository.py
       - run: python -m pytest -q -p no:cacheprovider -p pytest_asyncio.plugin --junitxml=data/runtime/ci-tests.xml
       - uses: actions/upload-artifact@v4
         if: always()

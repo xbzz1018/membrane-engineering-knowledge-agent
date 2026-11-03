@@ -27,10 +27,10 @@ x-app: &app
     LOCAL_UPLOAD_PATH: /app/data/uploads
     TEMPORAL_ENABLED: "true"
     TEMPORAL_TARGET: temporal:7233
-    TEMPORAL_TASK_QUEUE: membrane-deploy-v1
-    TEMPORAL_PARSE_TASK_QUEUE: membrane-deploy-v1-parse
-    TEMPORAL_REVIEW_TASK_QUEUE: membrane-deploy-v1-review
-    TEMPORAL_MAINTENANCE_TASK_QUEUE: membrane-deploy-v1-maintenance
+    TEMPORAL_TASK_QUEUE: membrane-deploy-v2
+    TEMPORAL_PARSE_TASK_QUEUE: membrane-deploy-v2-parse
+    TEMPORAL_REVIEW_TASK_QUEUE: membrane-deploy-v2-review
+    TEMPORAL_MAINTENANCE_TASK_QUEUE: membrane-deploy-v2-maintenance
     TRACE_CONTENT: "false"
     LOG_LEVEL: INFO
   volumes:

@@ -318,8 +318,22 @@ def get_model_provider() -> ModelProvider:
     return ModelProvider()
 
 
-def get_review_model_provider() -> ModelProvider:
-    settings = get_settings()
+def get_role_model_provider(role: str, settings: Settings | None = None) -> ModelProvider:
+    settings = settings or get_settings()
+    if role not in {"supervisor", "review", "retrieval", "material"}:
+        raise ProviderConfigurationError("Unknown Agent model role")
+    if settings.ROLE_MODEL_ROUTING_ENABLED and settings.MODEL_MODE.lower() == "api":
+        prefix = "STRONG" if role in {"supervisor", "review"} else "LIGHT"
+        base, key, model = (getattr(settings, name) for name in (
+            f"{prefix}_MODEL_API_BASE", f"{prefix}_MODEL_API_KEY", f"{prefix}_MODEL",
+        ))
+        if not all((base, key, model)):
+            raise ProviderConfigurationError(f"Incomplete {prefix} model route for {role}")
+        return ModelProvider(settings.model_copy(update={
+            "MODEL_PROVIDER": "gateway", "GATEWAY_API_BASE": base,
+            "GATEWAY_API_KEY": key, "GATEWAY_MODEL": model,
+            "MODEL_MAX_TOKENS": settings.REVIEW_MAX_TOKENS,
+        }))
     if not settings.REVIEW_API_BASE or not settings.REVIEW_API_KEY:
         return ModelProvider(settings)
     review_settings = settings.model_copy(update={
@@ -330,3 +344,7 @@ def get_review_model_provider() -> ModelProvider:
         "MODEL_MAX_TOKENS": settings.REVIEW_MAX_TOKENS,
     })
     return ModelProvider(review_settings)
+
+
+def get_review_model_provider() -> ModelProvider:
+    return get_role_model_provider("supervisor")

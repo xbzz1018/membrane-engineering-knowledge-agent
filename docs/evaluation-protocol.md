@@ -1,8 +1,8 @@
 # 评测协议与可复查结果
 
-更新：2026-11-02。所有结果以本目录生成的逐样本文件为准；原仓库的历史报告保留为来源记录，不能当成当前验证。
+更新：2026-11-03。所有结果以本目录生成的逐样本文件为准；原仓库的历史报告保留为来源记录，不能当成当前验证。
 
-本轮已运行成绩、错误案例和工程验证见 [current-validation.md](current-validation.md)。旧版真实模型第二轮21/24通过宽松约定检查、2误报和1执行失败；保留作历史。当前使用business_review_v2协议，最新结果见验证记录，不报告为生产准确率。
+本轮已运行成绩、错误案例和工程验证见 [current-validation.md](current-validation.md)。旧版真实模型第二轮21/24通过宽松约定检查、2误报和1执行失败；保留作历史。当前使用business_review_v3协议，最新结果见验证记录，不报告为生产准确率。
 
 ## 数据集分层
 
@@ -25,11 +25,11 @@ $python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
 & $python scripts\run_business_eval.py --mode api
 ```
 
-每次生成独立目录 `data/eval/results/business_review_v2/{run_id}/`，包含隔离SQLite、上传副本、`predictions.jsonl`和`summary.json`。每条记录保存预期、预测、问题类型、证据、完整公开/合成报告、耗时和错误；使用新项目，禁止污染默认业务项目。默认Fake不发模型请求；API失败保留错误，不降级。
+每次生成独立目录 `data/eval/results/business_review_v3/{run_id}/`，包含隔离SQLite、上传副本、`predictions.jsonl`和`summary.json`。每条记录保存预期、预测、问题类型、证据、完整公开/合成报告、耗时和错误；使用新项目，禁止污染默认业务项目。默认Fake不发模型请求；API失败保留错误，不降级。
 
 除二分类“是否需要人工复核”外，逐条检查预期问题类型与支持该问题的资料ID；避免模型只说“有问题”就算正确。schema/引用有效性是工程约束，引用语义支持另行评估。
 
-旧v1采用包含关系；当前v2另冻结business_expectations_v2.json及SHA，一对一匹配阻断问题的类型与证据文档集合，缺领域问题同时匹配领域。额外阻断发现、重复发现计FP，缺少预期问题计FN；schema检查也进入correct。非阻断说明与所有自由文本尚未逐claim标注，不能将严格通过率称为全文事实准确率。失败继续计入所有提交样本的通过率分母。
+旧v1采用包含关系；v2冻结business_expectations_v2.json及SHA，v3另冻结新角色/价格可选策略标签，一对一匹配阻断问题的类型与证据文档集合，缺领域问题同时匹配领域。额外阻断发现、重复发现计FP，缺少预期问题计FN；schema检查也进入correct。非阻断说明与所有自由文本尚未逐claim标注，不能将严格通过率称为全文事实准确率。失败继续计入所有提交样本的通过率分母。
 
 报告TP/FP/FN/TN、precision、recall、specificity、F1及完整案例正确率。分母为零返回null。失败单列，完成样本的二分类分数明确命名 `completed_only`；完整案例正确率以全部提交样本为分母，失败记错。分层记录样本数，不能用总分掩盖某领域失败。
 
@@ -68,3 +68,9 @@ p95统一为nearest-rank：排序后取 `ceil(0.95*n)-1`，同时报告n、min�
 v2标签由开发者从既定24条情境逐项标注，没有使用模型预测自动生成gold；数据和标签仍用于开发，不能叫独立测试。该任务支持的厚度、版次、币种比较有规则门禁，24/24系统成绩包含规则贡献，不能推导LLM自身100%准确或多Agent优于单Agent。当前未完成规则/模型/单Agent消融，亦无真实项目分层置信区间。
 
 保留所有运行：若manifest报告source_changed_during_run=true，该次作为探索记录；最后正式回归应在固定源码下重跑，不能删掉该记录或改成false。代码hash包括src与scripts中的全部Python文件，因此新增验收脚本也会触发变化标记。
+
+## 2026-11-03 新角色协议
+
+当前run_business_eval.py默认使用business_review_v3.jsonl与business_expectations_v3.json，24条开发案例，13正常/11需人工。仅因明确业务策略变化，将“无价格资料”改为普通设计/规格审查的正常包；新标签由脚本显式变更，未从预测生成，旧数据及SHA完全保留。Fake 24/24仅证明规则/工具/状态；不将新版成绩与旧真实模型运行混比。
+
+检索脚本现支持--contextual off|on，使用相同119资料/30查询和条件。metadata-v1主要补章节/工作表/位置；TXT集合没有充分章节信号，当前开关前后macro Recall/MRR均0.869565，3条改写仍全部未召回。该结果不支持“增强已提升质量”。新公开2份PDF的页码/字面值烟测仅验解析与MD，不计入这30查询，更不能凑作60条内部样本。上下文的下一轮质量集合需包含真实标题、表格、指代与跨段检索，由独立标签先定义目标。

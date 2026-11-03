@@ -37,14 +37,14 @@ if ($Temporal) {
     if (Get-NetTCPConnection -LocalPort $TemporalPort -State Listen -ErrorAction SilentlyContinue) {
         throw "Temporal port $TemporalPort is occupied. Inspect the existing service first."
     }
-    $temporalRuntime = Join-Path $runtime 'temporal-demo-v2'
+    $temporalRuntime = Join-Path $runtime 'temporal-demo-v3'
     New-Item -ItemType Directory -Force -Path $temporalRuntime | Out-Null
-    $env:LOCAL_DB_PATH = 'data/runtime/temporal-demo-v2/business.db'
+    $env:LOCAL_DB_PATH = 'data/runtime/temporal-demo-v3/business.db'
     $env:TEMPORAL_TARGET = "127.0.0.1:$TemporalPort"
-    $env:TEMPORAL_TASK_QUEUE = 'resume-demo-v2-orchestration'
-    $env:TEMPORAL_PARSE_TASK_QUEUE = 'resume-demo-v2-parse'
-    $env:TEMPORAL_REVIEW_TASK_QUEUE = 'resume-demo-v2-review'
-    $env:TEMPORAL_MAINTENANCE_TASK_QUEUE = 'resume-demo-v2-maintenance'
+    $env:TEMPORAL_TASK_QUEUE = 'resume-demo-v3-orchestration'
+    $env:TEMPORAL_PARSE_TASK_QUEUE = 'resume-demo-v3-parse'
+    $env:TEMPORAL_REVIEW_TASK_QUEUE = 'resume-demo-v3-review'
+    $env:TEMPORAL_MAINTENANCE_TASK_QUEUE = 'resume-demo-v3-maintenance'
     $env:TEMPORAL_ACTIVITY_TEST_DELAY_SECONDS = '0'
 }
 $env:LOCAL_UPLOAD_PATH = 'data/uploads'
@@ -75,7 +75,7 @@ if (-not $NoFrontend) {
     $node = (Get-Command node.exe -ErrorAction Stop).Source
     $quotedVite = '"' + $vite + '"'
     $frontend = Start-Process -FilePath $node -ArgumentList @(
-        $quotedVite, '--host', '127.0.0.1', '--port', "$FrontendPort", '--strictPort'
+        $quotedVite, '--host', '127.0.0.1', '--port', "$FrontendPort", '--strictPort', '--configLoader', 'runner'
     ) -WorkingDirectory (Join-Path $root 'frontend') -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $runtime 'frontend.stdout.log') `
         -RedirectStandardError (Join-Path $runtime 'frontend.stderr.log')

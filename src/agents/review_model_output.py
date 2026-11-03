@@ -13,7 +13,7 @@ class CitedQuote(BaseModel):
 
 class ModelFinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    check: Literal["version", "thickness", "material_reference", "price_basis", "other"]
+    check: Literal["version", "thickness", "material_reference", "price_basis", "mass_per_area", "other"]
     summary: str = Field(min_length=1, max_length=1000)
     severity: Literal["info", "warning", "conflict"] = "warning"
     actual_value: str = Field(default="", max_length=1000)
@@ -25,7 +25,7 @@ class ModelFinding(BaseModel):
 
 class ModelBlockingGap(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    check: Literal["version", "thickness", "material_reference", "price_basis", "other"]
+    check: Literal["version", "thickness", "material_reference", "price_basis", "mass_per_area", "other"]
     required_fact: str = Field(min_length=1, max_length=1000)
     reason: str = Field(min_length=1, max_length=1000)
     evidence_ids: list[str] = Field(min_length=1)
@@ -33,7 +33,8 @@ class ModelBlockingGap(BaseModel):
 
 class ModelWorkerReview(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    worker: Literal["design", "material", "price"]
+    worker: Literal["retrieval", "material", "review"]
+    selected_evidence_ids: list[str] = Field(default_factory=list)
     findings: list[ModelFinding] = Field(default_factory=list)
     uncertainties: list[str] = Field(default_factory=list)
     blocking_gaps: list[ModelBlockingGap] = Field(default_factory=list)

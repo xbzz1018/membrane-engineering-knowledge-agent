@@ -6,6 +6,8 @@ from typing import Any
 from pgvector import Vector
 from sqlalchemy import text
 
+from src.documents.representations import contextual_text, document_index_model
+
 
 def _vector_literal(values: list[float], expected_dimensions: int) -> str:
     if len(values) != expected_dimensions:
@@ -35,10 +37,12 @@ class PgVectorStore:
                 raise RuntimeError("pgvector tables are missing; run Alembic migrations")
 
     async def index_document(self, document: dict[str, Any], chunks: list[dict[str, Any]]) -> None:
-        embedding_model = self.provider.embedding_model
+        embedding_model = document_index_model(self.provider, self.settings)
         rows: list[dict[str, Any]] = []
         for chunk in chunks:
-            vector = await self.provider.embed(chunk["text"])
+            vector = await self.provider.embed(
+                contextual_text(document, chunk) if self.settings.CONTEXTUAL_RETRIEVAL_ENABLED else chunk["text"]
+            )
             rows.append(
                 {
                     "id": f"{document['id']}:{chunk['chunk_index']}",
@@ -108,7 +112,7 @@ class PgVectorStore:
         )
         predicates = ["e.embedding_model = :embedding_model", "d.status = 'indexed'"]
         params: dict[str, Any] = {
-            "embedding_model": self.provider.embedding_model,
+            "embedding_model": document_index_model(self.provider, self.settings),
             "query_vector": query_vector,
             "limit": limit,
         }

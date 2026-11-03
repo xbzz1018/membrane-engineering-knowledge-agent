@@ -1,6 +1,6 @@
 # 运行手册
 
-更新：2026-11-02。实际通过项和边界见[当前验证](current-validation.md)。本机Python固定为F:\code\homework\conda-envs\agent-membrane\python.exe，运行时不使用Conda base。
+更新：2026-11-03。实际通过项和边界见[当前验证](current-validation.md)。本机Python固定为F:\code\homework\conda-envs\agent-membrane\python.exe，运行时不使用Conda base。
 
 新增单机容器部署入口 `deploy/compose.yaml`，包含迁移、应用、Worker 与基础设施；具体操作见[部署说明](deployment.md)。它使用独立命名卷和 deployment 队列，不与下述本机 demo 数据混用。当前仅完成静态配置与门禁验证，未完成容器整栈验收。
 
@@ -9,10 +9,10 @@
 | 模式 | 入口与存储 | 用途 |
 |---|---|---|
 | 同步Local/Fake | start_demo.ps1；data/runtime/demo.db | 小包同步演示，旧demo_acceptance/validate_resume_slice脚本 |
-| 持久异步Local/Fake | start_demo.ps1 -Temporal -Mcp；data/runtime/temporal-demo-v2/business.db与temporal.db | 当前真实Temporal开发Server演示、人工等待与重启 |
+| 持久异步Local/Fake | start_demo.ps1 -Temporal -Mcp；data/runtime/temporal-demo-v3/business.db与temporal.db | 当前真实Temporal开发Server演示、人工等待与重启 |
 | Full/API | .env配置、Docker PostgreSQL/pgvector/Redis/MinIO、真实模型及Worker | 单独验收；本轮完整栈未运行 |
 
-两种Local库分开，禁止把旧同步脚本直接对异步服务运行。新Temporal演示使用独立v2队列，不能接管未经重放验证的旧生产历史。
+两种Local库分开，禁止把旧同步脚本直接对异步服务运行。新Temporal演示使用独立v3队列，不能接管未经重放验证的旧生产历史。
 
 ## 当前异步演示
 
@@ -104,3 +104,9 @@ Full/API配置成功后再运行validate_full_runtime.py（TEMPORAL_ENABLED=fals
 ## 前端依赖
 
 当前frontend/node_modules为指向原项目的Junction，不允许通过它npm ci/install/升级或删除。新电脑/独立副本使用自己的依赖目录npm ci，再npm run dev。当前Vite缓存和dist均在本副本，详见[前端说明](../frontend/README.md)。
+
+## 角色与索引配置增量
+
+新启动脚本使用v3独立数据库/队列，旧v2目录保留，不将新Worker连接到未验证的旧历史。API模式先填STRONG/LIGHT完整配置再启用ROLE_MODEL_ROUTING_ENABLED；Supervisor/Review同组，检索/材料同组。上下文开关CONTEXTUAL_RETRIEVAL_ENABLED切换会改变文档向量命名空间，须先停止相关写入、重建索引再切换服务，不能声称新旧向量语义一致。
+
+新公开PDF解析烟测：python scripts/validate_public_references.py --download（原文仅留runtime）。检索对照：python scripts/run_business_retrieval_eval.py --mode local-contract --contextual off，然后on；Full/API按相同参数验收。默认业务回归现使用business_review_v3，旧v1/v2原始数据和运行记录不变。详见[本轮方案](implementation-and-interview-2026-11-03.md)。

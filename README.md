@@ -1,10 +1,60 @@
-# 膜结构企业资料审查平台
+# 膜构智审 · Engineering Document Review
 
-> 独立工程复现，验证范围见[当前记录](docs/current-validation.md)。已验证 Local/Fake 下的业务、权限、领域工具、真实 Temporal 开发服务恢复与历史重放；真实 Embedding 端点曾返回 403，尚无 Full 栈部署成功或真实语义质量记录。合成开发集不能证明简历历史内部指标。
+把工程资料入库、条件检索、材料核验与人工复核接成可追溯的审查流程。面向膜结构项目的设计、采购和审核人员，输出带原文位置的问题单。
 
-面向膜结构公司设计、膜材采购和项目审核人员的企业工程资料智能审查平台。系统提供项目级资料隔离、工程知识问答、文档解析、三领域资料审查、证据引用、人工审批与长任务恢复。
+**个人工程复现** · 三个子 Agent 封装为工具 · 真实 Temporal 开发服务故障验收 · Docker Compose 部署包
 
-## Docker Compose 快速开始
+当前可运行演示为 **SQLite / Fake Agent / Basic TXT + 真实 Temporal 开发 Server**。PostgreSQL/pgvector完整栈及新强弱模型组合仍待验收；本项目不签发结构安全或材料合格结论。
+
+## 从哪里开始
+
+| 目标 | 入口 |
+| --- | --- |
+| 先理解一条完整业务 | 下方业务流程与[业务范围](docs/business-boundaries.md) |
+| 启动或部署 | [Docker Compose部署](docs/deployment.md)、[本地运行](docs/operator-runbook.md) |
+| 核查实测结果 | [当前验证](docs/current-validation.md)、[安全验证摘要](docs/validation-artifacts/README.md) |
+| 阅读代码与接口 | [架构](docs/architecture.md)、[代码导览](docs/code-map.md)、[前后端合同](docs/frontend-contract.md) |
+| 了解方案取舍 | [Agent与RAG设计说明](docs/implementation-and-interview-2026-11-03.md)、[评测协议](docs/evaluation-protocol.md) |
+
+## 一条完整业务
+
+工程师上传设计要求、材料规格及安装说明，等待解析与索引完成，再声明型号、适用版次、生效日期及依据。资料检索返回带定位的候选，用户选定资料后提交审查，系统冻结本次Evidence。
+
+Supervisor组织检索与材料Agent取证，再由审查Agent核对原文、缺项和跨文档差异。结构、引文、规则与覆盖检查完成后，审核人处理问题并批准或退回；旧版本更新返回409。历史价格按任务需要选入。
+
+```mermaid
+flowchart LR
+  U[上传资料] --> T[Temporal解析/切片/索引]
+  T --> Q[条件检索与证据定位]
+  Q --> F[选定并冻结Evidence]
+  F --> S[Supervisor]
+  S --> R[检索Agent]
+  S --> M[材料Agent]
+  R --> C[审查Agent]
+  M --> C
+  C --> G[结构/引用/规则校验]
+  G --> H[人工复核]
+  H --> O[问题单与Markdown报告]
+```
+
+## 主要实现
+
+| 模块 | 实现与边界 |
+| --- | --- |
+| Agent工具化 | `review_retrieval`、`review_material`、`review_review`由LangChain Supervisor调用；身份和资料范围由服务端绑定。Temporal用确定性Workflow保证依赖 |
+| 模型分工 | Supervisor/审查共用STRONG配置，检索/材料共用LIGHT配置；模型名可配置，API失败不切Fake |
+| 项目资料检索 | PostgreSQL型号/版次/日期条件，pgvector向量候选，weighted RRF与可选Reranker；词项通道当前为substring计分 |
+| 审查取证 | 子Agent只查已授权的冻结包，使用snapshot_lexical工具；补证需重新选资料提交，避免版本漂移 |
+| 业务规则 | 同对象/适用版本的厚度及面密度单位归一，资料缺项、引用与历史价格口径检查；复杂表格和容差由人工判断 |
+| 人工复核 | 问题处理、报告版本锁、持久审批命令；Signal只唤醒，Activity幂等消费决定 |
+| 长任务 | Temporal负责解析、索引和审查，包含重试、取消、Heartbeat、执行认领及旧attempt写入围栏 |
+| 外部与前端 | MCP对外提供能力，REST/MCP复用应用服务；Vue工作台调用REST/SSE，鉴权下载资料与报告MD |
+
+Contextual Retrieval首版`metadata-v1`只补文件、章节、工作表和位置，默认关闭；开启会改变向量命名空间并要求重建。保留原件及Evidence权威，Markdown是派生阅读格式，生成报告不自动成为检索源。
+
+## 快速开始
+
+在装有Docker Engine、Compose v2与Python的机器执行：
 
 ```bash
 python3 scripts/init_deployment.py
@@ -13,144 +63,44 @@ docker compose --env-file deploy/.env -f deploy/compose.yaml up -d --build
 docker compose --env-file deploy/.env -f deploy/compose.yaml --profile validation run --rm smoke
 ```
 
-访问 `http://127.0.0.1:8088`，管理员密码从生成的 `deploy/.env` 读取。默认使用真实 PostgreSQL/pgvector、Redis、MinIO 与 Temporal，模型为显式 Fake；基础镜像不含 MinerU。当前包已做配置/脚本检查，容器构建和整栈运行尚待 Docker Engine 可用后验收。完整命令、真实模型配置、备份和限制见[部署说明](docs/deployment.md)，仓库更新见[GitHub 更新方案](docs/github-update.md)。
+访问`http://127.0.0.1:8088`，账号`admin`，密码读取生成的`deploy/.env`中`BOOTSTRAP_ADMIN_PASSWORD`。每次新部署生成独立凭据，初始化脚本拒绝覆盖已有配置。
 
-## 项目定位
+默认部署选择Full存储、Fake模型和真实Temporal。基础镜像不包含MinerU，PDF/OCR会明确失败；TXT与原生Office路径用于初始smoke。本机仅完成Compose配置与门禁检查，镜像构建及整栈运行须在目标环境执行，详见[部署说明](docs/deployment.md)。
 
-这是一个面向膜结构企业内部资料的工程审查平台：它把文档、材料规格、价格记录和设计问题放进有权限边界的项目空间，再通过证据单元、受控 Agent、人工审批和可恢复工作流生成审查结果。
+不使用Docker的本地开发步骤见[运行手册](docs/operator-runbook.md)。脚本中的Windows路径是开发环境默认值，可通过`-PythonExe`等参数覆盖；新checkout安装自己的前端依赖。
 
-项目明确不做结构安全计算、正式报价、施工设计或自动安全审批；模型输出必须绑定证据，云 Provider 只能处理公开资料，内部或受限资料需要本地 Provider。
+## 验证记录
 
-项目背景、技术栈与面试追问见 [面试准备-膜构智审-综合版.md](面试准备-膜构智审-综合版.md)。业务前提见 [业务范围](docs/business-boundaries.md)，实验分母、数据性质和复跑方式见 [评测协议](docs/evaluation-protocol.md)。
+以下均为对应源码版本的实测快照，具体日期、SHA和失败记录见[当前验证](docs/current-validation.md)。
 
-## 架构边界
+| 检查 | 结果 | 说明 |
+| --- | --- | --- |
+| 后端全量 | 154通过、2跳过 | 2026-11-03发布副本重新运行；MinerU/OCR未实际验收 |
+| 最终定向回归 | 54通过 | 接口、角色与部署门禁；不与全量相加 |
+| 真实Temporal | 故障用例通过、5份历史重放 | SQLite/Fake/TXT；强杀恢复、提交后重试、离线审批及取消 |
+| 业务开发回归v3 | 24/24 | 人工合成、Fake、规则参与，不是模型准确率 |
+| 检索开发回归 | Recall@10/MRR@10均0.869565 | 119资料/30查询，23有答案；SQLite词项，3条语义改写漏召回 |
+| 上下文off/on | 指标相同 | 未证明metadata-v1改善质量 |
+| 前端 | lint/类型/构建、2项测试通过 | 新角色与MD接口有HTTP验收，本轮未重跑浏览器 |
 
-- FastAPI 提供 JWT、RBAC、项目、文档、问答、审查、工作流和记忆 API。
-- LangChain create_agent实现KnowledgeAgent、ReviewSupervisorAgent及三个领域Worker；full由固定业务策略选三领域，focused才由模型受限规划，在线Supervisor通过领域工具调用子Agent。
-- LangGraph 是 Agent 运行时；Full 模式使用 Redis Checkpointer 保存 24 小时短期会话状态。
-- Temporal 是唯一后台任务系统，负责解析、批量导入、审查、重试、Heartbeat、Query、Signal 和 Cancellation。
-- PostgreSQL 保存业务事实、审查报告、记忆权威记录、预算与运行摘要，并通过 pgvector 保存文档及已确认记忆向量；MinIO 保存原文件和派生图片。
-- MCP 只作为外部 Agent 接入层，复用应用服务并执行 Scope、项目权限、幂等、Elicitation 和调用审计；它不参与内部 Agent 调度。
-- `membrane-package-review` Skill 只描述外部 Agent 如何组合 MCP 工具，不能越权或自动审批。
-- 独立 `frontend/` 使用 Vue 3 + TypeScript + Vite + Element Plus，调用 FastAPI REST/SSE 提供企业资料、台账、问答和审查工作台；前端不直接调用 MCP 或基础设施。
-- 项目不使用 DeepAgents、Neo4j、Kafka、RabbitMQ、A2A 或 Kubernetes。
+真实Embedding、完整PostgreSQL/pgvector/Redis/MinIO整栈、新强弱模型质量对照、MinerU及独立专家测试仍待完成。没有微调或GPU推理服务部署。历史实习内部指标须由原始记录支持，不能用本项目的合成开发集替代。
 
-## 文档与证据
+## 开发检查
 
-- PDF 强制使用 MinerU 时支持 `auto/text/ocr`，失败显式进入 `failed`。
-- DOCX/XLSX 原生提取正文、标题、表格和单元格；嵌入栅格图片交给 MinerU OCR。
-- EvidenceUnit 保存稳定 ID、页码或 Office 定位、版本、解析器、OCR 标记和 SHA-256。
-- Cloud Provider 只能处理 `public` 资料；项目包含 `internal/restricted` 资料时显式拒绝云调用。
-- 公开案例来自 TensiNet 列表页和详情页元数据，记录字段来源 URL、抓取时间和 SHA-256；不把受版权保护的原始案例 PDF 提交到仓库。
-- 测试用 PDF fixture 每份为 2 页；公开膜材规格源 PDF 为 7 页，规格记录保留来源页码，校验会拒绝单页或页数不一致的 fixture。
-
-## 本地验证
-
-本机演示已经运行在http://127.0.0.1:5173，开发账号**admin / admin-change-me**。重启持久异步演示：
-
-```powershell
-cd 'F:\工作\04项目资料\简历项目\资料智能审查落地版'
-& .\scripts\stop_demo.ps1
-& .\scripts\start_demo.ps1 -Temporal -Mcp
-$python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
-& $python scripts\seed_temporal_demo.py
+```bash
+python -m pip install -r requirements-runtime.txt -r requirements-dev.txt
+python -m ruff check src scripts test alembic deploy
+python scripts/validate_data.py
+python scripts/validate_repository.py
+python -m pytest -q -p no:cacheprovider -p pytest_asyncio.plugin
 ```
 
-此模式使用SQLite/Fake/Basic及真实Temporal开发Server，业务库与历史保存在data/runtime/temporal-demo-v2，队列采用独立v2名称。首次缺少CLI时先运行scripts/validate_temporal_local.py下载并验收。无-Temporal为另库的同步演示。前端依赖当前是Junction，不要通过它安装或升级。
-
-```powershell
-cd 'F:\工作\04项目资料\简历项目\资料智能审查落地版'
-$python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
-
-$env:RUNTIME_MODE = 'local'
-$env:MODEL_MODE = 'fake'
-$env:PARSER_MODE = 'basic'
-$env:TEMPORAL_ENABLED = 'false'
-$env:AUTH_ENABLED = 'false'
-
-$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD = '1'
-& $python -m pytest -q -p pytest_asyncio.plugin
-& $python -m ruff check src scripts test alembic
-& $python -m pip check
-& $python scripts\validate_data.py
+```bash
+cd frontend
+npm ci
+npm run lint
+npm test
+npm run build
 ```
 
-首次迁移到 pgvector 或切换 `EMBEDDING_MODEL` 后，需要执行 `& $python scripts\reindex_full_embeddings.py` 重建文档与确认记忆向量。
-
-## 环境迁移
-
-项目运行时不使用 Conda `base`。完整环境固定在 `F:\code\homework\conda-envs\agent-membrane`；`base` 中的 `conda.exe` 只用于创建或更新该 prefix 环境。
-
-```powershell
-cd 'F:\工作\04项目资料\简历项目\资料智能审查落地版'
-powershell -ExecutionPolicy Bypass -File .\scripts\setup_env.ps1
-powershell -ExecutionPolicy Bypass -File .\scripts\verify_env.ps1
-
-# 后续命令避免直接使用终端的 python。
-$python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
-& $python -m pytest -q
-```
-
-`environment.yml` 和 `requirements-full.txt` 包含 Full 模式依赖；`setup_env.ps1 -Minimal` 只安装本地开发依赖。
-
-## Full 模式
-
-```powershell
-# api.txt 只保存在本机，不要提交或粘贴到日志；脚本不会回显 Key。
-$apiFile = 'C:\path\to\api.txt'
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync_api_config.ps1 `
-  -SourceFile $apiFile -TargetFile .env
-
-& powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure_full_local.ps1 `
-  -TargetFile .env -EnableTemporal
-
-docker compose up -d postgres redis minio
-docker compose --profile temporal up -d temporal
-& F:\code\homework\conda-envs\agent-membrane\Scripts\alembic.exe upgrade head
-& $python scripts\run_temporal_worker.py
-& $python -m uvicorn src.main:app --host 127.0.0.1 --port 8080
-```
-
-Full 存储/模型链路与 Temporal 恢复链路分别运行：
-
-```powershell
-# Full 验证时临时设置 TEMPORAL_ENABLED=false
-& $python scripts\validate_full_runtime.py
-
-# Temporal 验证时设置 TEMPORAL_ENABLED=true，并确保 Worker 可启动
-& $python scripts\validate_temporal.py
-```
-
-Full模式的PDF强制走MinerU；`PARSER_MODE=basic`用于Local开发/回归，包括本轮公开合成TXT的真实模型实验，不代表MinerU或生产PDF验收。
-
-## API
-
-| 范围 | 主要端点 |
-|---|---|
-| 身份 | `POST /api/v1/auth/login`, `GET /api/v1/auth/me` |
-| 项目 | `GET/POST /api/v1/projects`, `POST /api/v1/projects/{id}/members` |
-| 问答 | `POST /api/v1/chat`, `POST /api/v1/chat/stream` |
-| 文档 | `POST /api/v1/documents/upload`, `POST /api/v1/documents/{id}/index` |
-| 条件检索/声明 | POST /api/v1/documents/search，GET/PUT /api/v1/documents/{id}/business-metadata；声明需依据与当前锁版本 |
-| 审查 | `POST /api/v1/package-reviews`, `GET /api/v1/package-reviews/{id}`, `GET .../stream` |
-| 复核 | `PATCH .../{id}/issues/{issue_id}`, `POST .../{id}/decision`；都需当前报告锁版本 |
-| 批量 | `POST /api/v1/batch-imports`, `GET /api/v1/batch-imports/{id}`, `GET .../stream` |
-| 工作流 | `GET /api/v1/workflows/{id}`, approve/reject/cancel 子路径 |
-| 记忆 | 候选、确认、拒绝、列表和删除 under `/api/v1/memories` |
-| MCP | `POST /api/v1/auth/mcp-token`, Streamable HTTP `/mcp` |
-
-前端启动和门禁见 [frontend/README.md](frontend/README.md)，视觉验收见 [docs/design-qa.md](docs/design-qa.md)。
-
-完整合同见 [frontend-contract.md](docs/frontend-contract.md)，架构和运行说明见 [architecture.md](docs/architecture.md) 与 [operator-runbook.md](docs/operator-runbook.md)。
-
-## 当前状态
-
-本仓库包含本地 Fake 模式的快速验证、Full 模式的配置和 Temporal/MCP 的显式验证脚本。只有在对应服务和数据门禁实际通过后，才能把 Full、MinerU 或 Temporal 描述为已验证能力；本 README 不把配置文件存在等同于生产就绪。
-
-0014业务声明、0015审查快照、0016解析认领均有Alembic迁移；Full数据库使用alembic upgrade head。新表document_ingest_claims记录执行身份与attempt，片段、向量和状态写入均受围栏保护。TEMPORAL_TARGET及四类TEMPORAL_*TASK_QUEUE配置服务和队列；启动脚本统一设置。真实开发Server验收不等于旧生产历史兼容或生产容灾。
-
-## 公开仓库边界
-
-- `.env`、真实 API Key、公司内部文件、客户合同和原始上传文件不属于仓库。
-- `data/` 中的合成案例和公开元数据必须保留来源、许可证和 provenance。
-- `docker/`、数据库、上传目录、日志和向量索引属于本地运行状态或可重建产物。
+GitHub Actions提供后端/前端检查；完整Compose smoke为手动触发选项，成功状态以实际工作流记录为准。请勿提交`.env`、内部资料、真实报价、上传文件、运行库或完整模型响应。来源与分发边界见[数据清单](data/manifests/sources.csv)及[公开资料索引](data/manifests/public-references-v1.json)。

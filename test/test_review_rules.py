@@ -103,11 +103,11 @@ def test_cloud_review_rejects_restricted_documents() -> None:
 def test_full_review_always_covers_three_domains_and_focused_can_narrow() -> None:
     service = PackageReviewService(provider=type("Provider", (), {"metadata": {"mode": "fake"}})())
     full, _ = asyncio.run(service.plan_review("只看价格", [], "full"))
-    focused, _ = asyncio.run(service.plan_review("只审查价格和币种", [], "focused"))
+    focused, _ = asyncio.run(service.plan_review("核对膜材厚度", [], "focused"))
 
-    assert set(full.workers) == {"design", "material", "price"}
+    assert set(full.workers) == {"retrieval", "material", "review"}
     assert full.review_mode == "full"
-    assert focused.workers == ["price"]
+    assert focused.workers == ["material"]
     assert focused.review_mode == "focused"
 
 
@@ -119,12 +119,12 @@ def test_evidence_routing_is_multi_label_and_shares_unclassified_units() -> None
         _item("price-1", "price.xlsx", "历史价格 300 CNY/m2"),
     ]
 
-    routes = service.route_evidence(("design", "material", "price"), evidence)
+    routes = service.route_evidence(("retrieval", "material", "review"), evidence)
 
-    assert "cross-1" in {item["evidence_id"] for item in routes["design"]}
+    assert "cross-1" in {item["evidence_id"] for item in routes["retrieval"]}
     assert "cross-1" in {item["evidence_id"] for item in routes["material"]}
     assert all("shared-1" in {item["evidence_id"] for item in rows} for rows in routes.values())
-    assert "price-1" in {item["evidence_id"] for item in routes["price"]}
+    assert "price-1" in {item["evidence_id"] for item in routes["review"]}
 
 
 def test_uncovered_evidence_is_rerouted_once_to_selected_workers(monkeypatch) -> None:
@@ -137,12 +137,12 @@ def test_uncovered_evidence_is_rerouted_once_to_selected_workers(monkeypatch) ->
         (
             WorkerReview(
                 worker=worker,
-                processed_evidence_ids=["design-1"] if worker == "design" else [],
+                processed_evidence_ids=["design-1"] if worker == "retrieval" else [],
                 skipped_evidence_ids=["shared-1"],
             ),
             {"calls": 1, "input_tokens": 10, "output_tokens": 2, "finish_reasons": ["stop"]},
         )
-        for worker in ("design", "material", "price")
+        for worker in ("retrieval", "material", "review")
     ]
 
     async def repair_worker(worker, _question, repair_evidence, _memories):
@@ -155,7 +155,7 @@ def test_uncovered_evidence_is_rerouted_once_to_selected_workers(monkeypatch) ->
     monkeypatch.setattr(service, "run_worker", repair_worker)
     repaired, coverage = asyncio.run(
         service.repair_evidence_coverage(
-            ("design", "material", "price"),
+            ("retrieval", "material", "review"),
             "完整审查",
             evidence,
             [],
@@ -165,7 +165,7 @@ def test_uncovered_evidence_is_rerouted_once_to_selected_workers(monkeypatch) ->
 
     assert coverage["attempted"] is True
     assert coverage["passes"] == 1
-    assert coverage["initial_uncovered_ids"] == ["shared-1"]
+    assert set(coverage["initial_uncovered_ids"]) == {"design-1", "shared-1"}
     assert coverage["remaining_uncovered_ids"] == []
-    assert coverage["rerouted_workers"] == ["design", "material", "price"]
+    assert coverage["rerouted_workers"] == ["retrieval", "material", "review"]
     assert all("shared-1" in review.processed_evidence_ids for review, _ in repaired)

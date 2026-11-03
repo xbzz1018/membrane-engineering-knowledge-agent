@@ -15,7 +15,7 @@ async def agent_topology(principal: Principal = Depends(current_principal)) -> d
         "orchestrator": {
             "name": "ReviewSupervisorAgent",
             "type": "langchain_supervisor_with_subagent_tools",
-            "description": "规划领域并调用 review_design/review_material/review_price 子Agent工具，服务端汇总证据结果。",
+            "description": "规划领域并调用 review_retrieval/review_material/review_review 子Agent工具，服务端汇总证据结果。",
             "offline_model": "本地 Fake 模式使用显式脚本模型驱动真实 LangChain 工具调用。",
         },
         "knowledge_agent": {
@@ -25,24 +25,26 @@ async def agent_topology(principal: Principal = Depends(current_principal)) -> d
         },
         "review_agents": [
             {
-                "name": "DesignReviewAgent",
-                "domain": "design",
-                "tool": "review_design",
-                "responsibility": "设计场景、结构形式、节点和版本一致性审查。",
+                "name": "RetrievalAgent",
+                "domain": "retrieval",
+                "tool": "review_retrieval",
+                "responsibility": "冻结包内查询证据、整理型号版次与出处。",
             },
             {
-                "name": "MaterialReviewAgent",
+                "name": "MaterialAgent",
                 "domain": "material",
                 "tool": "review_material",
                 "responsibility": "膜材型号、规格、单位、日期和版本审查。",
             },
             {
-                "name": "PriceReviewAgent",
-                "domain": "price",
-                "tool": "review_price",
-                "responsibility": "历史价格的单位、币种、区域、日期与来源可比性审查。",
+                "name": "ReviewAgent",
+                "domain": "review",
+                "tool": "review_review",
+                "responsibility": "等待检索与材料结果，核验原文、缺项、适用要求及跨文档冲突。",
             },
         ],
+        "execution_graph": "retrieval || material -> review",
+        "model_routes": {"supervisor": "strong", "retrieval": "light", "material": "light", "review": "strong"},
         "security": {
             "shell": False,
             "arbitrary_network": False,

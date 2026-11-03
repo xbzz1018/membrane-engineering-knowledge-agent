@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     REVIEW_MAX_EVIDENCE_UNITS: int = Field(default=1000, ge=1, le=10000)
     REVIEW_MAX_EVIDENCE_TOKENS: int = Field(default=100_000, ge=1000, le=1_000_000)
     REVIEW_SUPERVISOR_ENABLED: bool = True
+    ROLE_MODEL_ROUTING_ENABLED: bool = False
+    STRONG_MODEL_API_BASE: str = ""
+    STRONG_MODEL_API_KEY: str = ""
+    STRONG_MODEL: str = ""
+    LIGHT_MODEL_API_BASE: str = ""
+    LIGHT_MODEL_API_KEY: str = ""
+    LIGHT_MODEL: str = ""
+    CONTEXTUAL_RETRIEVAL_ENABLED: bool = False
     EMBEDDING_PROVIDER: str = "auto"  # auto | embedding/local/custom/openai | dashscope | gateway | fake
     EMBEDDING_API_KEY: str = ""
     EMBEDDING_API_BASE: str = ""

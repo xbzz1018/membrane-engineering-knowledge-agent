@@ -58,5 +58,71 @@
     "original_relative_path": "data/runtime/embedding-probe-20261102.json",
     "original_sha256": "c43ac2081f23e674f89666fddc8e5f33f9170222d69d15b741724ce2ad11231d",
     "archived_sha256": "c43ac2081f23e674f89666fddc8e5f33f9170222d69d15b741724ce2ad11231d"
+  },
+  {
+    "archived_file": "role-context-markdown-tests.xml",
+    "original_relative_path": "data/runtime/role-context-markdown-tests.xml",
+    "original_sha256": "474c126d7e4819af989831f17d478083726a9ddcc1a4213029f2a55998c66e4e",
+    "archived_sha256": "eab3d1d8eef39162905edfd7c05609f8e354ce8e45e6bf812b3ae8dfc927891e"
+  },
+  {
+    "archived_file": "role-recovery-followup-tests.xml",
+    "original_relative_path": "data/runtime/role-recovery-followup-tests.xml",
+    "original_sha256": "708a6b66fef81bf3dd2e7bb40edd8088e96f08785c77f1b902b1882e517d5f84",
+    "archived_sha256": "aca7d103fb2ddd526ad559c8d2ebb5ff1f3eeb3f397074922bd7cdf350027b9c"
+  },
+  {
+    "archived_file": "role-temporal-summary.json",
+    "original_relative_path": "data/runtime/temporal-local/20261103T072252Z-8a8b8aef/summary.json",
+    "original_sha256": "bdeeb88af8a454ea58f05dbc17c3c8af7c220c125dd35018c4aec9b94672d6a6",
+    "archived_sha256": "bdeeb88af8a454ea58f05dbc17c3c8af7c220c125dd35018c4aec9b94672d6a6"
+  },
+  {
+    "archived_file": "role-temporal-before-fix.json",
+    "original_relative_path": "data/runtime/temporal-local/20261103T071827Z-40ec6036/summary.json",
+    "original_sha256": "ae969f17491b6cd97ebf59a30c936a53c7c6843cf5d984b2298e05c7cc57d5e9",
+    "archived_sha256": "ae969f17491b6cd97ebf59a30c936a53c7c6843cf5d984b2298e05c7cc57d5e9"
+  },
+  {
+    "archived_file": "role-business-v3-summary.json",
+    "original_relative_path": "data/eval/results/business_review_v3/20261103T071719Z-37b2db6a/summary.json",
+    "original_sha256": "859ee98ee8f1ba4cc1153497ddcfeb938db2385460563ad94b1653cc5a61b1b5",
+    "archived_sha256": "859ee98ee8f1ba4cc1153497ddcfeb938db2385460563ad94b1653cc5a61b1b5"
+  },
+  {
+    "archived_file": "contextual-off-summary.json",
+    "original_relative_path": "data/eval/results/retrieval_business_v1/20261103T071721Z-bf6bf83a/summary.json",
+    "original_sha256": "258d27df99d2f7ae069cf669491cd3336b37c43e3ec3ab864fcd9733ea3c840f",
+    "archived_sha256": "258d27df99d2f7ae069cf669491cd3336b37c43e3ec3ab864fcd9733ea3c840f"
+  },
+  {
+    "archived_file": "contextual-on-summary.json",
+    "original_relative_path": "data/eval/results/retrieval_business_v1/20261103T071939Z-b1c45689/summary.json",
+    "original_sha256": "3f401842666dd6e2a1c2c883e05a004ef7e6965151167945cd166b988c6817a3",
+    "archived_sha256": "3f401842666dd6e2a1c2c883e05a004ef7e6965151167945cd166b988c6817a3"
+  },
+  {
+    "archived_file": "public-references-basic.json",
+    "original_relative_path": "data/runtime/public-references/validation-basic.json",
+    "original_sha256": "bab5bb672222e6accb1e06feb3ed0b90dd4d910ba9b6919db71e94a466618e20",
+    "archived_sha256": "bab5bb672222e6accb1e06feb3ed0b90dd4d910ba9b6919db71e94a466618e20"
+  },
+  {
+    "archived_file": "role-demo-http.json",
+    "original_relative_path": "data/runtime/role-demo-http-acceptance.json",
+    "original_sha256": "f9a8e8fa43eb1e3310a1728893108e4473a9751fb5b0beee757f4faa14f727b9",
+    "archived_sha256": "f9a8e8fa43eb1e3310a1728893108e4473a9751fb5b0beee757f4faa14f727b9"
+  },
+  {
+    "archived_file": "role-final-contract-tests.xml",
+    "original_relative_path": "data/runtime/role-final-contract-tests.xml",
+    "original_sha256": "f96f9b9edab3aef045f133159335460ca4e7c60fad097f3900665acfb966b69b",
+    "archived_sha256": "9fe31de6156f1eaa3ca8ae62c83f22600f1d98a035e6a68c8a1444bfb664fd82"
+  },
+  {
+    "archived_file": "github-publication-tests.xml",
+    "original_relative_path": "data/runtime/github-publication-tests.xml",
+    "original_sha256": "8a6e26eddbbdce824918504bcdfeadcb53ef52383d2f0875187a141d64288c92",
+    "archived_sha256": "669a0585f06ab505ae3431f9e8f32afc55a264c897ee21bd093dc8b30d0b8327"
   }
 ]

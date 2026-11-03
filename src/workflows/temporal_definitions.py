@@ -164,7 +164,7 @@ if workflow:
                 "approval": "not_required",
                 "supervisor": "queued",
                 "review_plan": None,
-                "workers": {"design": "queued", "material": "queued", "price": "queued"},
+                "workers": {"retrieval": "queued", "material": "queued", "review": "queued"},
                 "result": None,
                 "error": None,
             }
@@ -202,7 +202,7 @@ if workflow:
                 plan = dict(supervisor.get("plan") or {})
                 worker_names = [
                     worker for worker in plan.get("workers", [])
-                    if worker in {"design", "material", "price"}
+                    if worker in {"retrieval", "material", "review"}
                 ]
                 if not worker_names:
                     raise ValueError("review supervisor returned no valid workers")
@@ -212,13 +212,13 @@ if workflow:
                     "review_plan": plan,
                     "workers": {
                         worker: "queued" if worker in worker_names else "skipped"
-                        for worker in ("design", "material", "price")
+                        for worker in ("retrieval", "material", "review")
                     },
                 }
-                worker_outputs = await asyncio.gather(*(
-                    workflow.execute_activity(
+                async def run_domain(worker_name, upstream_results=None):
+                    result = await workflow.execute_activity(
                         "review_worker_activity",
-                        {**payload, "worker": worker_name},
+                        {**payload, "worker": worker_name, "upstream_results": upstream_results or []},
                         task_queue=payload.get("review_task_queue", "membrane-agent-review"),
                         schedule_to_close_timeout=timedelta(minutes=30),
                         start_to_close_timeout=timedelta(minutes=25),
@@ -226,10 +226,13 @@ if workflow:
                         retry_policy=_retry_policy(),
                         cancellation_type=workflow.ActivityCancellationType.TRY_CANCEL,
                     )
-                    for worker_name in worker_names
-                ))
-                for worker_name in worker_names:
                     self._state["workers"][worker_name] = "completed"
+                    return result
+
+                parallel_names = [name for name in worker_names if name != "review"]
+                worker_outputs = list(await asyncio.gather(*(run_domain(name) for name in parallel_names)))
+                if "review" in worker_names:
+                    worker_outputs.append(await run_domain("review", [item["review"] for item in worker_outputs]))
                 coverage_result = await workflow.execute_activity(
                     "repair_review_coverage_activity",
                     {
@@ -268,6 +271,9 @@ if workflow:
                             {"review_id": payload["review_id"]},
                             task_queue=payload.get("maintenance_task_queue", "membrane-maintenance"),
                             start_to_close_timeout=timedelta(minutes=2),
+                            # Detect a killed consumer before the execution timeout;
+                            # consuming the persisted command remains idempotent.
+                            heartbeat_timeout=timedelta(seconds=15),
                             retry_policy=_retry_policy(),
                         )
                         if receipt:

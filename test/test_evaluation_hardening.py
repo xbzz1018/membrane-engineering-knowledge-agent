@@ -111,20 +111,20 @@ def test_one_domain_cannot_mask_another_domain_coverage_gap(monkeypatch):
     service = PackageReviewService(provider=type("P", (), {"metadata": {"mode": "fake"}})())
     evidence = [{"evidence_id": "cross", "text": "设计方案指定膜材厚度", "filename": "design.txt"}]
     initial = [
-        (WorkerReview(worker="design", processed_evidence_ids=["cross"]), {}),
+        (WorkerReview(worker="retrieval", processed_evidence_ids=["cross"]), {}),
         (WorkerReview(worker="material", skipped_evidence_ids=["cross"]), {}),
     ]
 
     async def worker(name, *args):
         return WorkerReview(
             worker=name,
-            processed_evidence_ids=["cross"] if name == "design" else [],
+            processed_evidence_ids=["cross"] if name == "retrieval" else [],
             skipped_evidence_ids=["cross"] if name == "material" else [],
         ), {}
 
     monkeypatch.setattr(service, "run_worker", worker)
     outputs, coverage = asyncio.run(
-        service.repair_evidence_coverage(["design", "material"], "审查", evidence, [], initial)
+        service.repair_evidence_coverage(["retrieval", "material"], "审查", evidence, [], initial)
     )
     assert coverage["initial_uncovered_by_worker"]["material"] == ["cross"]
     assert coverage["remaining_uncovered_by_worker"]["material"] == ["cross"]

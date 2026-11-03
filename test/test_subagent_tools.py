@@ -14,23 +14,26 @@ def service():
     return PackageReviewService(provider=type("Provider", (), {"metadata": {"mode": "fake"}})())
 
 
-def test_supervisor_dispatches_three_real_langchain_tools_in_parallel(monkeypatch):
+def test_supervisor_parallel_lookup_then_review_with_real_tools(monkeypatch):
     current = service()
     started = set()
     ready = asyncio.Event()
 
     async def worker(name, question, evidence, memories):
+        if name == "review":
+            assert {"retrieval", "material"} <= started
+            assert "上游结果" in question
         started.add(name)
-        if len(started) == 3:
+        if {"retrieval", "material"} <= started:
             ready.set()
         await asyncio.wait_for(ready.wait(), timeout=2)
         return WorkerReview(worker=name, processed_evidence_ids=["e1"]), {"calls": 1}
 
     monkeypatch.setattr(current, "run_worker", worker)
     outputs, trace = asyncio.run(run_subagents_as_tools(
-        current, ReviewPlan(workers=["design", "material", "price"]), "审查资料", [{"evidence_id": "e1"}], [],
+        current, ReviewPlan(workers=["retrieval", "material", "review"]), "审查资料", [{"evidence_id": "e1"}], [],
     ))
-    assert [review.worker for review, _ in outputs] == ["design", "material", "price"]
+    assert [review.worker for review, _ in outputs] == ["retrieval", "material", "review"]
     assert trace["tool_calls"] == 3
     assert trace["mode"] == "scripted-tool-calling"
     assert len([event for event in trace["events"] if event["status"] == "completed"]) == 3
@@ -61,8 +64,8 @@ def test_tools_reject_identity_injection_and_cache_duplicate_calls(monkeypatch):
 def test_focused_review_exposes_only_selected_tool():
     async def run():
         current = service()
-        boundary = DomainAgentTools(current, ["price"], "价格", [], [])
-        assert [item.name for item in boundary.tools] == ["review_price"]
+        boundary = DomainAgentTools(current, ["review"], "价格", [], [])
+        assert [item.name for item in boundary.tools] == ["review_review"]
         with pytest.raises(ReviewAgentError):
             DomainAgentTools(current, ["shell"], "", [], [])
 

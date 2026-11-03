@@ -82,6 +82,8 @@ async def run(args, output):
     source = code_digest()
     profiles = ["lexical"] if args.mode == "local-contract" else ["lexical", "pure_vector", "hybrid", "hybrid_rerank"]
     summary = {"mode": args.mode, "dataset_sha256": digest, "dataset_kind": dataset["dataset_kind"],
+               "contextual_retrieval_enabled": settings.CONTEXTUAL_RETRIEVAL_ENABLED,
+               "contextual_version": "metadata-v1" if settings.CONTEXTUAL_RETRIEVAL_ENABLED else None,
                "not_a_held_out_test": True, "code_sha256_at_start": source,
                "candidate_budget": 30, "ranking_unit": "unique_document_best_chunk_position_top10",
                "limitations": dataset["limitations"] + (["Local SQLite lexical contract only; no vector/RRF/neural quality claim"] if args.mode == "local-contract" else []),
@@ -167,7 +169,9 @@ async def run(args, output):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["local-contract", "full-api"], default="local-contract")
+    parser.add_argument("--contextual", choices=["off", "on"], default="off")
     args = parser.parse_args()
+    os.environ["CONTEXTUAL_RETRIEVAL_ENABLED"] = "true" if args.contextual == "on" else "false"
     output = ROOT / "data/eval/results/retrieval_business_v1" / (datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8])
     output.mkdir(parents=True)
     if args.mode == "local-contract":

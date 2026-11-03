@@ -3,7 +3,7 @@ import { DocumentAdd, Refresh, Search, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, type UploadFile } from 'element-plus'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 
-import { api } from '../api/client'
+import { api, downloadMarkdown } from '../api/client'
 import PageHeader from '../components/PageHeader.vue'
 import StatusTag from '../components/StatusTag.vue'
 import { useSessionStore } from '../stores/session'
@@ -182,6 +182,11 @@ async function showEvidence(item: DocumentItem) {
   } catch (error) { if (requestId === evidenceRequest) ElMessage.error(error instanceof Error ? error.message : 'Evidence加载失败') }
 }
 
+async function exportMarkdown(item: DocumentItem) {
+  try { await downloadMarkdown(`/api/v1/documents/${item.id}/markdown`, `${item.filename}.md`) }
+  catch (error) { ElMessage.error(error instanceof Error ? error.message : '资料导出失败') }
+}
+
 onMounted(load)
 watch(() => session.currentProjectId, () => {
   projectEpoch += 1
@@ -228,7 +233,7 @@ watch(() => session.currentProjectId, () => {
         <el-table-column prop="sha256" label="SHA-256" min-width="150"><template #default="scope"><span class="mono">{{ scope.row.sha256.slice(0, 12) }}…</span></template></el-table-column>
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="scope">
-            <el-button link type="primary" @click="showEvidence(scope.row)">Evidence</el-button>
+            <el-button link :disabled="scope.row.status!=='indexed'" @click="exportMarkdown(scope.row)">Markdown</el-button><el-button link type="primary" @click="showEvidence(scope.row)">Evidence</el-button>
             <el-button v-if="canDeclare" link type="primary" @click="editMetadata(scope.row)">业务条件</el-button>
             <el-button link :disabled="scope.row.status === 'indexing'" @click="indexDocument(scope.row)">{{ scope.row.status === 'indexed' ? '重新索引' : '索引' }}</el-button>
           </template>
