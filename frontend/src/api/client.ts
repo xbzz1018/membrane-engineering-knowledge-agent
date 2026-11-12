@@ -81,3 +81,15 @@ export async function downloadMarkdown(path: string, filename: string): Promise<
   link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+export async function downloadArtifact(path: string, filename: string): Promise<void> {
+  const { data } = await api.get<Blob>(path, { responseType: 'blob' })
+  const url = URL.createObjectURL(data)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}

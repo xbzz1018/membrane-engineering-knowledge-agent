@@ -19,9 +19,14 @@ async def agent_topology(principal: Principal = Depends(current_principal)) -> d
             "offline_model": "本地 Fake 模式使用显式脚本模型驱动真实 LangChain 工具调用。",
         },
         "knowledge_agent": {
-            "name": "KnowledgeAgent",
-            "framework": "LangChain create_agent + LangGraph Checkpointer",
-            "responsibility": "项目知识问答、可追溯检索与会话上下文。",
+            "name": "ConversationSupervisor",
+            "framework": "LangChain create_agent + 服务端会话范围与持久消息记录",
+            "responsibility": "结构化意图规划，直接回答通用知识或调用检索/材料查询工具；普通问答不触发审查。",
+            "query_tools": ["query_retrieval", "query_material"],
+            "query_execution": ["single", "parallel", "sequential"],
+            "decision_authority": "模型建议意图，服务端校验策略并调度已授权工具。",
+            "generation_enabled": True,
+            "generation_scope": "一份初步方案，结构化版本、审查与人工批准后导出Markdown/Word",
         },
         "review_agents": [
             {

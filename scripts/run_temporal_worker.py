@@ -22,6 +22,14 @@ async def main() -> None:
         settle_review_budget_activity,
         update_batch_activity,
     )
+    from src.workflows.project_generation import ProjectExportWorkflow, ProjectGenerationWorkflow
+    from src.workflows.project_plan_activities import (
+        consume_project_plan_decision_activity,
+        export_project_plan_activity,
+        generate_project_plan_activity,
+        review_project_plan_activity,
+        settle_project_plan_activity,
+    )
     from src.workflows.temporal_definitions import (
         BatchDocumentIngestWorkflow,
         DocumentIngestWorkflow,
@@ -33,7 +41,8 @@ async def main() -> None:
     orchestration_worker = Worker(
         client,
         task_queue=settings.TEMPORAL_TASK_QUEUE,
-        workflows=[DocumentIngestWorkflow, BatchDocumentIngestWorkflow, PackageReviewWorkflow],
+        workflows=[DocumentIngestWorkflow, BatchDocumentIngestWorkflow, PackageReviewWorkflow,
+                   ProjectGenerationWorkflow, ProjectExportWorkflow],
     )
     parse_worker = Worker(
         client,
@@ -49,13 +58,17 @@ async def main() -> None:
             review_worker_activity,
             repair_review_coverage_activity,
             compose_package_review_activity,
+            generate_project_plan_activity,
+            review_project_plan_activity,
+            export_project_plan_activity,
         ],
         max_concurrent_activities=3,
     )
     maintenance_worker = Worker(
         client,
         task_queue=settings.TEMPORAL_MAINTENANCE_TASK_QUEUE,
-        activities=[finalize_package_review_activity, update_batch_activity, settle_review_budget_activity],
+        activities=[finalize_package_review_activity, update_batch_activity, settle_review_budget_activity,
+                    consume_project_plan_decision_activity, settle_project_plan_activity],
     )
     print(
         "Temporal workers listening on "

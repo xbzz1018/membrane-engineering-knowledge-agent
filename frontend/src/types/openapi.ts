@@ -13,7 +13,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 基于项目证据进行知识问答 */
+        /** 按意图进行通用问答或项目资料查询 */
         post: operations["chat_api_v1_chat_post"];
         delete?: never;
         options?: never;
@@ -189,6 +189,160 @@ export interface paths {
         get: operations["project_dashboard_api_v1_projects__project_id__dashboard_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/{project_id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 查询当前项目的方案 */
+        get: operations["list_plans_api_v1_projects__project_id__plans_get"];
+        put?: never;
+        /** 创建需求并生成审查初步方案 */
+        post: operations["create_plan_api_v1_projects__project_id__plans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{plan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 读取当前方案版本与审批状态 */
+        get: operations["get_plan_api_v1_plans__plan_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{plan_id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 读取指定方案版本 */
+        get: operations["get_plan_version_api_v1_plans__plan_id__versions__version__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{plan_id}/versions/{version}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 恢复受理或重试失败的方案任务 */
+        post: operations["generate_plan_api_v1_plans__plan_id__versions__version__generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{plan_id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 修改形成新版本并重新审查 */
+        post: operations["revise_plan_api_v1_plans__plan_id__revisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{plan_id}/versions/{version}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 对绑定审查的同版本方案批准或退回 */
+        post: operations["decide_plan_api_v1_plans__plan_id__versions__version__decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{plan_id}/versions/{version}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 导出当前批准版本的Markdown与Word */
+        post: operations["export_plan_api_v1_plans__plan_id__versions__version__exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plan-artifacts/{artifact_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 鉴权下载同版本批准产物 */
+        get: operations["download_plan_api_v1_plan_artifacts__artifact_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/plans/{plan_id}/versions/{version}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 取消未提交决定的方案版本 */
+        post: operations["cancel_plan_api_v1_plans__plan_id__versions__version__cancel_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1067,6 +1221,11 @@ export interface components {
             /** Expected Lock Version */
             expected_lock_version: number;
         };
+        /** CancelPlanRequest */
+        CancelPlanRequest: {
+            /** Expected Lock Version */
+            expected_lock_version: number;
+        };
         /** 知识问答请求 */
         ChatRequest: {
             /**
@@ -1092,6 +1251,11 @@ export interface components {
              * @description 用户问题
              */
             message: string;
+            /**
+             * Request Id
+             * @description 动作请求幂等标识；重试复用
+             */
+            request_id?: string | null;
         };
         /** 知识问答响应 */
         ChatResponse: {
@@ -1101,6 +1265,13 @@ export interface components {
             session_id: string;
             /** Route */
             route: string;
+            /**
+             * Answer Origin
+             * @default project_evidence
+             * @enum {string}
+             */
+            answer_origin: "general_knowledge" | "project_evidence" | "workflow_guidance" | "clarification";
+            routing?: components["schemas"]["ChatRoutingInfo"] | null;
             /** Agents Used */
             agents_used?: string[];
             /** Sources */
@@ -1115,6 +1286,50 @@ export interface components {
             memory_candidates?: {
                 [key: string]: unknown;
             }[];
+            /**
+             * Project Plan
+             * @description 受理的方案ID、版本、状态与工作流引用
+             */
+            project_plan?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** ChatRoutingInfo */
+        ChatRoutingInfo: {
+            /**
+             * Intent
+             * @enum {string}
+             */
+            intent: "direct_chat" | "knowledge_search" | "material_query" | "combined_query" | "review_package" | "generate_project" | "clarify";
+            /**
+             * Execution Mode
+             * @enum {string}
+             */
+            execution_mode: "direct" | "single" | "parallel" | "sequential" | "action" | "clarify";
+            /** Agents Planned */
+            agents_planned?: string[];
+            /**
+             * Needs Review
+             * @default false
+             */
+            needs_review: boolean;
+            /**
+             * Decision Source
+             * @enum {string}
+             */
+            decision_source: "rules" | "model" | "server_guard";
+            /** Outcomes */
+            outcomes?: {
+                [key: string]: "ok" | "no_results" | "failed" | "timeout" | "blocked";
+            };
+            /** Action Status */
+            action_status?: ("not_started" | "existing_api_required" | "not_implemented" | "accepted") | null;
+        };
+        /** CreatePlanRequest */
+        CreatePlanRequest: {
+            /** Request Id */
+            request_id: string;
+            requirements: components["schemas"]["PlanRequirements"];
         };
         /** 创建项目请求 */
         CreateProjectRequest: {
@@ -1532,6 +1747,101 @@ export interface components {
              */
             lock_version: number;
         };
+        /** PlanContent */
+        PlanContent: {
+            requirements: components["schemas"]["PlanRequirements"];
+            /** Sections */
+            sections: components["schemas"]["PlanSection"][];
+            /** Source Quotes */
+            source_quotes?: components["schemas"]["PlanQuotation"][];
+        };
+        /** PlanDecisionRequest */
+        PlanDecisionRequest: {
+            /** Command Id */
+            command_id: string;
+            /** Expected Lock Version */
+            expected_lock_version: number;
+            /** Review Id */
+            review_id: string;
+            /** Content Hash */
+            content_hash: string;
+            /** Manifest Hash */
+            manifest_hash: string;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approved" | "rejected";
+            /** Reason */
+            reason: string;
+        };
+        /** PlanExportRequest */
+        PlanExportRequest: {
+            /** Formats */
+            formats?: ("md" | "docx")[];
+        };
+        /** PlanQuotation */
+        PlanQuotation: {
+            /**
+             * Purpose
+             * @enum {string}
+             */
+            purpose: "history" | "material";
+            /** Evidence Id */
+            evidence_id: string;
+            /** Quote */
+            quote: string;
+        };
+        /** PlanRequirements */
+        PlanRequirements: {
+            /** Project Name */
+            project_name: string;
+            /** Building Area M2 */
+            building_area_m2?: number | null;
+            /**
+             * Location
+             * @default
+             */
+            location: string;
+            /**
+             * Purpose
+             * @default 停车棚
+             */
+            purpose: string;
+            /**
+             * Preferred Membrane
+             * @default
+             */
+            preferred_membrane: string;
+            /**
+             * Applicable Revision
+             * @default
+             */
+            applicable_revision: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+        };
+        /** PlanSection */
+        PlanSection: {
+            /**
+             * Section Id
+             * @enum {string}
+             */
+            section_id: "overview" | "technical" | "implementation" | "boundaries";
+            /** Title */
+            title: string;
+            /** Content */
+            content: string;
+            /**
+             * Origin
+             * @default proposed
+             * @constant
+             */
+            origin: "proposed";
+        };
         /** 历史价格创建请求 */
         PriceRecordCreateRequest: {
             /**
@@ -1743,6 +2053,18 @@ export interface components {
              * @description 读取报告时获得的乐观锁版本
              */
             expected_lock_version: number;
+        };
+        /** RevisionRequest */
+        RevisionRequest: {
+            /** Request Id */
+            request_id: string;
+            /** Base Version */
+            base_version: number;
+            /** Expected Lock Version */
+            expected_lock_version: number;
+            content: components["schemas"]["PlanContent"];
+            /** Reason */
+            reason: string;
         };
         /** 证据来源 */
         SourceRef: {
@@ -2364,6 +2686,379 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_plans_api_v1_projects__project_id__plans_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_plan_api_v1_projects__project_id__plans_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plan_api_v1_plans__plan_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plan_version_api_v1_plans__plan_id__versions__version__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_plan_api_v1_plans__plan_id__versions__version__generate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revise_plan_api_v1_plans__plan_id__revisions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                plan_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_plan_api_v1_plans__plan_id__versions__version__decision_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_plan_api_v1_plans__plan_id__versions__version__exports_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_plan_api_v1_plan_artifacts__artifact_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_plan_api_v1_plans__plan_id__versions__version__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                plan_id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelPlanRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

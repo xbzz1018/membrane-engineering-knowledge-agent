@@ -679,7 +679,7 @@ class PackageReviewService:
             memories,
             worker_outputs,
         )
-        return self.compose(
+        return await self.compose_and_organize(
             worker_outputs,
             sources,
             plan=plan,
@@ -688,6 +688,14 @@ class PackageReviewService:
             evidence=evidence,
             coverage=coverage,
         )
+
+    async def compose_and_organize(self, worker_outputs, sources, **kwargs) -> dict[str, Any]:
+        result = self.compose(worker_outputs, sources, **kwargs)
+        if get_settings().LORA_TASKS_ENABLED:
+            from src.application.model_tasks import TaskAdapterService
+
+            result = await TaskAdapterService("review_organization").organize(result, kwargs.get("evidence") or [])
+        return result
 
     def compose(
         self,

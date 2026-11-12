@@ -158,4 +158,4 @@ def test_openapi_is_chinese_and_contains_enterprise_routes() -> None:
     assert len(schema["paths"]) >= 30
     assert "/api/v1/agents" in schema["paths"]
     assert "/api/v1/package-reviews/{review_id}/workers" in schema["paths"]
-    assert schema["paths"]["/api/v1/chat"]["post"]["summary"] == "基于项目证据进行知识问答"
+    assert schema["paths"]["/api/v1/chat"]["post"]["summary"] == "按意图进行通用问答或项目资料查询"

@@ -1,6 +1,32 @@
 # 可分享的验证摘要
 
-这里保存经过内容检查的合成开发验收摘要，不包含密钥、业务数据库、原始上传、完整模型响应或用户资料。它们是历史运行证据，不表示当前所有源码均重新运行了同一实验；各次源码 SHA 与模式以记录为准。部署镜像构建及整栈验收尚未完成；[GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)已通过后端及前端，Compose smoke此次跳过。
+这里保存经过内容检查的合成开发验收摘要，不包含密钥、业务数据库、原始上传、完整模型响应或用户资料。它们是历史运行证据，不表示当前所有源码均重新运行了同一实验；各次源码 SHA 与模式以记录为准。部署镜像构建及整栈验收尚未完成；[11月3日GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)通过后端及前端，未运行Compose smoke。
+
+## 2026-11-12 上传副本
+
+| 记录 | 实际范围 |
+|---|---|
+| [后端JUnit](upload-20261112-backend-tests.xml) | 218通过/2跳过，69.40秒；Local/Fake、API协议替身 |
+| [安全摘要](upload-20261112-summary.json) | 修复前失败、最终检查和未验收项；不是真实模型质量报告 |
+| [迁移](upload-20261112-migration-summary.json) | 隔离SQLite旧表基线，0017升/降/再升 |
+| [规则路由](upload-20261112-routing-summary.json) | 34条人工开发样本，34通过；非留出集或模型成绩 |
+
+公司4B与本地0.6B实验分开，六份本地训练/评估摘要的独立清单见[本地实验](../../experiments/local_lora/README.md)。本轮没有重跑下方真实Temporal、浏览器或Word渲染历史验收。
+
+## 2026-11-03 动态问答入口
+
+| 记录 | 实际范围 |
+|---|---|
+| [动态问答全量JUnit](conversation-routing-full-tests.xml) | 178通过/2跳过；角色观测标签最后修正之前 |
+| [最后定向JUnit](conversation-routing-final-tests.xml) | 76通过；问答/接口/原核心，不与全量相加 |
+| [规则路由首轮](conversation-routing-before-fix.json) | 34条人工开发样本，33通过；否定审查语句多分派一路检索 |
+| [修复后规则路由](conversation-routing-summary.json) | 相同样本34通过，记录源码及数据SHA；不是API模型或回答质量成绩 |
+
+此处阶段A记录对应当时实现；后续单份方案闭环见下方新增记录。真实模型与Full部署未在本增量中验收。
+
+## 2026-11-03 项目初步方案
+
+本地生成、审查、同版审批和MD/Word导出记录：[全量](project-plan-full-tests.xml)、[最终定向](project-plan-final-tests.xml)、[Temporal](project-plan-temporal-summary.json)、[浏览器](project-plan-browser-summary.json)、[迁移](project-plan-migration-summary.json)、[Word渲染](project-plan-word-render.json)。均为Local/Fake；保留[取证失败](project-plan-temporal-before-fix.json)及[启动失败](project-plan-temporal-startup-failure.json)。
 
 ## 2026-11-03 新角色与上下文增量
 

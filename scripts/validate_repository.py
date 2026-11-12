@@ -72,6 +72,15 @@ def validate() -> int:
     if archived != indexed or len(indexed) != len(records):
         errors.append("evidence index: duplicate or unindexed archives")
 
+    lab = ROOT / "experiments/local_lora/evidence/2026-11-10"
+    manifest = json.loads((lab / "manifest.json").read_text(encoding="utf-8"))
+    for record in manifest["files"]:
+        target = (lab / record["snapshot"]).resolve()
+        if not target.is_relative_to(lab.resolve()) or not target.is_file():
+            errors.append("local LoRA evidence: invalid or missing snapshot")
+        elif hashlib.sha256(target.read_bytes()).hexdigest() != record["sha256"]:
+            errors.append(f"local LoRA evidence: hash mismatch {record['snapshot']}")
+
     print(f"markdown={len(markdown)} frozen_datasets={len(hashes)} evidence_archives={len(records)}")
     if errors:
         print("\n".join(errors))

@@ -1,0 +1,15 @@
+{
+  "task": "query_rewriter",
+  "run": "formal",
+  "steps": 75,
+  "validation_loss_before": 1.20925170323901,
+  "validation_loss_after": 0.3519389930901292,
+  "last_training_loss": 0.30355927103664726,
+  "elapsed_seconds": 127.990071962,
+  "peak_allocated_mib": 1477.728515625,
+  "peak_reserved_mib": 2612.0,
+  "changed_lora_tensors": 112,
+  "trainable_parameters": 1146880,
+  "reload_max_logit_delta": 0.0,
+  "adapter": "/home/xzheng/local-llm-lab/adapters/formal/query_rewriter"
+}

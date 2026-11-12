@@ -128,7 +128,7 @@ def test_compose_failure_after_commit_does_not_erase_intervening_human_review(mo
             rid = uuid.uuid4().hex
             payload = report(rid)
             service = SimpleNamespace(collect_evidence=AsyncMock(return_value=([], [], [])),
-                compose=lambda *_args, **_kwargs: payload)
+                compose_and_organize=AsyncMock(return_value=payload))
             monkeypatch.setattr(activities, "get_package_review_service", lambda: service)
             monkeypatch.setattr(storage, "settle_budget", AsyncMock(side_effect=[RuntimeError("after commit"), True]))
             args = {"review_id": rid, "tenant_id": "membrane-company", "project_id": "demo-project",

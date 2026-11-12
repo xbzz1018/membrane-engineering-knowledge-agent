@@ -4,6 +4,8 @@
 
 ## 主链路
 
+项目方案增量详见[实现与交付](project-plan-delivery-2026-11-03.md)：生成请求进入独立ProjectGenerationWorkflow，检索/材料工具并发取证，来源快照与生成草稿分离，复用ReviewAgent审查，持久决定消费后批准同版内容。ProjectExportWorkflow确定性生成MD/Word；修改新版本使旧批准失去当前交付效力。方案使用新增五表与独立Workflow类型，资料包原流程保留。
+
 ```mermaid
 flowchart TD
     U[企业用户 / JWT] --> API[FastAPI + 项目权限]
@@ -15,7 +17,9 @@ flowchart TD
     P --> E[EvidenceUnit: 文件、页码、位置、版本、SHA]
     E --> PG[(PostgreSQL 业务事实)]
     E --> V[(pgvector 向量索引)]
-    APP --> KA[KnowledgeAgent + Function Calling]
+    APP --> KA[ConversationSupervisor：结构化意图与服务端策略]
+    KA --> GK[通用概念直接回答]
+    KA --> QT[检索 / 材料查询子Agent工具]
     APP --> T[Temporal 长任务]
     T --> S[ReviewSupervisorAgent]
     S --> R[确定性工程规则]
@@ -30,7 +34,7 @@ flowchart TD
     M --> I
     C --> I
     I --> PG
-    KA --> RC[(Redis LangGraph Checkpoint)]
+    KA --> CH[(PostgreSQL 范围化会话审计)]
 ```
 
 本地模式使用SQLite、文件目录，可显式选择Fake/API模型及Temporal；当前演示为Local/Fake配真实Temporal开发Server。Full存储使用PostgreSQL/pgvector、Redis和MinIO，模型是否可用由端点及资料分级决定。
@@ -51,9 +55,19 @@ PostgreSQL 先写入 Evidence，再写入同库中可重建的 pgvector 索引�
 
 FastAPI 与 MCP 共同调用 `ProjectAuthorizationService`、`KnowledgeQueryService` 和 `PackageReviewApplicationService`。协议层不直接实现权限、检索、预算或 Temporal 操作。
 
-KnowledgeAgent 通过 Function Calling 选择四个工具：`search_project_documents`、`query_material_specs`、`query_price_records`、`get_document_evidence`。Principal 与 ProjectScope 由运行时注入，模型不能传入身份，也不会先执行一次应用层检索再重复调用综合检索工具。
+`/api/v1/chat`及其SSE接口现调用ConversationSupervisor。API模式先由LangChain模型输出受Schema限制的意图，服务端校验企业事实取证要求、派生角色及执行顺序，再调用`query_retrieval`或`query_material`工具。无依赖并发；先查项目才能知道型号时顺序执行，型号不明确则澄清。通用概念直接回答，普通问答不调用独立ReviewAgent。Fake显式使用规则分类和实际授权查询工具，不冒充模型推理。
+
+查询角色复用KnowledgeAgent的四类底层工具：`search_project_documents`、`query_material_specs`、`query_price_records`、`get_document_evidence`；仅暴露该角色需要的集合。Principal与项目由服务端闭包绑定，文档读取也校验当前项目。项目事实仍强制当前调用返回的Evidence，不能用“允许直接回答”绕过精确参数取证。最终合并为确定性带来源分段，不额外用模型重写。生成项目意图受理独立方案任务；资料包审查意图仍提示已有接口，不自动提交任务。方案任务复用两种查询角色，冻结来源后生成结构化正文，再用ProjectReviewAdapter调用既有ReviewAgent，不重复启动整套资料包取证。
+
+当前动态问答从PostgreSQL/Local SQLite的既有conversations审计表读取最近6条上下文，session键由租户、用户、项目及客户端session做SHA-256派生，不混读旧的无项目范围会话。查询子Agent不复用持久Checkpoint，因此不把历史ToolMessage当本轮证据。旧KnowledgeAgent入口保留其Redis/InMemory Checkpointer兼容路径，但不是当前Chat API默认入口。此增量不改表结构。
 
 MCP Streamable HTTP 提供五个查询工具和四个需要 Scope、幂等键及 Elicitation 的工作流工具；stdio 只提供查询工具。MCP 首版只返回 `public` 资料，不上传、删除、改价或修改问题单，也不参与内部多 Agent 调度。
+
+## 可选任务Adapter（2026-11-12）
+
+`LORA_TASKS_ENABLED`默认关闭。启用时，API查询角色在资料分级门禁后调用查询标准化任务，保留原始问题，字面型号/日期/版次不一致时拒用改写。领域审查及规则合并后，可调用审查整理任务，输入既有问题和相关原始证据，输出仅附加为辅助说明；结构化问题、状态与批准权限仍由原流程控制。Temporal调用在Activity内并持续Heartbeat，没有改变旧资料包Workflow的命令顺序。
+
+两任务由`LORA_API_BASE`共享端点、`LORA_QUERY_MODEL`和`LORA_REVIEW_MODEL`不同别名选择；Supervisor及通用Agent继续使用原Provider配置。失败显式返回，不切Fake。字面标识与引用检查不能证明完整语义正确，整理内容需人工复核。公司模型、本地0.6B实验与当前接入的证据边界见[模型适配说明](model-adaptation.md)；本地JSON任务Adapter不能直接替代平台的纯文本业务任务。
 
 ## 文档与权限
 
@@ -80,7 +94,7 @@ Evidence 在审查阶段采用多标签路由：跨领域片段可以同时进�
 
 `RetrievalAgent`在冻结包内调用只读查询工具整理证据；`MaterialAgent`查询包内规格并核对参数/单位；`ReviewAgent`以原始Evidence复核上游结果与跨文档一致性。设计/材料/价格仍是资料和业务检查类型，价格不再对应独立Agent，且未提交价格不阻断普通设计/规格审查。项目级PostgreSQL/pgvector检索与冻结包内snapshot_lexical查询范围不同，不能混称。
 
-Prompt Catalog 包含 `knowledge/v1`、`review-supervisor/v2`、`review-delegator/v2`、`retrieval-review/v2`、`material-review/v2`、`review-review/v2`。`review-supervisor` 是计划阶段，`review-delegator` 是在线工具调度阶段。Agent Run 保存名称、版本和 SHA，不保存完整 Prompt、Evidence 正文或隐藏思维链。
+Prompt Catalog新增`conversation-router/v1`、`general-knowledge/v1`、`retrieval-query/v1`和`material-query/v1`；保留 `knowledge/v1`、`review-supervisor/v2`、`review-delegator/v2`、`retrieval-review/v2`、`material-review/v2`、`review-review/v2`。`review-supervisor` 是计划阶段，`review-delegator` 是在线工具调度阶段。Agent Run 保存名称、版本和 SHA，不保存完整 Prompt、Evidence 正文或隐藏思维链。
 
 ## 工作流与观测
 

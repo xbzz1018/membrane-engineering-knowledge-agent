@@ -1,0 +1,55 @@
+{
+  "all_passed": true,
+  "at": "2026-11-12T07:18:47.371914+00:00",
+  "steps": [
+    {
+      "command": [
+        "stamp",
+        "0016_document_ingest_claims"
+      ],
+      "exit_code": 0,
+      "proposal_tables": []
+    },
+    {
+      "command": [
+        "upgrade",
+        "head"
+      ],
+      "exit_code": 0,
+      "proposal_tables": [
+        "project_plan_artifacts",
+        "project_plan_decisions",
+        "project_plan_reviews",
+        "project_plan_versions",
+        "project_plans"
+      ]
+    },
+    {
+      "command": [
+        "downgrade",
+        "0016_document_ingest_claims"
+      ],
+      "exit_code": 0,
+      "proposal_tables": []
+    },
+    {
+      "command": [
+        "upgrade",
+        "head"
+      ],
+      "exit_code": 0,
+      "proposal_tables": [
+        "project_plan_artifacts",
+        "project_plan_decisions",
+        "project_plan_reviews",
+        "project_plan_versions",
+        "project_plans"
+      ]
+    }
+  ],
+  "scope": "SQLite pre-0017 metadata baseline stamped 0016, then 0017 up/down/up",
+  "not_validated": [
+    "PostgreSQL migration execution",
+    "full migration chain on SQLite (0013 requires pgvector)"
+  ]
+}

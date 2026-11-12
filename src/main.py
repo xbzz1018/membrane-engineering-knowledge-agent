@@ -14,6 +14,7 @@ from src.api.routers.documents import router as documents_router
 from src.api.routers.integrations import router as integrations_router
 from src.api.routers.memories import router as memories_router
 from src.api.routers.models import router as models_router
+from src.api.routers.project_plans import router as project_plans_router
 from src.api.routers.projects import router as projects_router
 from src.api.routers.reviews import router as reviews_router
 from src.api.routers.workflows import router as workflows_router
@@ -31,6 +32,7 @@ OPENAPI_TAGS = [
     {"name": "多智能体资料审查", "description": "检索与材料Agent并行取证，审查Agent按依赖复核原文。"},
     {"name": "智能体与执行轨迹", "description": "多智能体拓扑、Agent Run与安全步骤摘要。"},
     {"name": "长期记忆", "description": "用户/项目记忆候选、确认、更新和删除。"},
+    {"name": "项目方案与文档", "description": "结构化初步方案、版本审查、人工批准和Markdown/Word导出。"},
     {"name": "批量资料导入", "description": "Temporal批量子工作流与SSE进度。"},
     {"name": "长任务工作流", "description": "工作流状态、批准、退回与取消。"},
     {"name": "模型能力", "description": "Chat、Embedding、Reranker策略和阿里模型目录。"},
@@ -92,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(chat_router)
     app.include_router(auth_router)
     app.include_router(projects_router)
+    app.include_router(project_plans_router)
     app.include_router(documents_router)
     app.include_router(catalogs_router)
     app.include_router(reviews_router)

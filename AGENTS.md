@@ -21,7 +21,7 @@
 - Every read and tool call must receive server-derived Principal and ProjectScope.
 - Cloud providers may process only public data. Internal or restricted data requires a configured local provider.
 - MinerU failure is explicit. Do not silently fall back to the basic PDF parser.
-- Every model-produced fact needs a valid evidence ID; memory is context, never evidence.
+- Enterprise/project facts and precise engineering parameters need valid evidence IDs; memory is context, never evidence. Explicitly labeled general explanations may answer without retrieval; they must not assert project facts or claim tool execution.
 - Use Alembic for schema changes. Keep Local/Fake tests isolated from a developer `.env`.
 - Every ingest write must validate its persisted execution/attempt claim; a stale Activity must not write chunks, vectors or status.
 - Keep synchronous demo.db and persistent Temporal demo-v2 databases/queues separate. Legacy synchronous acceptance scripts must not target the asynchronous demo.

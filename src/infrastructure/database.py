@@ -35,9 +35,13 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from src.core.config import get_settings
 from src.domain.document_search import DocumentSearchFilters
 from src.infrastructure.document_filters import apply_document_filters
+from src.infrastructure.project_plan_tables import define_plan_tables
 
 settings = get_settings()
 metadata = MetaData()
+project_plans, project_plan_versions, project_plan_reviews, project_plan_decisions, project_plan_artifacts = (
+    define_plan_tables(metadata)
+)
 
 document_business_metadata = Table(
     "document_business_metadata", metadata,
@@ -1382,6 +1386,17 @@ class EngineeringStorage:
                 role=role, content=content[:8000], created_at=_now(),
             ))
             await session.commit()
+
+    async def conversation_messages(self, user_id: str, scoped_session_id: str, limit: int = 6) -> list[dict]:
+        """Caller derives session hash from tenant/user/project/session after authorization."""
+        async with self.session_factory() as session:
+            rows = (await session.execute(
+                select(conversations.c.role, conversations.c.content)
+                .where(conversations.c.user_id == user_id, conversations.c.session_id == scoped_session_id)
+                .order_by(conversations.c.created_at.desc(), conversations.c.id.desc())
+                .limit(max(1, min(limit, 12)))
+            )).mappings().all()
+            return [dict(row) for row in reversed(rows)]
 
     async def create_memory_candidate(
         self,

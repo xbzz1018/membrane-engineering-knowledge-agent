@@ -1,0 +1,11 @@
+{
+  "renderer": "Microsoft Word 16.0",
+  "pages": 2,
+  "native_pdf_export": true,
+  "source": "approved-plan.docx",
+  "source_sha256": "f765bcbe13b13f0d6e46360cc5f3c15cacbf7cf0dad77b82a06df0c22d39fa1d",
+  "pngs": [
+    "word-qa/page-1.png",
+    "word-qa/page-2.png"
+  ]
+}

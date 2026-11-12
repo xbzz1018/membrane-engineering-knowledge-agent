@@ -132,5 +132,107 @@
     "archived_sha256": "4b4517771b291183a98e8398428b3dddf3bafa2f5687eef4b58fe7fb2bef90da",
     "source_url": "https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091",
     "source_commit": "87cdc2e79e62586ab025463049211dd2ac7c296d"
+  },
+  {
+    "archived_file": "conversation-routing-before-fix.json",
+    "original_relative_path": "docs/validation-artifacts/conversation-routing-before-fix.json",
+    "original_sha256": "84d476bdb0499027ce71385ae25058a51b2f1eebd3264474a36dbc4267a3c2bc",
+    "archived_sha256": "84d476bdb0499027ce71385ae25058a51b2f1eebd3264474a36dbc4267a3c2bc"
+  },
+  {
+    "archived_file": "conversation-routing-final-tests.xml",
+    "original_relative_path": "docs/validation-artifacts/conversation-routing-final-tests.xml",
+    "original_sha256": "dabf53bf8f1ea7335184ae0dd5c5aadeea2b9fd6f81c451d49b2a589e1c8c7fc",
+    "archived_sha256": "b892a31f0e9064175817143581b5c7a6ab9759f4be4620b66c74f3650d2db975"
+  },
+  {
+    "archived_file": "conversation-routing-full-tests.xml",
+    "original_relative_path": "docs/validation-artifacts/conversation-routing-full-tests.xml",
+    "original_sha256": "ae021c951cb0a36c681f8c11a8d9f11c52ca06a0baeedf0fc1808813e04a1a63",
+    "archived_sha256": "38b4d87c52acb5e9cfe6635cc7cd40087a48d145e2a52022fce8744cc1201dc0"
+  },
+  {
+    "archived_file": "conversation-routing-summary.json",
+    "original_relative_path": "docs/validation-artifacts/conversation-routing-summary.json",
+    "original_sha256": "d2639c37ce753d74c8edcd09c4da7724c9699b292fec8c1cd0b9ec60cf4f79e9",
+    "archived_sha256": "d2639c37ce753d74c8edcd09c4da7724c9699b292fec8c1cd0b9ec60cf4f79e9"
+  },
+  {
+    "archived_file": "project-plan-browser-summary.json",
+    "original_relative_path": "docs/validation-artifacts/project-plan-browser-summary.json",
+    "original_sha256": "02479bed65c5c01a5b3cdc3e8fb9e2db262c783d5355214fe69c4a86c380c6e9",
+    "archived_sha256": "02479bed65c5c01a5b3cdc3e8fb9e2db262c783d5355214fe69c4a86c380c6e9"
+  },
+  {
+    "archived_file": "project-plan-final-tests.xml",
+    "original_relative_path": "docs/validation-artifacts/project-plan-final-tests.xml",
+    "original_sha256": "d9f8060c4f5f969285648358b16c423cee5d626ff9bd1f45139b2c84642e7768",
+    "archived_sha256": "ad2878c7770a680839808f84c38770a6b198c99eb15c8b7738383124159b533f"
+  },
+  {
+    "archived_file": "project-plan-full-tests.xml",
+    "original_relative_path": "docs/validation-artifacts/project-plan-full-tests.xml",
+    "original_sha256": "702d36f9e9dbae506c772e6579864d8a55716603ef9e492bc5d5868ad5b3fcc9",
+    "archived_sha256": "0e4e0568fb111e6855d03a08325a0209e5342d4e2041d63e47eef1a7927d656f"
+  },
+  {
+    "archived_file": "project-plan-isolated-browser-summary.json",
+    "original_relative_path": "docs/validation-artifacts/project-plan-isolated-browser-summary.json",
+    "original_sha256": "7455f60d64b44d019e9c78b666f6be1f695abedbd794d5042fe1ac450d52c9a2",
+    "archived_sha256": "7455f60d64b44d019e9c78b666f6be1f695abedbd794d5042fe1ac450d52c9a2"
+  },
+  {
+    "archived_file": "project-plan-migration-summary.json",
+    "original_relative_path": "docs/validation-artifacts/project-plan-migration-summary.json",
+    "original_sha256": "e8b2d2a7504e0d651549cdbc8b9a437f9072a1f8f6e94c2a69c12d4e4d560b15",
+    "archived_sha256": "e8b2d2a7504e0d651549cdbc8b9a437f9072a1f8f6e94c2a69c12d4e4d560b15"
+  },
+  {
+    "archived_file": "project-plan-temporal-before-fix.json",
+    "original_relative_path": "docs/validation-artifacts/project-plan-temporal-before-fix.json",
+    "original_sha256": "130daf299d832fc9c9c0ff9394ba648adce5aa8a967e43a308bf2ba1b7a2be64",
+    "archived_sha256": "130daf299d832fc9c9c0ff9394ba648adce5aa8a967e43a308bf2ba1b7a2be64"
+  },
+  {
+    "archived_file": "project-plan-temporal-startup-failure.json",
+    "original_relative_path": "docs/validation-artifacts/project-plan-temporal-startup-failure.json",
+    "original_sha256": "9d947708422f8fcbe5ffe0df6d458110976dcbd99189f5ccc9875bc51d1f5f4a",
+    "archived_sha256": "9d947708422f8fcbe5ffe0df6d458110976dcbd99189f5ccc9875bc51d1f5f4a"
+  },
+  {
+    "archived_file": "project-plan-temporal-summary.json",
+    "original_relative_path": "docs/validation-artifacts/project-plan-temporal-summary.json",
+    "original_sha256": "180f7df9411e06d5e4825536aabd6c05ecb4df4d0dba413520fc9f35ecb59cc1",
+    "archived_sha256": "180f7df9411e06d5e4825536aabd6c05ecb4df4d0dba413520fc9f35ecb59cc1"
+  },
+  {
+    "archived_file": "project-plan-word-render.json",
+    "original_relative_path": "docs/validation-artifacts/project-plan-word-render.json",
+    "original_sha256": "73d5a3368e34e43961bff53e713599453ecf4464c52cdee0c2a98ff407ce66ff",
+    "archived_sha256": "73d5a3368e34e43961bff53e713599453ecf4464c52cdee0c2a98ff407ce66ff"
+  },
+  {
+    "archived_file": "upload-20261112-backend-tests.xml",
+    "original_relative_path": "data/runtime/upload-20261112/final-backend-tests.xml",
+    "original_sha256": "77e2373901f0bd1d8d31a22bd781fc0e0d16e484742e0270eb771bd313acb2bb",
+    "archived_sha256": "fecfa93a7b00d81fc9de6d172c2c1b559f3fed46003d3cc16151a4baf6c287a7"
+  },
+  {
+    "archived_file": "upload-20261112-summary.json",
+    "original_relative_path": "data/runtime/upload-20261112/summary.json",
+    "original_sha256": "7f197a550ba05e67dc366a3292e26c10d051687ba45207f4706faf4c52eb1916",
+    "archived_sha256": "7f197a550ba05e67dc366a3292e26c10d051687ba45207f4706faf4c52eb1916"
+  },
+  {
+    "archived_file": "upload-20261112-migration-summary.json",
+    "original_relative_path": "data/runtime/project-plan-migrations/d545bafdc3c34c688d2a961822fb824a/summary.json",
+    "original_sha256": "6d43bc3de1d70e72b32a9a94fb8509001cec490ff22dafd8ec8c1f5f097df5c9",
+    "archived_sha256": "6d43bc3de1d70e72b32a9a94fb8509001cec490ff22dafd8ec8c1f5f097df5c9"
+  },
+  {
+    "archived_file": "upload-20261112-routing-summary.json",
+    "original_relative_path": "data/eval/results/conversation_routes_v1/20261112T071843Z-6d1c42aa/summary.json",
+    "original_sha256": "c705030053ea31072b5395877c2d969246d3fa0c5549035fb8a00d1244b76d57",
+    "archived_sha256": "c705030053ea31072b5395877c2d969246d3fa0c5549035fb8a00d1244b76d57"
   }
 ]

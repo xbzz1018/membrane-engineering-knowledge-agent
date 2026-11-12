@@ -72,6 +72,12 @@ class Settings(BaseSettings):
     MODEL_TIMEOUT_SECONDS: int = Field(default=180, ge=5, le=600)
     MODEL_RETRY_ATTEMPTS: int = Field(default=2, ge=1, le=5)
     MODEL_RETRY_BACKOFF_SECONDS: float = Field(default=0.5, ge=0, le=10)
+    CHAT_QUERY_TIMEOUT_SECONDS: float = Field(default=120, ge=0.05, le=600)
+    LORA_TASKS_ENABLED: bool = False
+    LORA_API_BASE: str = ""
+    LORA_API_KEY: str = ""
+    LORA_QUERY_MODEL: str = "user"
+    LORA_REVIEW_MODEL: str = "shencha"
 
     LOCAL_DATA_PATH: str = "data/processed"
     LOCAL_UPLOAD_PATH: str = "data/uploads"

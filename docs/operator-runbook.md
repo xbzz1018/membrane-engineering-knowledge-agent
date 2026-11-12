@@ -54,9 +54,11 @@ docker compose --profile temporal up -d temporal-postgres temporal
 
 Full端口：PostgreSQL5432、Redis16379/UI18001、MinIO19000/19001、Temporal7233/8233。Full PDF强制MinerU，不能以basic代替OCR验收。切换EMBEDDING_MODEL后运行scripts/reindex_full_embeddings.py，旧模型向量不参与新检索。
 
-迁移以alembic head为准：0014业务声明、0015不可变审查快照、0016执行认领。Local create_all会新增独立表，Full已有库必须迁移；本轮仅SQLite迁移演练通过。工作流命令序列改变时使用新Worker版本/队列或排空旧任务，并重放目标历史；本轮5份新历史通过不代表旧历史迁移完成。
+迁移以alembic head为准：0014业务声明、0015不可变审查快照、0016执行认领、0017方案版本/审查/决定/导出记录。Local create_all会新增独立表，Full已有库必须迁移；本轮仅SQLite迁移演练通过。工作流命令序列改变时使用新Worker版本/队列或排空旧任务，并重放目标历史；本轮5份新历史通过不代表旧历史迁移完成。
 
 ## 接入约定
+
+知识问答中的生成请求现可创建一份初步方案。点击“项目方案”抽屉查看、修订、审批与下载。面积/地点/材料和引用缺失会阻断批准；模型不自动补工程参数。同版批准后才允许MD/Word，改版后须重新审查。操作、故障验证及迁移0017见[方案交付说明](project-plan-delivery-2026-11-03.md)。
 
 - POST /api/v1/auth/login取JWT，身份/项目范围由服务端派生。GET /api/v1/projects后选择有权项目。
 - 上传multipart含file/project_id/data_classification/parse_method/版本；同项目、SHA及版本重复提交复用文档。

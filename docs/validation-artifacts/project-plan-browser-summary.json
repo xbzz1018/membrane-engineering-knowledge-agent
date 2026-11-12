@@ -1,0 +1,19 @@
+{
+  "mode": "real Chromium / Local HTTP API / real Temporal dev server / SQLite / Fake Agents / synthetic sources",
+  "checks": {
+    "chat_create_and_review": true,
+    "same_version_approval_and_word_download": true,
+    "revision_requires_new_approval_and_old_download_denied": true,
+    "cancel_dialog_does_not_submit_decision": true,
+    "mobile_no_horizontal_overflow": true
+  },
+  "errors": [],
+  "plan_id": "c9154c60-d51a-4d31-b74b-a576e6a570eb",
+  "project_id": "fdd3b55f9026444ba812fd9ed9c6c779",
+  "all_passed": true,
+  "finished_at": "2026-11-03T12:33:16.407Z",
+  "api_url": "http://127.0.0.1:8080",
+  "frontend_url": "http://127.0.0.1:5173",
+  "mode_label_correction": "Corrected the original hardcoded isolated-API label; this run used PLAN_ACCEPTANCE_API=http://127.0.0.1:8080 and the running demo with real Temporal.",
+  "downloaded_docx_sha256": "f765bcbe13b13f0d6e46360cc5f3c15cacbf7cf0dad77b82a06df0c22d39fa1d"
+}

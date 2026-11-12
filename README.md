@@ -6,6 +6,8 @@
 
 当前可运行演示为 **SQLite / Fake Agent / Basic TXT + 真实 Temporal 开发 Server**。PostgreSQL/pgvector完整栈及新强弱模型组合仍待验收；本项目不签发结构安全或材料合格结论。
 
+本次同步新增动态问答、项目初步方案的生成/审查/同版批准与Markdown/Word导出，并接入可选的查询标准化及审查整理Adapter。个人0.6B训练实验另行归档，公司Qwen3.5-4B经历和本地实验的边界见[模型适配说明](docs/model-adaptation.md)。
+
 ## 从哪里开始
 
 | 目标 | 入口 |
@@ -42,6 +44,9 @@ flowchart LR
 | 模块 | 实现与边界 |
 | --- | --- |
 | Agent工具化 | `review_retrieval`、`review_material`、`review_review`由LangChain Supervisor调用；身份和资料范围由服务端绑定。Temporal用确定性Workflow保证依赖 |
+| 动态问答 | 通用概念直答，资料/材料按需单路、并发或依赖查询；普通问答不触发综合审查 |
+| 项目初步方案 | 结构化方案和来源快照分离；不可变版本、同版审查/批准后确定性MD/DOCX导出，详见[交付说明](docs/project-plan-delivery-2026-11-03.md) |
+| 任务Adapter | 默认关闭的API接入；查询改写保留原文，审查辅助说明不改问题/状态；[本地实验](experiments/local_lora/README.md)独立记录 |
 | 模型分工 | Supervisor/审查共用STRONG配置，检索/材料共用LIGHT配置；模型名可配置，API失败不切Fake |
 | 项目资料检索 | PostgreSQL型号/版次/日期条件，pgvector向量候选，weighted RRF与可选Reranker；词项通道当前为substring计分 |
 | 审查取证 | 子Agent只查已授权的冻结包，使用snapshot_lexical工具；补证需重新选资料提交，避免版本漂移 |
@@ -75,21 +80,21 @@ docker compose --env-file deploy/.env -f deploy/compose.yaml --profile validatio
 
 | 检查 | 结果 | 说明 |
 | --- | --- | --- |
-| 后端全量 | 154通过、2跳过 | 本机发布副本与GitHub Ubuntu/Python 3.12均通过；MinerU/OCR未实际验收 |
-| 最终定向回归 | 54通过 | 接口、角色与部署门禁；不与全量相加 |
+| 本轮后端全量 | 218通过、2跳过 | 2026-11-12本机Local/Fake，含动态问答、方案及Adapter协议测试 |
+| 历史GitHub CI | 154通过、2跳过 | 2026-11-03 Ubuntu/Python 3.12；不代表本轮新增功能的远端结果 |
 | 真实Temporal | 故障用例通过、5份历史重放 | SQLite/Fake/TXT；强杀恢复、提交后重试、离线审批及取消 |
 | 业务开发回归v3 | 24/24 | 人工合成、Fake、规则参与，不是模型准确率 |
 | 检索开发回归 | Recall@10/MRR@10均0.869565 | 119资料/30查询，23有答案；SQLite词项，3条语义改写漏召回 |
 | 上下文off/on | 指标相同 | 未证明metadata-v1改善质量 |
-| 前端 | lint/类型/构建、2项测试通过 | 新角色与MD接口有HTTP验收，本轮未重跑浏览器 |
+| 前端 | lint/类型/构建、2项测试通过 | 2026-11-12重新运行，浏览器记录为历史验收 |
 
-真实Embedding、完整PostgreSQL/pgvector/Redis/MinIO整栈、新强弱模型质量对照、MinerU及独立专家测试仍待完成。没有微调或GPU推理服务部署。历史实习内部指标须由原始记录支持，不能用本项目的合成开发集替代。
+真实Embedding、完整PostgreSQL/pgvector/Redis/MinIO整栈、新模型质量对照、MinerU及独立专家测试仍待完成。已有0.6B本地训练摘要；公司4B权重、GPU部署与任务质量未在本仓库验收。历史实习内部指标须由原始记录支持，不能用合成开发集替代。
 
 ## 开发检查
 
 ```bash
 python -m pip install -r requirements-runtime.txt -r requirements-dev.txt
-python -m ruff check src scripts test alembic deploy
+python -m ruff check src scripts test alembic deploy experiments
 python scripts/validate_data.py
 python scripts/validate_repository.py
 python -m pytest -q -p no:cacheprovider -p pytest_asyncio.plugin
@@ -103,4 +108,4 @@ npm test
 npm run build
 ```
 
-[GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)已在提交`87cdc2e`通过后端/前端检查；完整Compose smoke为手动触发选项，此次跳过。请勿提交`.env`、内部资料、真实报价、上传文件、运行库或完整模型响应。来源与分发边界见[数据清单](data/manifests/sources.csv)及[公开资料索引](data/manifests/public-references-v1.json)。
+[历史GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)在提交`87cdc2e`通过后端/前端；本轮以[PR #22检查](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/pull/22/checks)为准。完整Compose smoke为手动触发选项。请勿提交`.env`、内部资料、真实报价、上传文件、运行库或完整模型响应。来源与分发边界见[数据清单](data/manifests/sources.csv)及[公开资料索引](data/manifests/public-references-v1.json)。

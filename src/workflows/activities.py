@@ -325,14 +325,14 @@ async def compose_package_review_activity(payload: dict) -> dict:
         for item in payload["worker_outputs"]
     ]
     plan = ReviewPlan.model_validate(payload.get("review_plan") or {"workers": [item[0].worker for item in outputs]})
-    result = service.compose(
+    result = await _await_with_heartbeat(service.compose_and_organize(
         outputs,
         sources,
         plan=plan,
         supervisor_usage=payload.get("supervisor_usage"),
         evidence=evidence,
         coverage=payload.get("coverage"),
-    )
+    ), "organize-review")
     result["review_id"] = payload["review_id"]
     await storage.save_package_review(
         result,

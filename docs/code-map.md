@@ -4,10 +4,13 @@
 
 | 要理解的问题 | 代码入口 |
 | --- | --- |
+| 聊天怎样直答、查询或提交方案 | [conversation_supervisor.py](../src/agents/conversation_supervisor.py)、[chat_routing.py](../src/domain/chat_routing.py) |
 | 审查如何提交、授权并冻结证据 | [application/reviews.py](../src/application/reviews.py)、[review_manifest.py](../src/infrastructure/review_manifest.py) |
 | Supervisor怎样调用子Agent工具 | [subagent_tools.py](../src/agents/subagent_tools.py)、[review_agents.py](../src/agents/review_agents.py) |
 | 子Agent查到了什么，是否保留单位 | [evidence_tools.py](../src/agents/evidence_tools.py)、[review_roles.py](../src/domain/review_roles.py) |
 | 强弱模型怎样选择 | [model_provider.py](../src/infrastructure/model_provider.py)、[config.py](../src/core/config.py) |
+| 两个任务Adapter怎样接入 | [model_tasks.py](../src/application/model_tasks.py)、[适配及实验说明](model-adaptation.md) |
+| 同版批准与文档导出 | [project_plans.py](../src/application/project_plans.py)、[project_plan_repository.py](../src/infrastructure/project_plan_repository.py)、[project_export.py](../src/documents/project_export.py) |
 | 条件检索、向量、融合与重排 | [retrieval.py](../src/infrastructure/retrieval.py)、[pgvector_store.py](../src/infrastructure/pgvector_store.py)、[database.py](../src/infrastructure/database.py) |
 | 单位/版本规则与引用门禁 | [review_rules.py](../src/domain/review_rules.py)、[material_mass.py](../src/domain/material_mass.py)、[model_finding_gate.py](../src/domain/model_finding_gate.py) |
 | Workflow与Activity分别做什么 | [temporal_definitions.py](../src/workflows/temporal_definitions.py)、[activities.py](../src/workflows/activities.py) |

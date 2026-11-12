@@ -1,6 +1,47 @@
 # 当前实现与验证证据
 
-更新：2026-11-03。本目录是独立复现副本，不能把新增实现追认为3—6月实习贡献。按源码版本与运行模式分期记录，保留失败。业务取舍与参考MD的对应见[本轮说明](implementation-and-interview-2026-11-03.md)。
+更新：2026-11-12。本目录是独立复现副本，不能把新增实现追认为3—6月实习贡献。按源码版本与运行模式分期记录，保留失败。业务取舍与参考MD的对应见[实现说明](implementation-and-interview-2026-11-03.md)。
+
+## 2026-11-12 同步与任务Adapter接入
+
+在GitHub功能分支同步动态问答和单份项目方案闭环；保留原资料包流程、CI与历史归档。新增可选查询标准化和审查整理任务接入，默认关闭；真实调用位置已有协议测试，非公开资料在调用前阻断，整理结果不改结构化问题或审批状态。公司Qwen3.5-4B经历与11月Qwen3-0.6B实验分开记录，见[模型适配](model-adaptation.md)。本轮没有训练、GPU推理或公司权重部署。
+
+| 检查 | 本轮结果与范围 |
+|---|---|
+| 完整后端 | **218 passed / 2 skipped，69.40秒**；[JUnit](validation-artifacts/upload-20261112-backend-tests.xml)，Local/Fake；API模型使用测试替身 |
+| 首轮失败与修复 | 214通过/1失败/2跳过；旧Temporal生命周期测试替身未适配新的异步审查方法。更新替身后，含新增调用位置测试的定向30项通过，再运行上述全量；原始失败保留在本机运行目录 |
+| Ruff / pip / 数据 | 全部通过；Ruff包含本地实验脚本，GPU依赖不加入平台运行环境 |
+| 前端 | Typecheck、ESLint、Vite构建、2项Vitest通过；Windows使用runner加载配置，保留Element Plus体积提示。本轮未重跑浏览器 |
+| 迁移0017 | 隔离SQLite旧表基线上升/降/再升通过；[摘要](validation-artifacts/upload-20261112-migration-summary.json)，未验收PostgreSQL或SQLite从零迁移全链 |
+| 规则路由 | [34/34](validation-artifacts/upload-20261112-routing-summary.json)，人工开发集，不是模型准确率或留出集 |
+| 归档完整性 | 相对文档链接、冻结数据、历史验证摘要与六份本地LoRA摘要哈希检查通过 |
+
+[本轮安全摘要](validation-artifacts/upload-20261112-summary.json)记录范围和未验收项。真实Temporal强杀恢复、Word渲染和浏览器记录为下方11月3日历史；本轮没有重跑这些实验。完整PostgreSQL/pgvector/Redis/MinIO栈、真实Embedding及新任务质量未验收；简历60条内部检索样本及提升幅度仍需原始材料。本次远端CI以PR检查为准，不能用旧的通过记录代替。
+
+下方为2026-11-03及更早的分阶段记录，成绩不相加，也不自动覆盖本次新增功能。
+
+## 动态问答增量（阶段A）
+
+项目方案后续增量已完成单份闭环，详见[方案交付与限制](project-plan-delivery-2026-11-03.md)。全量回归192通过/2跳过；最后版式/渲染器保护后定向61通过。真实浏览器生成/审批/下载/修订门禁通过；真实Temporal强杀恢复、离线审批、对象写后崩溃幂等及2份历史重放通过。运行采用SQLite/Fake/合成资料；未做真实模型或Full质量验收。Word通过Microsoft Word实际渲染，2页逐页检查。摘要见[方案验收目录](validation-artifacts/README.md)。
+
+Chat API与SSE现经ConversationSupervisor：通用概念直接回答；项目资料走检索角色，型号/规格走材料角色；两路独立则并发，材料身份依赖历史资料则顺序执行，不明确则澄清。API模式采用LangChain结构化意图与Pydantic校验，服务端覆盖漏检索/依赖错误并调度受限子Agent工具；Fake明确使用规则。普通问答不触发ReviewAgent。现有审查API保留，聊天中的审查请求不会自动创建任务；阶段A当时的方案生成意图返回未实现；后续方案闭环已接通，见本页新增记录。
+
+工程验证：全量**178 passed / 2 skipped，121.14秒**，见[JUnit](validation-artifacts/conversation-routing-full-tests.xml)。随后修正角色调用的观测模型标识、同步OpenAPI后，问答/接口/原核心定向回归**76 passed，97.18秒**，见[最终JUnit](validation-artifacts/conversation-routing-final-tests.xml)，两者不相加。Ruff、pip依赖检查与原数据校验通过。本轮无表结构变更，消息键按租户/用户/项目/session派生；尚未做新入口的真实模型质量或新Full栈验收。
+
+前端已从更新的OpenAPI重新生成类型；Typecheck、ESLint、2项Vitest及Vite构建通过，Vite使用runner配置加载。只调整问答页面说明与助手称呼，未新增路由状态控件，也未重跑浏览器交互；Element Plus包体积提示保留。
+
+新增[34条人工编写路由开发样本](../data/eval/conversation_routes_v1.jsonl)，包含否定请求、解释性提问、缺指代和上下文。初次**33/34**，样本n02被多分派检索；[失败记录](validation-artifacts/conversation-routing-before-fix.json)保留。修复后**34/34**，见[规则路由摘要](validation-artifacts/conversation-routing-summary.json)，仅为开发集意图及执行策略符合率，不是模型准确率、回答事实正确率或检索质量。冻结集合SHA为`3f6f317a1888bcb983d56c48fef6c5cade99f787e11319c9989cff5e32ae5a9f`；最终运行源码SHA为`0333ac5a7173c681c3d843373ed003498259a7707b15def0228d1688b4c374c0`，运行中未变更。
+
+已验证单路旧route兼容、两路实际重叠、依赖等待、歧义阻断、无结果/失败/超时区分、Schema失败有限重试、路由误判的取证门禁、当前项目文档边界、鉴权前不调用模型和SSE附加元数据。协议测试中的API模型均为本机替身，没有执行新的真实Qwen模型调用。新版SSE仍是回答完成后发送，不是逐Token生成流；旧前端继续消费token/sources，新routing元数据尚未增加专门展示控件。
+
+后续[阶段B](project-generation-design-2026-11-03.md)首版已实施，见本页项目方案增量；阶段A记录和当时成绩保留，不把后续功能追认为当时已验收。
+
+```powershell
+$python = 'F:\code\homework\conda-envs\agent-membrane\python.exe'
+& $python -m scripts.run_conversation_routing_eval --mode rules
+# 仅配置获准公开资料API后使用；失败不转Fake：
+# & $python -m scripts.run_conversation_routing_eval --mode api
+```
 
 ## 当前闭环
 
@@ -80,7 +121,7 @@
 
 已提供Compose、前后端Dockerfile、随机凭据初始化、启动门禁及真实HTTP/pgvector/Temporal验收入口，见[部署说明](deployment.md)。18项部署门禁已测，Compose可解析；本机Linux Engine未运行，容器镜像和完整栈没有成功记录。[GitHub Actions](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41604101091)已通过后端和前端检查，Compose smoke此次跳过。首次CI在提交`27e8d14`因缺少greenlet失败，修复依赖声明为`sqlalchemy[asyncio]`后通过；[失败记录](https://github.com/xbzz1018/membrane-engineering-knowledge-agent/actions/runs/41603661769)保留。可分享记录另见[安全摘要](validation-artifacts/README.md)。
 
-真实PostgreSQL/pgvector、Redis、MinIO整栈，真实Embedding/新强弱模型对照，MinerU/OCR，专家独立标注与实际业务试用均待验收。当前模型通过API接入，没有微调、LoRA权重或GPU推理服务部署。
+真实PostgreSQL/pgvector、Redis、MinIO整栈，真实Embedding/新强弱模型对照，MinerU/OCR，专家独立标注与实际业务试用均待验收。该阶段模型通过API接入，尚未归档微调材料；11月12日已补本地实验与可选任务接入，公司LoRA权重及其GPU部署仍未在本仓库核实。
 
 ## 新演示HTTP验收
 

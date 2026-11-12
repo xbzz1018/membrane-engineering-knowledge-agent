@@ -2,6 +2,10 @@
 
 ## 角色
 
+项目方案界面位于知识问答页抽屉。设计/材料角色可生成和修订，审核人/admin可批准与退回，当前批准版本可申请导出。所有权限仍由后端项目角色核验；前端只展示可用控件。
+
+方案状态为queued/generating/generated/reviewing/needs_revision/awaiting_approval/decision_pending/approved/rejected/failed/cancelled。修改使用base_version与expected_lock_version形成新版本；决定提交review_id、content_hash、manifest_hash和锁版本；产物下载再次核对当前批准版本。普通Chat API新增project_plan引用，SSE done传递同字段。
+
 | 能力 | 管理员 | 设计工程师 | 膜材/采购 | 审核人 |
 |---|---:|---:|---:|---:|
 | 管理用户、项目和成员 | 是 | 否 | 否 | 否 |
@@ -45,6 +49,9 @@
 
 - `POST /api/v1/documents/upload` 使用 multipart，提交 `file`、`project_id`、`data_classification`、`parse_method=auto|text|ocr` 和业务版本；默认最大 25 MB。
 - `POST /api/v1/chat` 提交 `project_id`、`session_id` 和消息。来源显示稳定 Evidence ID、文件、页码或 Office 位置、日期、版本和检索说明。
+- 问答新增`answer_origin`和`routing`。`answer_origin`区分general_knowledge/project_evidence/workflow_guidance/clarification；`routing`返回intent、execution_mode、agents_planned、needs_review、decision_source及每角色outcomes。单路查询的旧`route=knowledge`保留；新调用方应读取`routing.intent`区分knowledge_search和material_query。
+- 通用概念直接回答，没有来源不表示查询失败。企业事实取证后无结果为no_results；failed/timeout表示未获得可靠结果，不能显示成“没有相关资料”。普通问答不调用独立审查Agent；generate_project现为accepted，并返回project_plan中的方案ID、版本、状态和workflow；review_package仍为existing_api_required，不表示已创建资料包审查任务。动作可提交request_id，网络重试应复用。
+- `POST /api/v1/chat/stream`继续发送token、sources、done事件；done现带与REST相同的路由、来源类型、usage、uncertainties和memory_candidates。旧前端可继续忽略附加字段。此端点仍是在回答完成后发送完整内容，不是逐Token模型流；鉴权/模型失败在发送200响应头之前返回HTTP错误。
 - `POST /api/v1/package-reviews` 接收同一项目的 1 至 20 份已索引资料；`review_mode=full`覆盖retrieval/material/review，`focused`由Supervisor从白名单选择；review依赖retrieval/material。问题业务domain可以仍为design/price等，与Agent角色不同。
 - 审查可能处于 `queued`、`running`、`awaiting_approval` 或终态。没有有效证据的模型输出只能显示为待人工确认。
 - 记忆由 Agent 提议为 `pending`，用户确认后才写入 pgvector 索引；记忆只辅助理解上下文，不作为审查证据。

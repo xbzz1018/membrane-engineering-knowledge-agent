@@ -348,3 +348,21 @@ def get_role_model_provider(role: str, settings: Settings | None = None) -> Mode
 
 def get_review_model_provider() -> ModelProvider:
     return get_role_model_provider("supervisor")
+
+
+def get_task_model_provider(task: str, settings: Settings | None = None) -> ModelProvider:
+    """Select an explicitly configured adapter alias, independently of Agent roles."""
+    settings = settings or get_settings()
+    if task not in {"query_normalization", "review_organization"}:
+        raise ProviderConfigurationError("Unknown LoRA task")
+    if not settings.LORA_TASKS_ENABLED or settings.MODEL_MODE.lower() != "api":
+        raise ProviderConfigurationError("LoRA tasks require explicit API mode and opt-in")
+    base, key = settings.LORA_API_BASE.strip(), settings.LORA_API_KEY.strip()
+    query, review = settings.LORA_QUERY_MODEL.strip(), settings.LORA_REVIEW_MODEL.strip()
+    if not all((base, key, query, review)) or query == review:
+        raise ProviderConfigurationError("LoRA endpoint and two distinct adapter aliases are required")
+    return ModelProvider(settings.model_copy(update={
+        "MODEL_PROVIDER": "gateway", "GATEWAY_API_BASE": base, "GATEWAY_API_KEY": key,
+        "GATEWAY_MODEL": query if task == "query_normalization" else review,
+        "MODEL_MAX_TOKENS": 512 if task == "query_normalization" else 2048,
+    }))

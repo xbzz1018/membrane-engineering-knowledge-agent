@@ -99,9 +99,10 @@ class KnowledgeQueryService:
         *,
         limit: int = 20,
         classifications: set[str] | None = None,
+        project_id: str | None = None,
     ) -> dict[str, Any]:
         document = await self.store.get_document(document_id)
-        if document is None:
+        if document is None or (project_id is not None and document["project_id"] != project_id):
             raise KnowledgeQueryError("not_found", "资料不存在或无访问权限")
         await self.authorization.authorize(principal, str(document["project_id"]))
         if document["tenant_id"] != principal.tenant_id:

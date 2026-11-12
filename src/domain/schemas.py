@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.domain.chat_routing import ChatRoutingInfo
+
 
 class SourceRef(BaseModel):
     model_config = ConfigDict(title="证据来源")
@@ -36,6 +38,7 @@ class ChatRequest(BaseModel):
     project_id: str = Field(default="demo-project", min_length=1, max_length=128, description="项目ID")
     session_id: str = Field(default="default", min_length=1, max_length=128, description="会话ID")
     message: str = Field(min_length=1, max_length=4000, description="用户问题")
+    request_id: str | None = Field(default=None, min_length=8, max_length=128, description="动作请求幂等标识；重试复用")
 
 
 class ChatResponse(BaseModel):
@@ -43,11 +46,14 @@ class ChatResponse(BaseModel):
     answer: str
     session_id: str
     route: str
+    answer_origin: Literal["general_knowledge", "project_evidence", "workflow_guidance", "clarification"] = "project_evidence"
+    routing: ChatRoutingInfo | None = None
     agents_used: list[str] = Field(default_factory=list)
     sources: list[SourceRef] = Field(default_factory=list)
     uncertainties: list[str] = Field(default_factory=list)
     usage: dict = Field(default_factory=dict)
     memory_candidates: list[dict] = Field(default_factory=list)
+    project_plan: dict | None = Field(default=None, description="受理的方案ID、版本、状态与工作流引用")
 
 
 class DocumentResponse(BaseModel):

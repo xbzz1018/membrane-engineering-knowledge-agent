@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ChatDotRound, Connection, Delete, Promotion } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 import { streamSse } from '../api/client'
 import PageHeader from '../components/PageHeader.vue'
+import ProjectPlanPanel from '../components/ProjectPlanPanel.vue'
 import { useSessionStore } from '../stores/session'
 import type { SourceRef } from '../types/domain'
 
-interface Message { role: 'user' | 'assistant'; content: string; sources?: SourceRef[]; streaming?: boolean }
+interface Message { role: 'user' | 'assistant'; content: string; sources?: SourceRef[]; streaming?: boolean; planId?: string }
 
 const session = useSessionStore()
 const sessionId = ref(`web-${Date.now()}`)
@@ -16,6 +17,14 @@ const input = ref('')
 const sending = ref(false)
 const messages = ref<Message[]>([])
 const scroll = ref<HTMLElement>()
+const planPanel = ref(false)
+const selectedPlanId = ref<string>()
+let scopeSequence = 0
+watch(() => session.currentProjectId, () => {
+  scopeSequence++; messages.value = []; selectedPlanId.value = undefined
+  planPanel.value = false; sessionId.value = `web-${Date.now()}`
+})
+function showPlan(planId?: string) { selectedPlanId.value = planId; planPanel.value = true }
 
 async function send() {
   const question = input.value.trim()
@@ -25,12 +34,15 @@ async function send() {
   messages.value.push(answer)
   input.value = ''
   sending.value = true
+  const requestScope = scopeSequence
   try {
     await streamSse('/api/v1/chat/stream', {
-      method: 'POST', body: JSON.stringify({ project_id: session.currentProjectId, session_id: sessionId.value, message: question }),
+      method: 'POST', body: JSON.stringify({ project_id: session.currentProjectId, session_id: sessionId.value, message: question, request_id: crypto.randomUUID() }),
     }, (event) => {
+      if (requestScope !== scopeSequence) return
       if (event.type === 'token') answer.content += event.content
       if (event.type === 'sources') answer.sources = event.sources
+      if (event.type === 'done' && event.project_plan) answer.planId = event.project_plan.plan_id
     })
     answer.streaming = false
   } catch (error) {
@@ -47,7 +59,8 @@ function newSession() { messages.value = []; sessionId.value = `web-${Date.now()
 </script>
 
 <template>
-  <PageHeader title="知识问答" description="KnowledgeAgent 会选择资料、膜材、价格或 Evidence 工具，并返回可追溯来源">
+  <PageHeader title="知识问答" description="通用概念直接回答；项目资料与材料规格按需查询，并返回可追溯来源">
+    <el-button @click="showPlan()">项目方案</el-button>
     <el-button :icon="Delete" @click="newSession">新建会话</el-button>
   </PageHeader>
   <div class="chat-shell section">
@@ -58,13 +71,15 @@ function newSession() { messages.value = []; sessionId.value = `web-${Date.now()
       </div>
       <article v-for="(message,index) in messages" :key="index" class="chat-message" :class="message.role">
         <div class="chat-avatar"><el-icon><component :is="message.role === 'user' ? Promotion : Connection" /></el-icon></div>
-        <div class="chat-bubble"><div class="chat-role">{{ message.role === 'user' ? '你' : 'KnowledgeAgent' }}</div><p>{{ message.content }}<span v-if="message.streaming" class="cursor" /></p>
+        <div class="chat-bubble"><div class="chat-role">{{ message.role === 'user' ? '你' : '知识助手' }}</div><p>{{ message.content }}<span v-if="message.streaming" class="cursor" /></p>
           <div v-if="message.sources?.length" class="source-list"><strong>引用来源</strong><button v-for="source in message.sources" :key="source.source_id" type="button"><span>{{ source.title }}</span><small>{{ source.location || source.source_type }} · V{{ source.version || '-' }}</small><code>{{ source.source_id }}</code></button></div>
+          <el-button v-if="message.planId" type="primary" plain @click="showPlan(message.planId)">查看方案与复核</el-button>
         </div>
       </article>
     </div>
     <div class="chat-input"><el-input v-model="input" type="textarea" :rows="2" resize="none" maxlength="4000" show-word-limit placeholder="输入工程资料问题，Enter 发送，Shift+Enter 换行" @keydown.enter.exact.prevent="send" /><el-button type="primary" :icon="Promotion" :loading="sending" @click="send">发送</el-button></div>
   </div>
+  <ProjectPlanPanel v-model="planPanel" :plan-id="selectedPlanId" />
 </template>
 
 <style scoped>
