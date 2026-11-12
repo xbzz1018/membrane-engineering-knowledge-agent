@@ -1,3 +1,9 @@
+* text=auto eol=lf
+# Frozen datasets and archived evidence are hashed as raw bytes.
+data/eval/*.json -text whitespace=cr-at-eol
+data/eval/*.jsonl -text whitespace=cr-at-eol
+docs/validation-artifacts/* -text whitespace=cr-at-eol
+experiments/local_lora/evidence/** -text whitespace=cr-at-eol
 *.pdf binary
 *.docx binary
 *.xlsx binary

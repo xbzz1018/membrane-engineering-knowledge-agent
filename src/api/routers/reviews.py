@@ -4,7 +4,7 @@ import asyncio
 import json
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 
 from src.api.dependencies import current_principal, rate_limited_principal, require_project_role
 from src.application.reviews import ReviewApplicationError, package_review_application
@@ -13,9 +13,11 @@ from src.core.security import Principal
 from src.domain.schemas import (
     PackageReviewRequest,
     PackageReviewResponse,
+    ReviewDecisionRequest,
     ReviewIssueStatusRequest,
 )
 from src.infrastructure.database import storage
+from src.infrastructure.review_decisions import ReviewDecisionRepository
 from src.workflows.temporal_app import get_workflow_state
 
 router = APIRouter(prefix="/api/v1/package-reviews", tags=["多智能体资料审查"])
@@ -60,6 +62,22 @@ async def get_package_review(
         raise HTTPException(status_code=404, detail="资料包审查不存在")
     await require_project_role(result.get("project_id", "default"), principal)
     return PackageReviewResponse(**result)
+
+
+@router.get("/{review_id}/markdown", summary="下载含当前复核状态及来源的Markdown报告")
+async def export_review_markdown(review_id: str,
+                                 principal: Principal = Depends(current_principal)) -> Response:
+    from src.documents.representations import review_markdown
+
+    result = await storage.get_package_review(review_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="资料包审查不存在")
+    await require_project_role(result["project_id"], principal)
+    if not result.get("report"):
+        raise HTTPException(status_code=409, detail="报告尚未生成")
+    return Response(review_markdown(result), media_type="text/markdown",
+                    headers={"Content-Disposition": f'attachment; filename="review-{review_id}.md"',
+                             "Cache-Control": "no-store"})
 
 
 @router.get("/{review_id}/workers", summary="查看三个审查智能体的领域结果")
@@ -118,20 +136,43 @@ async def update_review_issue(
         raise HTTPException(status_code=404, detail="资料包审查不存在")
     await require_project_role(review["project_id"], principal, {"reviewer"})
     try:
-        updated = await storage.update_review_issue_status(
+        updated = await ReviewDecisionRepository(storage).mutate(
             review_id,
-            issue_id,
-            request.status,
-            request.expected_lock_version,
+            issue_id=issue_id,
+            issue_status=request.status,
+            expected_lock_version=request.expected_lock_version,
+            actor=principal.user_id,
+            reason=request.reason,
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail="审查问题单不存在") from exc
     except ValueError as exc:
-        raise HTTPException(status_code=409, detail="审查报告已被其他审核人更新，请刷新后重试") from exc
-    if updated is None:
-        raise HTTPException(status_code=404, detail="资料包审查不存在")
-    issue, lock_version = updated
-    return {"review_id": review_id, "issue": issue, "lock_version": lock_version}
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return updated
+
+
+@router.post("/{review_id}/decision", summary="审核人按报告版本批准或退回审查")
+async def decide_review(
+    review_id: str,
+    request: ReviewDecisionRequest,
+    principal: Principal = Depends(current_principal),
+) -> dict:
+    review = await storage.get_package_review(review_id)
+    if review is None:
+        raise HTTPException(status_code=404, detail="审查报告不存在")
+    await require_project_role(review["project_id"], principal, {"reviewer"})
+    try:
+        return await package_review_application.decide(
+            review_id,
+            principal,
+            request.decision,
+            expected_lock_version=request.expected_lock_version,
+            reason=request.reason,
+        )
+    except ReviewApplicationError as exc:
+        raise HTTPException(
+            status_code={"not_found": 404, "forbidden": 403, "conflict": 409}.get(exc.code, 502), detail=str(exc)
+        ) from exc
 
 
 @router.get("/{review_id}/trace", summary="查看审查智能体运行轨迹")

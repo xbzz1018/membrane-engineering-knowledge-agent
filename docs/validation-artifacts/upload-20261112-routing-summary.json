@@ -1,0 +1,29 @@
+{
+  "mode": "rules",
+  "provider": {
+    "provider": "fake",
+    "model": "deterministic",
+    "mode": "fake"
+  },
+  "dataset_sha256": "3f6f317a1888bcb983d56c48fef6c5cade99f787e11319c9989cff5e32ae5a9f",
+  "dataset_kind": "hand_authored_development_cases",
+  "not_a_held_out_test": true,
+  "n": 34,
+  "correct": 34,
+  "joint_intent_execution_accuracy": 1.0,
+  "errors": 0,
+  "confusion": {
+    "direct_chat->direct_chat": 7,
+    "knowledge_search->knowledge_search": 6,
+    "material_query->material_query": 8,
+    "combined_query->combined_query": 7,
+    "generate_project->generate_project": 2,
+    "review_package->review_package": 2,
+    "clarify->clarify": 2
+  },
+  "failed_ids": [],
+  "scope": "routing decisions only, not answer correctness or retrieval quality",
+  "code_sha256_at_start": "adbdb87db0889ad6410b41426873a63c8c749c2ff48310afd5ad1656e07f0687",
+  "code_sha256_at_end": "adbdb87db0889ad6410b41426873a63c8c749c2ff48310afd5ad1656e07f0687",
+  "source_changed_during_run": false
+}

@@ -1,0 +1,15 @@
+{
+  "mode": "real Chromium / isolated Local HTTP API / Fake Agents",
+  "checks": {
+    "chat_create_and_review": true,
+    "same_version_approval_and_word_download": true,
+    "revision_requires_new_approval_and_old_download_denied": true,
+    "cancel_dialog_does_not_submit_decision": true,
+    "mobile_no_horizontal_overflow": true
+  },
+  "errors": [],
+  "plan_id": "921d005b-aa8d-4e58-8b9b-b7d25821e928",
+  "project_id": "3ab237c89a99412d87742a71c01bb763",
+  "all_passed": true,
+  "finished_at": "2026-11-03T12:29:36.631Z"
+}

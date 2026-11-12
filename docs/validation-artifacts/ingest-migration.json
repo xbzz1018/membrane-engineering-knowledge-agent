@@ -1,0 +1,23 @@
+{
+  "validated_at": "2026-11-02T11:42:40.713844+00:00",
+  "database": "isolated SQLite stamped0015",
+  "steps": [
+    {
+      "command": "alembic stamp 0015_review_manifest",
+      "exit_code": 0
+    },
+    {
+      "command": "alembic upgrade head",
+      "exit_code": 0
+    },
+    {
+      "command": "alembic downgrade 0015_review_manifest",
+      "exit_code": 0
+    },
+    {
+      "command": "alembic upgrade head",
+      "exit_code": 0
+    }
+  ],
+  "pg_not_executed": true
+}

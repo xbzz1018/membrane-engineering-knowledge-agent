@@ -4,6 +4,7 @@ from typing import Any
 
 from src.application.authorization import ProjectAuthorizationService, project_authorization
 from src.core.security import Principal
+from src.domain.document_search import DocumentSearchFilters
 from src.infrastructure.database import EngineeringStorage, storage
 from src.infrastructure.retrieval import RetrievalService
 
@@ -33,6 +34,7 @@ class KnowledgeQueryService:
         *,
         limit: int = 8,
         classifications: set[str] | None = None,
+        filters: DocumentSearchFilters | None = None,
     ) -> dict[str, Any]:
         scope = await self.authorization.authorize(principal, project_id)
         packet = await self.retrieval.retrieve(
@@ -42,8 +44,11 @@ class KnowledgeQueryService:
             classifications=classifications,
             channels={"documents"},
             limit=max(1, min(limit, 10)),
+            filters=filters,
         )
-        return {"tool": "search_project_documents", **packet.as_tool_result()}
+        return {"tool": "search_project_documents", "applied_filters": (
+            filters.model_dump(mode="json", exclude_none=True) if filters else {}
+        ), **packet.as_tool_result()}
 
     async def query_material_specs(
         self,
@@ -94,9 +99,10 @@ class KnowledgeQueryService:
         *,
         limit: int = 20,
         classifications: set[str] | None = None,
+        project_id: str | None = None,
     ) -> dict[str, Any]:
         document = await self.store.get_document(document_id)
-        if document is None:
+        if document is None or (project_id is not None and document["project_id"] != project_id):
             raise KnowledgeQueryError("not_found", "资料不存在或无访问权限")
         await self.authorization.authorize(principal, str(document["project_id"]))
         if document["tenant_id"] != principal.tenant_id:

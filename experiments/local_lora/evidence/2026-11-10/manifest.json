@@ -1,0 +1,42 @@
+{
+  "snapshot_date": "2026-11-10",
+  "description": "Read-only snapshot of existing public-data local experiment summaries. No training or inference was run. These are not internship metrics.",
+  "files": [
+    {
+      "source": "\\\\wsl.localhost\\Ubuntu-22.04\\home\\xzheng\\local-llm-lab\\results\\formal\\query_rewriter\\config.json",
+      "snapshot": "formal/query_rewriter/config.json",
+      "sha256": "ddfb7f27a7cc25abe2395b3e5df677f3f926665ed6d263054705f681c514b072",
+      "bytes": 1245
+    },
+    {
+      "source": "\\\\wsl.localhost\\Ubuntu-22.04\\home\\xzheng\\local-llm-lab\\results\\formal\\query_rewriter\\summary.json",
+      "snapshot": "formal/query_rewriter/summary.json",
+      "sha256": "eafbce162a642207a4011ae532adf889b20aee54bae3af3198376b6ac167dac3",
+      "bytes": 483
+    },
+    {
+      "source": "\\\\wsl.localhost\\Ubuntu-22.04\\home\\xzheng\\local-llm-lab\\results\\evaluation\\formal\\query_rewriter\\summary.json",
+      "snapshot": "evaluation/formal/query_rewriter/summary.json",
+      "sha256": "66d7b353328798eb5898715a0f413da12405e8b9c71449cc897140f675cd6ea4",
+      "bytes": 729
+    },
+    {
+      "source": "\\\\wsl.localhost\\Ubuntu-22.04\\home\\xzheng\\local-llm-lab\\results\\formal\\grounded_qa\\config.json",
+      "snapshot": "formal/grounded_qa/config.json",
+      "sha256": "bdeec2c9ababc4de184f14d7fef98f657563066adc72caa491a3bee11570b950",
+      "bytes": 1239
+    },
+    {
+      "source": "\\\\wsl.localhost\\Ubuntu-22.04\\home\\xzheng\\local-llm-lab\\results\\formal\\grounded_qa\\summary.json",
+      "snapshot": "formal/grounded_qa/summary.json",
+      "sha256": "a74636bbd50e72e00be945a8e9151c66c3efdde8bd401b210ed8f78bdc063aeb",
+      "bytes": 481
+    },
+    {
+      "source": "\\\\wsl.localhost\\Ubuntu-22.04\\home\\xzheng\\local-llm-lab\\results\\evaluation\\formal\\grounded_qa\\summary.json",
+      "snapshot": "evaluation/formal/grounded_qa/summary.json",
+      "sha256": "36dfc8840a91047506a6ef37fb8fb1f4ab1176f97fd6e466a2f1817282c40ef0",
+      "bytes": 880
+    }
+  ]
+}

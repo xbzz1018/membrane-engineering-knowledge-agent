@@ -50,9 +50,11 @@ def test_upload_index_and_package_review() -> None:
         json={"document_ids": [document_id], "question": "比较资料中的膜材规格"},
     )
     assert review.status_code == 200
-    assert review.json()["status"] == "completed"
+    assert review.json()["status"] == "awaiting_approval"
+    assert review.json()["human_review_required"]
+    assert any(item["issue_type"] == "missing_domain_evidence" for item in review.json()["issues"])
     assert "ReviewSupervisorAgent" in review.json()["agents_used"]
-    assert set(review.json()["review_plan"]["workers"]) == {"design", "material", "price"}
+    assert set(review.json()["review_plan"]["workers"]) == {"retrieval", "material", "review"}
     persisted = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}")
     assert persisted.status_code == 200
     assert persisted.json()["report"] == review.json()["report"]
@@ -65,7 +67,7 @@ def test_upload_index_and_package_review() -> None:
     reviews = request("GET", "/api/v1/package-reviews?project_id=demo-project")
     assert any(item["review_id"] == review.json()["review_id"] for item in reviews.json())
     workers = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}/workers")
-    assert set(workers.json()["workers"]) == {"design", "material", "price"}
+    assert set(workers.json()["workers"]) == {"retrieval", "material", "review"}
     assert workers.json()["review_plan"]["workers"]
     review_evidence = request("GET", f"/api/v1/package-reviews/{review.json()['review_id']}/evidence")
     assert review_evidence.status_code == 200 and review_evidence.json()["evidence"]
@@ -156,4 +158,4 @@ def test_openapi_is_chinese_and_contains_enterprise_routes() -> None:
     assert len(schema["paths"]) >= 30
     assert "/api/v1/agents" in schema["paths"]
     assert "/api/v1/package-reviews/{review_id}/workers" in schema["paths"]
-    assert schema["paths"]["/api/v1/chat"]["post"]["summary"] == "基于项目证据进行知识问答"
+    assert schema["paths"]["/api/v1/chat"]["post"]["summary"] == "按意图进行通用问答或项目资料查询"

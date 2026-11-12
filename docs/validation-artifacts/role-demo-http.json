@@ -1,0 +1,65 @@
+{
+  "validated_at": "2026-11-03T07:54:00.876395+00:00",
+  "mode": "HTTP / Local SQLite / Fake / real Temporal dev server",
+  "review_id": "d32b3b241b4645d4a2a39ae0b8c188d9",
+  "checks": {
+    "topology_roles": true,
+    "review_waits_for_human": true,
+    "review_roles": true,
+    "documents_markdown_content_type": true,
+    "documents_markdown_no_store": true,
+    "documents_markdown_source": true,
+    "package-reviews_markdown_content_type": true,
+    "package-reviews_markdown_no_store": true,
+    "package-reviews_markdown_source": true,
+    "openapi_current": true,
+    "frontend_http": true,
+    "history-1_prerequisites_completed_before_review": true,
+    "history-2_prerequisites_completed_before_review": true,
+    "history-3_prerequisites_completed_before_review": true,
+    "graph_history_evidence_exists": true
+  },
+  "exports": [
+    {
+      "kind": "documents",
+      "sha256": "47fa0722e870e80d4d0a632acf5943b85011a1e67b25ea4c54eeb560059074d1",
+      "bytes": 699
+    },
+    {
+      "kind": "package-reviews",
+      "sha256": "f7218e4cfe12163e72735f55e50d669c98564d6b13d7633d942bdfadf333d565",
+      "bytes": 1622
+    }
+  ],
+  "historical_graph_checks": [
+    {
+      "history": "history-1.json",
+      "scheduled_event_ids": {
+        "retrieval": "11",
+        "material": "12",
+        "review": "20"
+      },
+      "prerequisites_completed_before_review": true
+    },
+    {
+      "history": "history-2.json",
+      "scheduled_event_ids": {
+        "retrieval": "11",
+        "material": "12",
+        "review": "23"
+      },
+      "prerequisites_completed_before_review": true
+    },
+    {
+      "history": "history-3.json",
+      "scheduled_event_ids": {
+        "retrieval": "11",
+        "material": "12",
+        "review": "23"
+      },
+      "prerequisites_completed_before_review": true
+    }
+  ],
+  "browser_tested": false,
+  "passed": true
+}

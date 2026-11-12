@@ -13,9 +13,11 @@ from sqlalchemy import or_, select, text, update
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.core.config import get_settings
+from src.documents.representations import document_index_model
 from src.infrastructure.database import SessionFactory, memory_items, storage
 from src.infrastructure.database import documents as documents_table
 from src.infrastructure.full_backends import get_full_backends
+from src.infrastructure.model_provider import get_model_provider
 from src.main import app
 
 
@@ -27,6 +29,7 @@ async def main() -> None:
     settings = get_settings()
     if settings.RUNTIME_MODE.lower() != "full":
         raise RuntimeError("Embedding rebuild requires RUNTIME_MODE=full")
+    index_model = document_index_model(get_model_provider(), settings)
     rows: list[dict] = []
     async with app.router.lifespan_context(app):
         document_rows = await storage.list_documents(
@@ -42,7 +45,7 @@ async def main() -> None:
             for item in document_rows
             if item["status"] == "indexed"
             and (
-                item.get("embedding_model", "") != settings.EMBEDDING_MODEL
+                item.get("embedding_model", "") != index_model
                 or item["id"] not in indexed_vector_ids
             )
         ]
@@ -57,7 +60,7 @@ async def main() -> None:
                 async with SessionFactory() as session:
                     await session.execute(update(documents_table).where(
                         documents_table.c.id == document["id"]
-                    ).values(embedding_model=settings.EMBEDDING_MODEL))
+                    ).values(embedding_model=index_model))
                     await session.commit()
                 count = len(chunks)
                 rows.append({"document_id": document["id"], "status": "indexed", "chunks": count})
@@ -92,7 +95,7 @@ async def main() -> None:
                 memory_failures += 1
         summary = {
             "project_id": args.project_id,
-            "embedding_model": settings.EMBEDDING_MODEL,
+            "embedding_model": index_model,
             "indexed": sum(item["status"] == "indexed" for item in rows),
             "failed": sum(item["status"] == "failed" for item in rows),
             "skipped": sum(item["status"] == "skipped" for item in rows),

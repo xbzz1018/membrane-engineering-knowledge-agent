@@ -253,13 +253,21 @@ def test_review_approval_allows_only_the_first_concurrent_decision() -> None:
                 project_id="demo-project",
                 question="并发审批测试",
             )
-            approved, rejected = await asyncio.gather(
-                storage.update_package_review_status(review_id, "approved"),
-                storage.update_package_review_status(review_id, "rejected"),
+            from src.infrastructure.review_decisions import ReviewDecisionRepository
+
+            repo = ReviewDecisionRepository(storage)
+            outcomes = await asyncio.gather(
+                repo.mutate(review_id, expected_lock_version=1, actor="reviewer-a", decision="approved"),
+                repo.mutate(review_id, expected_lock_version=1, actor="reviewer-b", decision="rejected", reason="补证"),
+                return_exceptions=True,
             )
-            assert int(approved) + int(rejected) == 1
+            assert sum(isinstance(outcome, dict) for outcome in outcomes) == 1
             stored = await storage.get_package_review(review_id)
             assert stored and stored["status"] in {"approved", "rejected"}
+            assert await storage.update_package_review_status(review_id, stored["status"])
+            assert not await storage.update_package_review_status(
+                review_id, "rejected" if stored["status"] == "approved" else "approved",
+            )
 
     asyncio.run(verify())
 

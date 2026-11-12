@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-11-02T11:37:10.423286+00:00",
+  "data": "public synthetic capability probe",
+  "attempts": [
+    {
+      "provider": "embedding",
+      "passed": false,
+      "error_type": "ProviderRequestError",
+      "http_status": 403
+    },
+    {
+      "provider": "dashscope",
+      "passed": false,
+      "error_type": "ProviderRequestError",
+      "http_status": 403
+    }
+  ]
+}

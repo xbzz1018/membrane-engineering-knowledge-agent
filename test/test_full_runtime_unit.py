@@ -6,6 +6,7 @@ import uuid
 import httpx
 
 from src.core.config import Settings
+from src.domain.document_search import DocumentSearchFilters
 from src.infrastructure.database import _fuse_ranked
 from src.infrastructure.full_backends import FullBackends
 from src.infrastructure.model_provider import ModelProvider
@@ -94,17 +95,24 @@ def test_pgvector_search_filters_tenant_project_classification_and_model() -> No
         project_id="project-a",
         tenant_id="tenant-a",
         classifications={"public"},
+        filters=DocumentSearchFilters(engineering_model="ptfe-502", applicable_revision="r1", upload_version=2),
     ))
 
     assert rows == []
+    assert "JOIN documents d" in captured["statement"]
+    assert "d.status = 'indexed'" in captured["statement"]
     assert "embedding_model = :embedding_model" in captured["statement"]
     assert "project_id = :project_id" in captured["statement"]
     assert "tenant_id = :tenant_id" in captured["statement"]
-    assert "classification IN (:classification_0)" in captured["statement"]
+    assert "d.data_classification IN (:classification_0)" in captured["statement"]
     assert captured["params"]["embedding_model"] == "embedding-v1"
     assert captured["params"]["project_id"] == "project-a"
     assert captured["params"]["tenant_id"] == "tenant-a"
     assert captured["params"]["classification_0"] == "public"
+    assert "EXISTS (SELECT 1 FROM document_business_metadata m" in captured["statement"]
+    assert captured["params"]["filter_engineering_model"] == "PTFE-502"
+    assert captured["params"]["filter_applicable_revision"] == "R1"
+    assert captured["params"]["filter_upload_version"] == 2
 
 
 def test_long_term_memory_requires_confirmation_before_use() -> None:

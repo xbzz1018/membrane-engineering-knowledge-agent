@@ -1,0 +1,45 @@
+{
+  "at": "2026-11-12T07:23:00.380066+00:00",
+  "mode": "local / SQLite / Fake; API protocol tests use local substitutes",
+  "source_sha256": "adbdb87db0889ad6410b41426873a63c8c749c2ff48310afd5ad1656e07f0687",
+  "backend": {
+    "passed": 218,
+    "skipped": 2,
+    "failures": 0,
+    "seconds_pytest": 69.4
+  },
+  "initial_backend_run": {
+    "passed": 214,
+    "failed": 1,
+    "skipped": 2,
+    "cause": "Temporal lifecycle test double still used synchronous compose after the optional organizer introduced compose_and_organize",
+    "fix": "Update async test double and add query/review adapter call-site tests; rerun full suite"
+  },
+  "checks": {
+    "ruff": "passed (src/scripts/test/alembic/deploy/experiments)",
+    "pip_check": "passed",
+    "data": "passed: 200 cases, 43 specs, 60 synthetic historical prices, 30 format fixtures",
+    "frontend_typecheck": "passed",
+    "frontend_eslint": "passed",
+    "frontend_build": "passed: runner config; Element Plus chunk warning retained",
+    "frontend_vitest": "2 passed",
+    "sqlite_migration_0017": "passed: isolated upgrade/downgrade/upgrade",
+    "rules_routing": "34/34 hand-authored development cases; not held out"
+  },
+  "models": {
+    "company": "User reports Qwen3.5-4B, rank16, BF16, learning rate 2e-4; company weights/logs and exact data/other config not verified",
+    "local_experiment": "Historical Qwen3-0.6B public-data snapshots; different tasks, rank8. Not company metrics",
+    "platform_task_adapters": "Optional, disabled by default; protocol tests only"
+  },
+  "not_validated_this_run": [
+    "GPU training or inference",
+    "Qwen3.5-4B/vLLM deployment and model quality",
+    "Full PostgreSQL/pgvector/Redis/MinIO stack",
+    "PostgreSQL migration execution",
+    "MinerU/OCR",
+    "Browser or Word rendering",
+    "Real Temporal crash/replay tests (historical evidence retained)",
+    "Company 60-query retrieval metrics"
+  ],
+  "remote_ci": "Check the final feature-branch commit on PR 22; historical passes do not validate this revision"
+}

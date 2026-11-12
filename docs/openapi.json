@@ -3,7 +3,7 @@
   "info": {
     "title": "膜结构企业资料审查平台",
     "summary": "面向膜结构公司的多智能体工程资料审查后端",
-    "description": "按项目隔离工程资料，使用KnowledgeAgent进行可追溯问答，并由设计、膜材、价格三个业务智能体完成资料包审查、结构化问题跟踪与人工复核。",
+    "description": "按项目隔离工程资料，使用KnowledgeAgent进行可追溯问答，并由检索、材料、审查三个业务智能体完成资料包审查、结构化问题跟踪与人工复核。",
     "version": "0.2.0"
   },
   "paths": {
@@ -12,7 +12,7 @@
         "tags": [
           "项目知识问答"
         ],
-        "summary": "基于项目证据进行知识问答",
+        "summary": "按意图进行通用问答或项目资料查询",
         "operationId": "chat_api_v1_chat_post",
         "parameters": [
           {
@@ -874,6 +874,887 @@
         }
       }
     },
+    "/api/v1/projects/{project_id}/plans": {
+      "get": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "查询当前项目的方案",
+        "operationId": "list_plans_api_v1_projects__project_id__plans_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response List Plans Api V1 Projects  Project Id  Plans Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "创建需求并生成审查初步方案",
+        "operationId": "create_plan_api_v1_projects__project_id__plans_post",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Create Plan Api V1 Projects  Project Id  Plans Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}": {
+      "get": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "读取当前方案版本与审批状态",
+        "operationId": "get_plan_api_v1_plans__plan_id__get",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Plan Api V1 Plans  Plan Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/versions/{version}": {
+      "get": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "读取指定方案版本",
+        "operationId": "get_plan_version_api_v1_plans__plan_id__versions__version__get",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Plan Version Api V1 Plans  Plan Id  Versions  Version  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/versions/{version}/generate": {
+      "post": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "恢复受理或重试失败的方案任务",
+        "operationId": "generate_plan_api_v1_plans__plan_id__versions__version__generate_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Generate Plan Api V1 Plans  Plan Id  Versions  Version  Generate Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/revisions": {
+      "post": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "修改形成新版本并重新审查",
+        "operationId": "revise_plan_api_v1_plans__plan_id__revisions_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Revise Plan Api V1 Plans  Plan Id  Revisions Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/versions/{version}/decision": {
+      "post": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "对绑定审查的同版本方案批准或退回",
+        "operationId": "decide_plan_api_v1_plans__plan_id__versions__version__decision_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Decide Plan Api V1 Plans  Plan Id  Versions  Version  Decision Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/versions/{version}/exports": {
+      "post": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "导出当前批准版本的Markdown与Word",
+        "operationId": "export_plan_api_v1_plans__plan_id__versions__version__exports_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Export Plan Api V1 Plans  Plan Id  Versions  Version  Exports Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plan-artifacts/{artifact_id}/download": {
+      "get": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "鉴权下载同版本批准产物",
+        "operationId": "download_plan_api_v1_plan_artifacts__artifact_id__download_get",
+        "parameters": [
+          {
+            "name": "artifact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Artifact Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/{plan_id}/versions/{version}/cancel": {
+      "post": {
+        "tags": [
+          "项目方案与文档"
+        ],
+        "summary": "取消未提交决定的方案版本",
+        "operationId": "cancel_plan_api_v1_plans__plan_id__versions__version__cancel_post",
+        "parameters": [
+          {
+            "name": "plan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Plan Id"
+            }
+          },
+          {
+            "name": "version",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Version"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cancel Plan Api V1 Plans  Plan Id  Versions  Version  Cancel Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/search": {
+      "post": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "按明确型号、适用版本及业务生效日期检索资料",
+        "operationId": "search_documents_api_v1_documents_search_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Search Documents Api V1 Documents Search Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{document_id}/business-metadata": {
+      "put": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "声明有来源依据的资料业务条件",
+        "operationId": "declare_business_metadata_api_v1_documents__document_id__business_metadata_put",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentBusinessMetadata"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Declare Business Metadata Api V1 Documents  Document Id  Business Metadata Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "查看业务条件及声明来源",
+        "operationId": "business_metadata_api_v1_documents__document_id__business_metadata_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Business Metadata Api V1 Documents  Document Id  Business Metadata Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/documents": {
       "get": {
         "tags": [
@@ -1045,6 +1926,62 @@
                   },
                   "title": "Response Document Evidence Api V1 Documents  Document Id  Evidence Get"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{document_id}/markdown": {
+      "get": {
+        "tags": [
+          "工程资料"
+        ],
+        "summary": "下载保留证据定位的资料Markdown派生文本",
+        "operationId": "export_document_markdown_api_v1_documents__document_id__markdown_get",
+        "parameters": [
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -2199,6 +3136,62 @@
         }
       }
     },
+    "/api/v1/package-reviews/{review_id}/markdown": {
+      "get": {
+        "tags": [
+          "多智能体资料审查"
+        ],
+        "summary": "下载含当前复核状态及来源的Markdown报告",
+        "operationId": "export_review_markdown_api_v1_package_reviews__review_id__markdown_get",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Review Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/package-reviews/{review_id}/workers": {
       "get": {
         "tags": [
@@ -2441,6 +3434,76 @@
                   "type": "object",
                   "additionalProperties": true,
                   "title": "Response Update Review Issue Api V1 Package Reviews  Review Id  Issues  Issue Id  Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/package-reviews/{review_id}/decision": {
+      "post": {
+        "tags": [
+          "多智能体资料审查"
+        ],
+        "summary": "审核人按报告版本批准或退回审查",
+        "operationId": "decide_review_api_v1_package_reviews__review_id__decision_post",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Review Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Decide Review Api V1 Package Reviews  Review Id  Decision Post"
                 }
               }
             }
@@ -3496,7 +4559,7 @@
         "tags": [
           "长任务工作流"
         ],
-        "summary": "审核人批准资料包审查",
+        "summary": "审核人按报告版本批准审查",
         "operationId": "approve_workflow_api_v1_workflows__workflow_id__approve_post",
         "parameters": [
           {
@@ -3525,6 +4588,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkflowDecisionRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -3556,7 +4629,7 @@
         "tags": [
           "长任务工作流"
         ],
-        "summary": "审核人退回资料包审查",
+        "summary": "审核人按报告版本退回审查",
         "operationId": "reject_workflow_api_v1_workflows__workflow_id__reject_post",
         "parameters": [
           {
@@ -4161,6 +5234,21 @@
         ],
         "title": "项目预算更新请求"
       },
+      "CancelPlanRequest": {
+        "properties": {
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expected_lock_version"
+        ],
+        "title": "CancelPlanRequest"
+      },
       "ChatRequest": {
         "properties": {
           "user_id": {
@@ -4192,6 +5280,20 @@
             "minLength": 1,
             "title": "Message",
             "description": "用户问题"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id",
+            "description": "动作请求幂等标识；重试复用"
           }
         },
         "type": "object",
@@ -4213,6 +5315,27 @@
           "route": {
             "type": "string",
             "title": "Route"
+          },
+          "answer_origin": {
+            "type": "string",
+            "enum": [
+              "general_knowledge",
+              "project_evidence",
+              "workflow_guidance",
+              "clarification"
+            ],
+            "title": "Answer Origin",
+            "default": "project_evidence"
+          },
+          "routing": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatRoutingInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "agents_used": {
             "items": {
@@ -4247,6 +5370,19 @@
             },
             "type": "array",
             "title": "Memory Candidates"
+          },
+          "project_plan": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Plan",
+            "description": "受理的方案ID、版本、状态与工作流引用"
           }
         },
         "type": "object",
@@ -4256,6 +5392,115 @@
           "route"
         ],
         "title": "知识问答响应"
+      },
+      "ChatRoutingInfo": {
+        "properties": {
+          "intent": {
+            "type": "string",
+            "enum": [
+              "direct_chat",
+              "knowledge_search",
+              "material_query",
+              "combined_query",
+              "review_package",
+              "generate_project",
+              "clarify"
+            ],
+            "title": "Intent"
+          },
+          "execution_mode": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "single",
+              "parallel",
+              "sequential",
+              "action",
+              "clarify"
+            ],
+            "title": "Execution Mode"
+          },
+          "agents_planned": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Agents Planned"
+          },
+          "needs_review": {
+            "type": "boolean",
+            "title": "Needs Review",
+            "default": false
+          },
+          "decision_source": {
+            "type": "string",
+            "enum": [
+              "rules",
+              "model",
+              "server_guard"
+            ],
+            "title": "Decision Source"
+          },
+          "outcomes": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "ok",
+                "no_results",
+                "failed",
+                "timeout",
+                "blocked"
+              ]
+            },
+            "type": "object",
+            "title": "Outcomes"
+          },
+          "action_status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "not_started",
+                  "existing_api_required",
+                  "not_implemented",
+                  "accepted"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "intent",
+          "execution_mode",
+          "decision_source"
+        ],
+        "title": "ChatRoutingInfo"
+      },
+      "CreatePlanRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Request Id"
+          },
+          "requirements": {
+            "$ref": "#/components/schemas/PlanRequirements"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "requirements"
+        ],
+        "title": "CreatePlanRequest"
       },
       "CreateProjectRequest": {
         "properties": {
@@ -4302,6 +5547,78 @@
           "role"
         ],
         "title": "创建企业用户请求"
+      },
+      "DocumentBusinessMetadata": {
+        "properties": {
+          "engineering_model": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Engineering Model"
+          },
+          "applicable_revision": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Applicable Revision"
+          },
+          "document_type": {
+            "type": "string",
+            "enum": [
+              "design",
+              "material",
+              "price",
+              "other"
+            ],
+            "title": "Document Type"
+          },
+          "effective_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective From"
+          },
+          "effective_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective To"
+          },
+          "source_note": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Source Note",
+            "description": "声明依据，如文件页码；不是模型确认事实"
+          },
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "engineering_model",
+          "applicable_revision",
+          "document_type",
+          "source_note",
+          "expected_lock_version"
+        ],
+        "title": "DocumentBusinessMetadata"
       },
       "DocumentResponse": {
         "properties": {
@@ -4355,6 +5672,111 @@
           "status"
         ],
         "title": "工程资料响应"
+      },
+      "DocumentSearchFilters": {
+        "properties": {
+          "engineering_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engineering Model"
+          },
+          "applicable_revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicable Revision"
+          },
+          "upload_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Version"
+          },
+          "effective_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective On"
+          },
+          "document_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "design",
+                  "material",
+                  "price",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Type"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DocumentSearchFilters"
+      },
+      "DocumentSearchRequest": {
+        "properties": {
+          "project_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Project Id"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Query",
+            "default": ""
+          },
+          "filters": {
+            "$ref": "#/components/schemas/DocumentSearchFilters"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 8
+          }
+        },
+        "type": "object",
+        "required": [
+          "project_id"
+        ],
+        "title": "DocumentSearchRequest"
       },
       "HTTPValidationError": {
         "properties": {
@@ -4924,7 +6346,7 @@
             "maxLength": 2000,
             "title": "Question",
             "description": "审查目标",
-            "default": "比较资料中的设计方案、膜材规格和价格差异"
+            "default": "查找资料依据、核验材料参数并审查跨文档一致性"
           },
           "review_mode": {
             "type": "string",
@@ -4933,7 +6355,7 @@
               "focused"
             ],
             "title": "Review Mode",
-            "description": "full固定覆盖三领域，focused由Supervisor选择领域",
+            "description": "full必须覆盖检索/材料/审查，focused由Supervisor受限选择；审查依赖前两角色",
             "default": "full"
           }
         },
@@ -5061,6 +6483,246 @@
           "report"
         ],
         "title": "多智能体资料包审查响应"
+      },
+      "PlanContent": {
+        "properties": {
+          "requirements": {
+            "$ref": "#/components/schemas/PlanRequirements"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/PlanSection"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Sections"
+          },
+          "source_quotes": {
+            "items": {
+              "$ref": "#/components/schemas/PlanQuotation"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Source Quotes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "requirements",
+          "sections"
+        ],
+        "title": "PlanContent"
+      },
+      "PlanDecisionRequest": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Command Id"
+          },
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version"
+          },
+          "review_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Review Id"
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Content Hash"
+          },
+          "manifest_hash": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Manifest Hash"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "expected_lock_version",
+          "review_id",
+          "content_hash",
+          "manifest_hash",
+          "decision",
+          "reason"
+        ],
+        "title": "PlanDecisionRequest"
+      },
+      "PlanExportRequest": {
+        "properties": {
+          "formats": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "md",
+                "docx"
+              ]
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Formats"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PlanExportRequest"
+      },
+      "PlanQuotation": {
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "history",
+              "material"
+            ],
+            "title": "Purpose"
+          },
+          "evidence_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Evidence Id"
+          },
+          "quote": {
+            "type": "string",
+            "maxLength": 1200,
+            "minLength": 1,
+            "title": "Quote"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "purpose",
+          "evidence_id",
+          "quote"
+        ],
+        "title": "PlanQuotation"
+      },
+      "PlanRequirements": {
+        "properties": {
+          "project_name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Project Name"
+          },
+          "building_area_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Building Area M2"
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Location",
+            "default": ""
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Purpose",
+            "default": "停车棚"
+          },
+          "preferred_membrane": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Preferred Membrane",
+            "default": ""
+          },
+          "applicable_revision": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Applicable Revision",
+            "default": ""
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 4000,
+            "title": "Notes",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "project_name"
+        ],
+        "title": "PlanRequirements"
+      },
+      "PlanSection": {
+        "properties": {
+          "section_id": {
+            "type": "string",
+            "enum": [
+              "overview",
+              "technical",
+              "implementation",
+              "boundaries"
+            ],
+            "title": "Section Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Content"
+          },
+          "origin": {
+            "type": "string",
+            "const": "proposed",
+            "title": "Origin",
+            "default": "proposed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section_id",
+          "title",
+          "content"
+        ],
+        "title": "PlanSection"
       },
       "PriceRecordCreateRequest": {
         "properties": {
@@ -5440,6 +7102,35 @@
         ],
         "title": "项目成员请求"
       },
+      "ReviewDecisionRequest": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Decision"
+          },
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision",
+          "expected_lock_version"
+        ],
+        "title": "ReviewDecisionRequest"
+      },
       "ReviewIssue": {
         "properties": {
           "issue_id": {
@@ -5452,8 +7143,10 @@
           "domain": {
             "type": "string",
             "enum": [
-              "design",
+              "retrieval",
               "material",
+              "review",
+              "design",
               "price",
               "cross_domain"
             ],
@@ -5545,6 +7238,13 @@
       },
       "ReviewIssueStatusRequest": {
         "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Reason",
+            "description": "处理说明；忽略问题时必填",
+            "default": ""
+          },
           "status": {
             "type": "string",
             "enum": [
@@ -5568,8 +7268,59 @@
         ],
         "title": "审查问题处理请求"
       },
+      "RevisionRequest": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Request Id"
+          },
+          "base_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Base Version"
+          },
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version"
+          },
+          "content": {
+            "$ref": "#/components/schemas/PlanContent"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "base_version",
+          "expected_lock_version",
+          "content",
+          "reason"
+        ],
+        "title": "RevisionRequest"
+      },
       "SourceRef": {
         "properties": {
+          "content_sha256": {
+            "type": "string",
+            "title": "Content Sha256",
+            "description": "完整证据文本SHA256，用于核对重新解析后的证据",
+            "default": ""
+          },
+          "document_sha256": {
+            "type": "string",
+            "title": "Document Sha256",
+            "description": "原资料文件SHA256",
+            "default": ""
+          },
           "source_id": {
             "type": "string",
             "title": "Source Id",
@@ -5693,6 +7444,12 @@
       },
       "WorkflowDecisionRequest": {
         "properties": {
+          "expected_lock_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Lock Version",
+            "description": "报告当前乐观锁版本"
+          },
           "reason": {
             "type": "string",
             "maxLength": 1000,
@@ -5702,6 +7459,9 @@
           }
         },
         "type": "object",
+        "required": [
+          "expected_lock_version"
+        ],
         "title": "工作流决定请求"
       }
     }
@@ -5725,7 +7485,7 @@
     },
     {
       "name": "多智能体资料审查",
-      "description": "设计、膜材、价格三个LangChain智能体并行审查。"
+      "description": "检索与材料Agent并行取证，审查Agent按依赖复核原文。"
     },
     {
       "name": "智能体与执行轨迹",
@@ -5734,6 +7494,10 @@
     {
       "name": "长期记忆",
       "description": "用户/项目记忆候选、确认、更新和删除。"
+    },
+    {
+      "name": "项目方案与文档",
+      "description": "结构化初步方案、版本审查、人工批准和Markdown/Word导出。"
     },
     {
       "name": "批量资料导入",

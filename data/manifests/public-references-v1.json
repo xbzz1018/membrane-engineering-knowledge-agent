@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "purpose": "Public archived parsing/lookup development fixtures; not project specification, regulatory approval or held-out quality evaluation.",
+  "sources": [
+    {
+      "id": "etfe-natural-250",
+      "source_url": "https://www.birdair.com/files/specifications/H_022_120110_Datasheet_Nowoflon_natural_250_d_e_0.pdf",
+      "sha256": "e5cc0e889833fb4d9b17d3569952c5ffe30bb2899165cf8fc57686463121fd59",
+      "bytes": 99840,
+      "pages": 1,
+      "retrieved_at": "2026-11-03T07:04:58.728951+00:00",
+      "snapshot_status": "archived_public_not_current_certification",
+      "rights": "Copyright remains with manufacturer; original and full derived text kept only in ignored local runtime; no redistribution permission assumed.",
+      "title": "NOWOFOL NOWOFLON ET 6235 Z natural 250 µm",
+      "source_document_date": "2012-01-10",
+      "material_family": "ETFE",
+      "expected_page_literals": {
+        "1": [
+          "250 µm",
+          "437,50"
+        ]
+      },
+      "document_type": "material",
+      "applicable_project_revision": null,
+      "current_applicability_confirmed": false,
+      "visually_verified_facts": {
+        "thickness_um": 250,
+        "mass_per_area_g_m2": 437.5,
+        "page": 1,
+        "note": "Mean/reference values; no suitability guarantee in source"
+      }
+    },
+    {
+      "id": "pvc-precontraint-1002",
+      "source_url": "https://www.birdair.com/files/specifications/Carte_Precontraint%201002%20S2%20_%201002%20Flutop%20T2_GB.pdf",
+      "sha256": "1342d28bf638f5596c4095a8fe953e139a09797099e0187fc9a276e5cd4170b7",
+      "bytes": 720529,
+      "pages": 2,
+      "retrieved_at": "2026-11-03T07:05:02.013201+00:00",
+      "snapshot_status": "archived_public_not_current_certification",
+      "rights": "Copyright remains with manufacturer; original and full derived text kept only in ignored local runtime; no redistribution permission assumed.",
+      "title": "Serge Ferrari Précontraint 1002 S2 / Fluotop T2",
+      "source_document_date": "2012-04",
+      "material_family": "PVC/PVDF-coated polyester",
+      "expected_page_literals": {
+        "2": [
+          "Total thickness",
+          "0.78 mm",
+          "1050 g/sqm"
+        ]
+      },
+      "document_type": "material",
+      "applicable_project_revision": null,
+      "current_applicability_confirmed": false,
+      "visually_verified_facts": {
+        "total_thickness_mm": 0.78,
+        "coating_thickness_above_yarn_um": 350,
+        "weight_g_m2": 1050,
+        "page": 2,
+        "note": "Total thickness and coating thickness are different parameters; stated averages/tolerance retained in original"
+      }
+    }
+  ],
+  "failed_sources": [
+    {
+      "id": "ptfe-chukoh-catalog",
+      "source_url": "https://www.birdair.com/wp-content/uploads/2022/09/catalog_fgt_eng.pdf",
+      "error": "URLError"
+    }
+  ]
+}

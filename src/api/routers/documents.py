@@ -3,11 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 
 from src.api.dependencies import rate_limited_principal, require_project_role
+from src.application.knowledge import KnowledgeQueryService
 from src.core.config import get_settings
 from src.core.security import Principal
 from src.documents.parsing import parse_document
+from src.domain.document_search import DocumentBusinessMetadata, DocumentSearchRequest
 from src.domain.schemas import DocumentResponse, IndexResponse
 from src.infrastructure.database import storage
 from src.workflows.temporal_app import submit_document_ingest
@@ -15,6 +18,43 @@ from src.workflows.temporal_app import submit_document_ingest
 router = APIRouter(prefix="/api/v1/documents", tags=["工程资料"])
 ALLOWED_SUFFIXES = {".pdf", ".docx", ".xlsx", ".xlsm", ".txt", ".md"}
 MAX_BYTES = 25 * 1024 * 1024
+
+
+@router.post("/search", summary="按明确型号、适用版本及业务生效日期检索资料")
+async def search_documents(request: DocumentSearchRequest,
+                           principal: Principal = Depends(rate_limited_principal)) -> dict:
+    await require_project_role(request.project_id, principal)
+    return await KnowledgeQueryService().search_documents(
+        principal, request.project_id, request.query, filters=request.filters, limit=request.limit,
+        classifications={"public"},
+    )
+
+
+@router.put("/{document_id}/business-metadata", summary="声明有来源依据的资料业务条件")
+async def declare_business_metadata(document_id: str, request: DocumentBusinessMetadata,
+                                    principal: Principal = Depends(rate_limited_principal)) -> dict:
+    from src.infrastructure.document_metadata import declare_metadata
+
+    document = await storage.get_document(document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="资料不存在")
+    await require_project_role(document["project_id"], principal, {"admin", "design_engineer", "material_procurement"})
+    try:
+        return await declare_metadata(storage, document_id, request, principal.user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/{document_id}/business-metadata", summary="查看业务条件及声明来源")
+async def business_metadata(document_id: str,
+                            principal: Principal = Depends(rate_limited_principal)) -> dict:
+    from src.infrastructure.document_metadata import get_metadata
+
+    document = await storage.get_document(document_id)
+    if document is None:
+        raise HTTPException(status_code=404, detail="资料不存在")
+    await require_project_role(document["project_id"], principal)
+    return {"document_id": document_id, "business_metadata": await get_metadata(storage, document_id)}
 
 
 @router.get("", summary="查看项目资料列表")
@@ -52,6 +92,25 @@ async def document_evidence(
         raise HTTPException(status_code=404, detail="文档不存在")
     await require_project_role(row["project_id"], principal)
     return await storage.list_document_chunks(document_id, limit=5000)
+
+
+@router.get("/{document_id}/markdown", summary="下载保留证据定位的资料Markdown派生文本")
+async def export_document_markdown(document_id: str,
+                                   principal: Principal = Depends(rate_limited_principal)) -> Response:
+    from src.documents.representations import document_markdown
+
+    row = await storage.get_document(document_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="文档不存在")
+    await require_project_role(row["project_id"], principal)
+    if row["status"] != "indexed":
+        raise HTTPException(status_code=409, detail="资料尚未完成解析索引")
+    # Do not silently truncate a large export.
+    count = await storage.count_document_chunks(document_id)
+    chunks = await storage.list_document_chunks(document_id, limit=count)
+    return Response(document_markdown(row, chunks), media_type="text/markdown",
+                    headers={"Content-Disposition": f'attachment; filename="document-{document_id}.md"',
+                             "Cache-Control": "no-store"})
 
 
 @router.post("/upload", response_model=DocumentResponse, summary="上传工程资料")
@@ -110,9 +169,12 @@ async def index_document(
             status=workflow["status"],
             workflow_id=workflow["workflow_id"],
         )
+    from src.documents.representations import document_index_model
+    from src.infrastructure.model_provider import get_model_provider
+
     refresh_embedding = (
         get_settings().RUNTIME_MODE.lower() == "full"
-        and row.get("embedding_model", "") != get_settings().EMBEDDING_MODEL
+        and row.get("embedding_model", "") != document_index_model(get_model_provider(), get_settings())
     )
     acquired = await storage.acquire_document_ingest(document_id, refresh_embedding=refresh_embedding)
     if not acquired and row["status"] == "indexed":

@@ -1,0 +1,15 @@
+{
+  "task": "grounded_qa",
+  "run": "formal",
+  "steps": 75,
+  "validation_loss_before": 0.37276386490537,
+  "validation_loss_after": 0.1462203227161083,
+  "last_training_loss": 0.18949748016893864,
+  "elapsed_seconds": 139.9272660659999,
+  "peak_allocated_mib": 2241.814453125,
+  "peak_reserved_mib": 4606.0,
+  "changed_lora_tensors": 112,
+  "trainable_parameters": 1146880,
+  "reload_max_logit_delta": 0.0,
+  "adapter": "/home/xzheng/local-llm-lab/adapters/formal/grounded_qa"
+}

@@ -3,10 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from src.api.dependencies import current_principal, require_project_role
+from src.application.reviews import ReviewApplicationError, package_review_application
 from src.core.security import Principal
 from src.domain.schemas import WorkflowDecisionRequest
 from src.infrastructure.database import storage
-from src.workflows.temporal_app import cancel_workflow, get_workflow_state, signal_workflow
+from src.workflows.temporal_app import cancel_workflow, get_workflow_state
 
 router = APIRouter(prefix="/api/v1/workflows", tags=["长任务工作流"])
 
@@ -46,29 +47,40 @@ async def workflow_status(
         raise _http_error(exc) from exc
 
 
-@router.post("/{workflow_id}/approve", summary="审核人批准资料包审查")
+async def _decide(workflow_id: str, request: WorkflowDecisionRequest, principal: Principal, decision: str) -> dict:
+    await _authorize(workflow_id, principal, decision=True)
+    if not workflow_id.startswith("package-review:"):
+        raise HTTPException(status_code=404, detail="不是资料审查工作流")
+    try:
+        return await package_review_application.decide(
+            workflow_id.split(":", 1)[1],
+            principal,
+            decision,
+            expected_lock_version=request.expected_lock_version,
+            reason=request.reason,
+        )
+    except ReviewApplicationError as exc:
+        raise HTTPException(
+            status_code={"not_found": 404, "conflict": 409, "forbidden": 403}.get(exc.code, 502), detail=str(exc)
+        ) from exc
+
+
+@router.post("/{workflow_id}/approve", summary="审核人按报告版本批准审查")
 async def approve_workflow(
     workflow_id: str,
+    request: WorkflowDecisionRequest,
     principal: Principal = Depends(current_principal),
 ) -> dict:
-    await _authorize(workflow_id, principal, decision=True)
-    try:
-        return await signal_workflow(workflow_id, "approved")
-    except Exception as exc:
-        raise _http_error(exc) from exc
+    return await _decide(workflow_id, request, principal, "approved")
 
 
-@router.post("/{workflow_id}/reject", summary="审核人退回资料包审查")
+@router.post("/{workflow_id}/reject", summary="审核人按报告版本退回审查")
 async def reject_workflow(
     workflow_id: str,
     request: WorkflowDecisionRequest,
     principal: Principal = Depends(current_principal),
 ) -> dict:
-    await _authorize(workflow_id, principal, decision=True)
-    try:
-        return await signal_workflow(workflow_id, "rejected", request.reason)
-    except Exception as exc:
-        raise _http_error(exc) from exc
+    return await _decide(workflow_id, request, principal, "rejected")
 
 
 @router.post("/{workflow_id}/cancel", status_code=202, summary="取消未完成工作流")

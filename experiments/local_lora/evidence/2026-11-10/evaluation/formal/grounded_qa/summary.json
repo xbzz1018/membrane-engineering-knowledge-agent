@@ -1,0 +1,32 @@
+{
+  "task": "grounded_qa",
+  "dtype": "torch.bfloat16",
+  "do_sample": false,
+  "max_new_tokens": 96,
+  "structured_decoding": false,
+  "metric_definition": "NFKC/whitespace/case-normalized character EM and bag-of-character F1; not official CMRC scores.",
+  "base": {
+    "examples": 100,
+    "metrics": {
+      "schema_valid": 0.93,
+      "exact_match": 0.44,
+      "character_f1": 0.7214944674547064,
+      "source_id_correct": 0.93,
+      "answer_verbatim_in_context": 0.74,
+      "hit_generation_limit": 0.0
+    },
+    "elapsed_seconds": 63.23513614900003
+  },
+  "adapter": {
+    "examples": 100,
+    "metrics": {
+      "schema_valid": 0.99,
+      "exact_match": 0.43,
+      "character_f1": 0.7507097015958505,
+      "source_id_correct": 0.99,
+      "answer_verbatim_in_context": 0.93,
+      "hit_generation_limit": 0.01
+    },
+    "elapsed_seconds": 103.21409380400019
+  }
+}

@@ -11,8 +11,10 @@ from typing import Any
 
 from sqlalchemy import (
     Column,
+    Date,
     DateTime,
     Float,
+    Index,
     Integer,
     MetaData,
     String,
@@ -20,6 +22,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     and_,
+    case,
     delete,
     func,
     insert,
@@ -30,9 +33,47 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from src.core.config import get_settings
+from src.domain.document_search import DocumentSearchFilters
+from src.infrastructure.document_filters import apply_document_filters
+from src.infrastructure.project_plan_tables import define_plan_tables
 
 settings = get_settings()
 metadata = MetaData()
+project_plans, project_plan_versions, project_plan_reviews, project_plan_decisions, project_plan_artifacts = (
+    define_plan_tables(metadata)
+)
+
+document_business_metadata = Table(
+    "document_business_metadata", metadata,
+    Column("document_id", String(64), primary_key=True),
+    Column("engineering_model", String(128), nullable=False),
+    Column("applicable_revision", String(128), nullable=False),
+    Column("document_type", String(16), nullable=False),
+    Column("effective_from", Date, nullable=True),
+    Column("effective_to", Date, nullable=True),
+    Column("source_note", String(1000), nullable=False),
+    Column("declared_by", String(64), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Index("ix_doc_business_identity", "engineering_model", "applicable_revision", "document_type"),
+    Index("ix_doc_business_effective", "effective_from", "effective_to"),
+)
+
+review_manifests = Table(
+    "review_manifests", metadata,
+    Column("review_id", String(64), primary_key=True),
+    Column("tenant_id", String(64), nullable=False),
+    Column("project_id", String(128), nullable=False),
+    Column("sha256", String(64), nullable=False),
+    Column("payload", Text, nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+
+document_ingest_claims = Table(
+    "document_ingest_claims", metadata,
+    Column("document_id", String(64), primary_key=True),
+    Column("execution_id", String(256), nullable=False),
+    Column("attempt", Integer, nullable=False),
+)
 
 tenants = Table(
     "tenants", metadata,
@@ -722,7 +763,14 @@ class EngineeringStorage:
             await session.commit()
         return row
 
-    async def acquire_document_ingest(self, document_id: str, *, refresh_embedding: bool = False) -> bool:
+    async def acquire_document_ingest(
+        self, document_id: str, *, refresh_embedding: bool = False,
+        claim: tuple[str, int] | None = None,
+    ) -> bool:
+        if claim is not None:
+            from src.infrastructure.ingest_claim import acquire_claim
+
+            return await acquire_claim(self, document_id, claim, refresh_embedding=refresh_embedding)
         async with self.session_factory() as session:
             statuses = ["uploaded", "failed", "index_failed"]
             condition = documents.c.status.in_(statuses)
@@ -736,8 +784,14 @@ class EngineeringStorage:
             await session.commit()
             return bool(result.rowcount)
 
-    async def fail_document(self, document_id: str, error_type: str) -> None:
+    async def fail_document(
+        self, document_id: str, error_type: str, *, claim: tuple[str, int] | None = None,
+    ) -> None:
         async with self.session_factory() as session:
+            if claim is not None:
+                from src.infrastructure.ingest_claim import guard_claim
+
+                await guard_claim(session, document_id, claim)
             await session.execute(
                 documents.update().where(documents.c.id == document_id).values(
                     status="failed", error_type=error_type[:128], updated_at=_now(),
@@ -786,7 +840,10 @@ class EngineeringStorage:
             result = await session.execute(query)
             return [dict(row) for row in result.mappings().all()]
 
-    async def save_chunks(self, document_id: str, chunks: list[dict[str, Any]], parser: str) -> int:
+    async def save_chunks(
+        self, document_id: str, chunks: list[dict[str, Any]], parser: str,
+        *, claim: tuple[str, int] | None = None,
+    ) -> int:
         if not chunks or not any(str(item.get("text", "")).strip() for item in chunks):
             raise ValueError("cannot index a document without evidence chunks")
         if settings.RUNTIME_MODE.lower() == "full":
@@ -807,6 +864,10 @@ class EngineeringStorage:
                     bytes(asset["asset_bytes"]),
                 )
         async with self.session_factory() as session:
+            if claim is not None:
+                from src.infrastructure.ingest_claim import guard_claim
+
+                await guard_claim(session, document_id, claim)
             await session.execute(delete(document_chunks).where(document_chunks.c.document_id == document_id))
             values = [
                 {
@@ -844,20 +905,31 @@ class EngineeringStorage:
             if document is None:
                 raise RuntimeError(f"Document disappeared after indexing: {document_id}")
             try:
+                if claim is not None:
+                    document = {**document, "_ingest_claim": claim}
                 await get_full_backends().index_document(document, chunks)
             except Exception as exc:
                 async with self.session_factory() as session:
+                    if claim is not None:
+                        from src.infrastructure.ingest_claim import guard_claim
+
+                        await guard_claim(session, document_id, claim)
                     await session.execute(documents.update().where(documents.c.id == document_id).values(
                         status="index_failed", error_type=type(exc).__name__, updated_at=_now(),
                     ))
                     await session.commit()
                 raise
         async with self.session_factory() as session:
+            if claim is not None:
+                from src.infrastructure.ingest_claim import guard_claim
+
+                await guard_claim(session, document_id, claim)
             embedding_model = ""
             if settings.RUNTIME_MODE.lower() == "full":
+                from src.documents.representations import document_index_model
                 from src.infrastructure.model_provider import get_model_provider
 
-                embedding_model = get_model_provider().embedding_model
+                embedding_model = document_index_model(get_model_provider(), settings)
             await session.execute(documents.update().where(documents.c.id == document_id).values(
                 status="indexed", embedding_model=embedding_model, error_type=None, updated_at=_now(),
             ))
@@ -872,7 +944,10 @@ class EngineeringStorage:
         *,
         tenant_id: str = "",
         classifications: set[str] | None = None,
+        filters: DocumentSearchFilters | None = None,
+        lexical_only: bool = False,
     ) -> list[dict[str, Any]]:
+        filters = filters or DocumentSearchFilters()
         async with self.session_factory() as session:
             statement = select(
                 document_chunks,
@@ -880,27 +955,48 @@ class EngineeringStorage:
                 documents.c.version,
                 documents.c.created_at,
             ).select_from(document_chunks.join(documents, document_chunks.c.document_id == documents.c.id))
+            statement = statement.where(documents.c.status == "indexed")
             if project_id:
                 statement = statement.where(documents.c.project_id == project_id)
             if tenant_id:
                 statement = statement.where(documents.c.tenant_id == tenant_id)
             if classifications:
                 statement = statement.where(documents.c.data_classification.in_(sorted(classifications)))
-            result = await session.execute(statement)
+            statement = apply_document_filters(statement, documents, document_business_metadata, filters)
+            # Parameterized substring scoring in SQL. This is deliberately not called BM25.
+            # Keep candidate rows and their sort in the database, rather than loading
+            # every authorized chunk into Python memory.
+            terms = list(dict.fromkeys(re.findall(r"[\w-]+", query.lower())))[:32]
+            lexical_score = sum((
+                case((func.lower(documents.c.filename).contains(term, autoescape=True), 4), else_=0)
+                + case((func.lower(document_chunks.c.text).contains(term, autoescape=True), 1), else_=0)
+                for term in terms
+            ), 0)
+            if settings.CONTEXTUAL_RETRIEVAL_ENABLED:
+                lexical_score += sum((
+                    case((func.lower(document_chunks.c.heading_path).contains(term, autoescape=True), 2), else_=0)
+                    + case((func.lower(document_chunks.c.sheet_name).contains(term, autoescape=True), 2), else_=0)
+                    + case((func.lower(document_chunks.c.location).contains(term, autoescape=True), 1), else_=0)
+                    for term in terms
+                ), 0)
+            if terms:
+                statement = statement.add_columns(lexical_score.label("raw_score")).where(lexical_score > 0)
+                statement = statement.order_by(lexical_score.desc(), document_chunks.c.id)
+            elif filters.model_dump(exclude_none=True):
+                statement = statement.order_by(document_chunks.c.id)
+            else:
+                return []
+            result = await session.execute(statement.limit(limit))
             rows = [dict(row) for row in result.mappings().all()]
-        def score(row: dict[str, Any]) -> int:
-            return (_score(query, row["filename"]) * 4) + _score(query, row["text"])
-
-        ranked = sorted(rows, key=score, reverse=True)
-        lexical = [row for row in ranked if score(row) > 0][:limit]
+        lexical = rows
         for rank, row in enumerate(lexical, 1):
-            row["raw_score"] = score(row)
+            row.setdefault("raw_score", 0)
             row["retrieval"] = [{
                 "backend": "postgresql" if settings.RUNTIME_MODE.lower() == "full" else "sqlite",
                 "rank": rank,
-                "score": score(row),
+                "score": row["raw_score"],
             }]
-        if settings.RUNTIME_MODE.lower() != "full":
+        if settings.RUNTIME_MODE.lower() != "full" or not query.strip() or lexical_only:
             return lexical
         from src.infrastructure.full_backends import get_full_backends
 
@@ -910,7 +1006,8 @@ class EngineeringStorage:
             project_id=project_id,
             tenant_id=tenant_id,
             classifications=classifications,
-        )
+            filters=filters,
+        ) if query.strip() else []
         return _fuse_ranked(
             [("postgresql", 1.0, lexical), ("pgvector", 1.3, vector)],
             "id",
@@ -1290,6 +1387,17 @@ class EngineeringStorage:
             ))
             await session.commit()
 
+    async def conversation_messages(self, user_id: str, scoped_session_id: str, limit: int = 6) -> list[dict]:
+        """Caller derives session hash from tenant/user/project/session after authorization."""
+        async with self.session_factory() as session:
+            rows = (await session.execute(
+                select(conversations.c.role, conversations.c.content)
+                .where(conversations.c.user_id == user_id, conversations.c.session_id == scoped_session_id)
+                .order_by(conversations.c.created_at.desc(), conversations.c.id.desc())
+                .limit(max(1, min(limit, 12)))
+            )).mappings().all()
+            return [dict(row) for row in reversed(rows)]
+
     async def create_memory_candidate(
         self,
         *,
@@ -1537,53 +1645,12 @@ class EngineeringStorage:
         review_mode: str = "full",
         tenant_id: str | None = None,
     ) -> None:
-        now = _now()
-        review_id = result["review_id"]
-        async with self.session_factory() as session:
-            await session.execute(delete(package_review_evidence).where(
-                package_review_evidence.c.review_id == review_id
-            ))
-            values = {
-                "tenant_id": tenant_id or settings.DEFAULT_TENANT_ID,
-                "user_id": user_id,
-                "project_id": project_id,
-                "question": question,
-                "review_mode": review_mode,
-                "status": result["status"],
-                "engine": result["engine"],
-                "report": result.get("report", ""),
-                "conflicts": json.dumps(result.get("conflicts", []), ensure_ascii=False),
-                "worker_results": json.dumps(result.get("worker_results", {}), ensure_ascii=False),
-                "issues": json.dumps(result.get("issues", []), ensure_ascii=False),
-                "usage": json.dumps(result.get("usage", {}), ensure_ascii=False),
-                "human_review_required": int(bool(result.get("human_review_required"))),
-                "updated_at": now,
-            }
-            existing = await session.execute(select(package_reviews.c.id).where(package_reviews.c.id == review_id))
-            if existing.first():
-                await session.execute(package_reviews.update().where(package_reviews.c.id == review_id).values(
-                    **values,
-                    lock_version=package_reviews.c.lock_version + 1,
-                ))
-            else:
-                await session.execute(insert(package_reviews).values(
-                    id=review_id,
-                    **values,
-                    lock_version=1,
-                    created_at=now,
-                ))
-            evidence = [
-                {
-                    "id": f"{review_id}:{index}",
-                    "review_id": review_id,
-                    "source_id": str(source.get("source_id", index)),
-                    "payload": json.dumps(source, ensure_ascii=False),
-                }
-                for index, source in enumerate(result.get("sources", []))
-            ]
-            if evidence:
-                await session.execute(insert(package_review_evidence), evidence)
-            await session.commit()
+        from src.infrastructure.review_lifecycle import publish_review_once
+
+        await publish_review_once(
+            self, result, user_id=user_id, project_id=project_id, question=question,
+            review_mode=review_mode, tenant_id=tenant_id,
+        )
 
     async def get_package_review(self, review_id: str) -> dict[str, Any] | None:
         async with self.session_factory() as session:
@@ -1629,21 +1696,13 @@ class EngineeringStorage:
             }
 
     async def update_package_review_status(self, review_id: str, status: str) -> bool:
-        async with self.session_factory() as session:
-            result = await session.execute(
-                package_reviews.update()
-                .where(and_(
-                    package_reviews.c.id == review_id,
-                    package_reviews.c.status == "awaiting_approval",
-                ))
-                .values(
-                    status=status,
-                    updated_at=_now(),
-                    lock_version=package_reviews.c.lock_version + 1,
-                )
-            )
-            await session.commit()
-            return bool(result.rowcount)
+        # Approval must pass the transactional human gate, never a bare status update.
+        if status in {"approved", "rejected"}:
+            review = await self.get_package_review(review_id)
+            return bool(review and review["status"] == status)
+        from src.infrastructure.review_lifecycle import set_review_terminal
+
+        return await set_review_terminal(self, review_id, status)
 
     async def update_review_issue_status(
         self,

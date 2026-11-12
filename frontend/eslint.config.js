@@ -3,7 +3,7 @@ import tseslint from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
 
 export default [
-  { ignores: ['dist/**', 'node_modules/**', 'src/types/openapi.ts'] },
+  { ignores: ['dist/**', 'node_modules/**', '.vite-cache/**', 'src/types/openapi.ts'] },
   ...pluginVue.configs['flat/essential'],
   ...tseslint.configs.recommended,
   {

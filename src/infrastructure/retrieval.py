@@ -4,7 +4,10 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+from src.core.config import get_settings
 from src.core.observability import span
+from src.documents.representations import contextual_text
+from src.domain.document_search import DocumentSearchFilters
 from src.domain.schemas import SourceRef
 from src.infrastructure.database import EngineeringStorage, storage
 from src.infrastructure.model_provider import ModelProvider, get_model_provider
@@ -54,6 +57,7 @@ class RetrievalService:
         classifications: set[str] | None = None,
         channels: set[str] | None = None,
         limit: int = 8,
+        filters: DocumentSearchFilters | None = None,
     ) -> RetrievalPacket:
         enabled = channels or {"documents", "cases", "materials", "prices"}
         channel_candidates: dict[str, list[dict[str, Any]]] = {
@@ -67,6 +71,7 @@ class RetrievalService:
                     project_id=project_id,
                     tenant_id=tenant_id,
                     classifications=classifications,
+                    **({"filters": filters} if filters is not None else {}),
                 )
             for item in document_rows:
                 candidate_text = (
@@ -75,6 +80,8 @@ class RetrievalService:
                     f"位置：{item.get('location') or f'第{item.get('page_number', 1)}页'}\n"
                     f"正文：{item['text']}"
                 )
+                if get_settings().CONTEXTUAL_RETRIEVAL_ENABLED:
+                    candidate_text = contextual_text(item, item)
                 channel_candidates["documents"].append({
                     "evidence_id": str(item["id"]),
                     "source_type": "document",
@@ -125,7 +132,8 @@ class RetrievalService:
             if rank < len(rows)
         ]
         with span("gen_ai.rerank", {"rerank.candidate_count": len(candidates), "rerank.top_n": limit}):
-            selected = await self.provider.rerank(query, candidates, top_n=limit)
+            # Exact-only requests have no semantic query to rerank.
+            selected = await self.provider.rerank(query, candidates, top_n=limit) if query.strip() else candidates[:limit]
         evidence: list[dict[str, Any]] = []
         sources: list[dict[str, Any]] = []
         for item in selected:
@@ -133,7 +141,7 @@ class RetrievalService:
             evidence.append({
                 "evidence_id": item["evidence_id"],
                 "source_type": item["source_type"],
-                "text": item["text"][:8000],
+                "text": raw["text"] if item["source_type"] == "document" else item["text"][:8000],
                 "rerank": item.get("rerank", {}),
             })
             sources.append(self._source(item["source_type"], item["evidence_id"], raw))

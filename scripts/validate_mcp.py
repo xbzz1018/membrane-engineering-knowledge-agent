@@ -6,6 +6,7 @@ import asyncio
 import json
 import sys
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -206,6 +207,15 @@ async def validate_http() -> dict:
 
 async def main() -> None:
     summary = {"stdio": await validate_stdio(), "streamable_http": await validate_http()}
+    summary["validated_at"] = datetime.now(UTC).isoformat()
+    summary["runtime_mode"] = get_settings().RUNTIME_MODE
+    summary["model_mode"] = get_settings().MODEL_MODE
+    summary["temporal_enabled"] = get_settings().TEMPORAL_ENABLED
+    output = Path(__file__).resolve().parents[1] / "data/runtime/mcp-validation" / (
+        datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
+    )
+    output.mkdir(parents=True)
+    (output / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
 
 

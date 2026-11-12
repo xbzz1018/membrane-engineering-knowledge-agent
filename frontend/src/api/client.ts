@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios'
 
 export const TOKEN_KEY = 'membrane.access_token'
-export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080'
+export const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8080'
 
 export class ApiError extends Error {
   constructor(message: string, public status = 0, public detail: unknown = null) {
@@ -67,4 +67,29 @@ export async function streamSse(
       if (line) onEvent(JSON.parse(line.slice(5).trim()))
     }
   }
+}
+
+
+export async function downloadMarkdown(path: string, filename: string): Promise<void> {
+  const { data } = await api.get<string>(path, { responseType: 'text' })
+  const url = URL.createObjectURL(new Blob([data], { type: 'text/markdown;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+export async function downloadArtifact(path: string, filename: string): Promise<void> {
+  const { data } = await api.get<Blob>(path, { responseType: 'blob' })
+  const url = URL.createObjectURL(data)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

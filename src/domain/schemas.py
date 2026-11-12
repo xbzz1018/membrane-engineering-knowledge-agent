@@ -4,9 +4,13 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.domain.chat_routing import ChatRoutingInfo
+
 
 class SourceRef(BaseModel):
     model_config = ConfigDict(title="证据来源")
+    content_sha256: str = Field(default="", description="完整证据文本SHA256，用于核对重新解析后的证据")
+    document_sha256: str = Field(default="", description="原资料文件SHA256")
     source_id: str = Field(description="稳定证据ID")
     title: str = Field(description="文件或数据标题")
     source_type: str = Field(description="来源类型")
@@ -34,6 +38,7 @@ class ChatRequest(BaseModel):
     project_id: str = Field(default="demo-project", min_length=1, max_length=128, description="项目ID")
     session_id: str = Field(default="default", min_length=1, max_length=128, description="会话ID")
     message: str = Field(min_length=1, max_length=4000, description="用户问题")
+    request_id: str | None = Field(default=None, min_length=8, max_length=128, description="动作请求幂等标识；重试复用")
 
 
 class ChatResponse(BaseModel):
@@ -41,11 +46,14 @@ class ChatResponse(BaseModel):
     answer: str
     session_id: str
     route: str
+    answer_origin: Literal["general_knowledge", "project_evidence", "workflow_guidance", "clarification"] = "project_evidence"
+    routing: ChatRoutingInfo | None = None
     agents_used: list[str] = Field(default_factory=list)
     sources: list[SourceRef] = Field(default_factory=list)
     uncertainties: list[str] = Field(default_factory=list)
     usage: dict = Field(default_factory=dict)
     memory_candidates: list[dict] = Field(default_factory=list)
+    project_plan: dict | None = Field(default=None, description="受理的方案ID、版本、状态与工作流引用")
 
 
 class DocumentResponse(BaseModel):
@@ -75,9 +83,7 @@ class ReviewIssue(BaseModel):
 
     model_config = ConfigDict(title="工程审查问题单")
     issue_id: str = Field(default="", max_length=128, description="稳定问题编号")
-    domain: Literal["design", "material", "price", "cross_domain"] = Field(
-        default="design", description="问题所属领域"
-    )
+    domain: Literal["retrieval", "material", "review", "design", "price", "cross_domain"] = Field(default="design", description="问题所属领域")
     issue_type: str = Field(default="finding", max_length=64, description="问题类型")
     summary: str = Field(default="", max_length=1000, description="问题摘要")
     severity: Literal["info", "warning", "conflict"] = "info"
@@ -96,13 +102,13 @@ class PackageReviewRequest(BaseModel):
     project_id: str = Field(default="demo-project", description="项目ID")
     document_ids: list[str] = Field(min_length=1, max_length=20, description="1至20份已索引资料ID")
     question: str = Field(
-        default="比较资料中的设计方案、膜材规格和价格差异",
+        default="查找资料依据、核验材料参数并审查跨文档一致性",
         max_length=2000,
         description="审查目标",
     )
     review_mode: Literal["full", "focused"] = Field(
         default="full",
-        description="full固定覆盖三领域，focused由Supervisor选择领域",
+        description="full必须覆盖检索/材料/审查，focused由Supervisor受限选择；审查依赖前两角色",
     )
 
 
@@ -121,18 +127,23 @@ class PackageReviewResponse(BaseModel):
     agents_used: list[str] = Field(default_factory=list, description="实际参与的业务智能体")
     orchestrator: str = Field(default="ReviewSupervisorAgent", description="审查计划智能体")
     review_plan: dict = Field(default_factory=dict, description="Supervisor 生成的审查计划")
-    review_mode: Literal["full", "focused"] = Field(
-        default="full", description="full三领域审查或focused专项审查"
-    )
+    review_mode: Literal["full", "focused"] = Field(default="full", description="full三领域审查或focused专项审查")
     usage: dict = Field(default_factory=dict)
     human_review_required: bool = False
     lock_version: int = Field(default=1, ge=1, description="审查报告乐观锁版本")
 
 
 class ReviewIssueStatusRequest(BaseModel):
+    reason: str = Field(default="", max_length=1000, description="处理说明；忽略问题时必填")
     model_config = ConfigDict(title="审查问题处理请求")
     status: Literal["resolved", "dismissed", "pending_human"]
     expected_lock_version: int = Field(ge=1, description="读取报告时获得的乐观锁版本")
+
+
+class ReviewDecisionRequest(BaseModel):
+    decision: Literal["approved", "rejected"]
+    expected_lock_version: int = Field(ge=1)
+    reason: str = Field(default="", max_length=1000)
 
 
 class MemoryItemResponse(BaseModel):
@@ -163,6 +174,7 @@ class MemoryUpdateRequest(BaseModel):
 
 
 class WorkflowDecisionRequest(BaseModel):
+    expected_lock_version: int = Field(ge=1, description="报告当前乐观锁版本")
     model_config = ConfigDict(title="工作流决定请求")
     reason: str = Field(default="", max_length=1000, description="退回原因")
 

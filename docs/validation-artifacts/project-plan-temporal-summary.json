@@ -1,0 +1,29 @@
+{
+  "run_id": "20261103T122632Z-f4bf5872",
+  "mode": "real Temporal dev server / SQLite / Fake Agents / synthetic sources",
+  "code_sha256_at_start": "b5aa20ee1e123a917c482cf2eb589aa3547d4526758f666115aac2ccfe817b29",
+  "checks": {
+    "duplicate_request_same_plan_and_workflow": true,
+    "worker_killed_after_claim_retries_without_duplicate_version": true,
+    "offline_human_decision_persisted_then_consumed": true,
+    "object_written_worker_killed_single_published_artifact": true,
+    "two_real_histories_replayed": true
+  },
+  "not_validated": [
+    "PostgreSQL/pgvector",
+    "real model quality",
+    "production failover",
+    "Word layout"
+  ],
+  "plan_id": "af6c8cfd-219f-465d-a11e-45a0c37e623d",
+  "artifact_id": "283f8d25-fa5e-530f-b120-5a55ce696e74",
+  "histories": {
+    "ProjectGenerationWorkflow": "ProjectGenerationWorkflow.json",
+    "ProjectExportWorkflow": "ProjectExportWorkflow.json"
+  },
+  "docx_sha256": "34b04333c1e1f10e825ef821228fc2e5ac891bd667b770c9524e8a0056c973b5",
+  "all_passed": true,
+  "code_sha256_at_end": "b5aa20ee1e123a917c482cf2eb589aa3547d4526758f666115aac2ccfe817b29",
+  "source_changed_during_run": false,
+  "finished_at": "2026-11-03T12:28:20.517497+00:00"
+}

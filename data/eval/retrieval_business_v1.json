@@ -1,0 +1,1970 @@
+{
+  "schema_version": 1,
+  "dataset_kind": "synthetic_development_fixture",
+  "label_author": "developer",
+  "not_a_held_out_test": true,
+  "limitations": [
+    "Template-generated distractors and repeated model families",
+    "No domain expert labels",
+    "Semantic no-answer has no calibrated score threshold; empty-return rate is not QA accuracy"
+  ],
+  "documents": [
+    {
+      "key": "PTFE-502-design-R1",
+      "filename": "PTFE-502-design-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R1。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R1",
+        "document_type": "design",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "PTFE-502-design-R2",
+      "filename": "PTFE-502-design-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R2。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "document_type": "design",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "PTFE-502-design-R3",
+      "filename": "PTFE-502-design-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R3。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R3",
+        "document_type": "design",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PTFE-502-material-R1",
+      "filename": "PTFE-502-material-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R1。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R1",
+        "document_type": "material",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "PTFE-502-material-R2",
+      "filename": "PTFE-502-material-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R2。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "PTFE-502-material-R3",
+      "filename": "PTFE-502-material-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R3。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R3",
+        "document_type": "material",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PTFE-502-price-R1",
+      "filename": "PTFE-502-price-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R1。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R1",
+        "document_type": "price",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "PTFE-502-price-R2",
+      "filename": "PTFE-502-price-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R2。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "document_type": "price",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "PTFE-502-price-R3",
+      "filename": "PTFE-502-price-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 PTFE-502，适用版次 R3。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R3",
+        "document_type": "price",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PTFE-502-near-model",
+      "filename": "PTFE-502-near-model.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 PTFE-5020，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PTFE-5020",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PTFE-502-unknown-date",
+      "filename": "PTFE-502-unknown-date.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 PTFE-502，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": null,
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PTFE-502-private",
+      "filename": "PTFE-502-private.txt",
+      "upload_version": 2,
+      "classification": "internal",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 PTFE-502，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PTFE-502-other-project",
+      "filename": "PTFE-502-other-project.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "other",
+      "content": "SYNTHETIC 材料规格：型号 PTFE-502，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "ETFE-250-design-R1",
+      "filename": "ETFE-250-design-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R1。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R1",
+        "document_type": "design",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "ETFE-250-design-R2",
+      "filename": "ETFE-250-design-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R2。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "document_type": "design",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "ETFE-250-design-R3",
+      "filename": "ETFE-250-design-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R3。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R3",
+        "document_type": "design",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "ETFE-250-material-R1",
+      "filename": "ETFE-250-material-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R1。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R1",
+        "document_type": "material",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "ETFE-250-material-R2",
+      "filename": "ETFE-250-material-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R2。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "ETFE-250-material-R3",
+      "filename": "ETFE-250-material-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R3。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R3",
+        "document_type": "material",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "ETFE-250-price-R1",
+      "filename": "ETFE-250-price-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R1。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R1",
+        "document_type": "price",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "ETFE-250-price-R2",
+      "filename": "ETFE-250-price-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R2。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "document_type": "price",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "ETFE-250-price-R3",
+      "filename": "ETFE-250-price-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 ETFE-250，适用版次 R3。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R3",
+        "document_type": "price",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "ETFE-250-near-model",
+      "filename": "ETFE-250-near-model.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 ETFE-2500，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "ETFE-2500",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "ETFE-250-unknown-date",
+      "filename": "ETFE-250-unknown-date.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 ETFE-250，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": null,
+        "effective_to": null
+      }
+    },
+    {
+      "key": "ETFE-250-private",
+      "filename": "ETFE-250-private.txt",
+      "upload_version": 2,
+      "classification": "internal",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 ETFE-250，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "ETFE-250-other-project",
+      "filename": "ETFE-250-other-project.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "other",
+      "content": "SYNTHETIC 材料规格：型号 ETFE-250，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PVC-900-design-R1",
+      "filename": "PVC-900-design-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R1。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R1",
+        "document_type": "design",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "PVC-900-design-R2",
+      "filename": "PVC-900-design-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R2。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "document_type": "design",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "PVC-900-design-R3",
+      "filename": "PVC-900-design-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R3。设计要求：核验拉伸强度与节点承载，安装预张力按节点详图控制。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R3",
+        "document_type": "design",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PVC-900-material-R1",
+      "filename": "PVC-900-material-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R1。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R1",
+        "document_type": "material",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "PVC-900-material-R2",
+      "filename": "PVC-900-material-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R2。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "PVC-900-material-R3",
+      "filename": "PVC-900-material-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R3。材料规格：名义厚度0.8 mm，拉伸强度6000 N/5cm，防火等级B1。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R3",
+        "document_type": "material",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PVC-900-price-R1",
+      "filename": "PVC-900-price-R1.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R1。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R1",
+        "document_type": "price",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31"
+      }
+    },
+    {
+      "key": "PVC-900-price-R2",
+      "filename": "PVC-900-price-R2.txt",
+      "upload_version": 2,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R2。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "document_type": "price",
+        "effective_from": "2026-01-01",
+        "effective_to": "2026-12-31"
+      }
+    },
+    {
+      "key": "PVC-900-price-R3",
+      "filename": "PVC-900-price-R3.txt",
+      "upload_version": 3,
+      "content": "SYNTHETIC developer fixture。型号 PVC-900，适用版次 R3。历史价格：华东地区含税人民币每平方米280元；不作为正式报价。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R3",
+        "document_type": "price",
+        "effective_from": "2027-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PVC-900-near-model",
+      "filename": "PVC-900-near-model.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 PVC-9000，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PVC-9000",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PVC-900-unknown-date",
+      "filename": "PVC-900-unknown-date.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 PVC-900，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": null,
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PVC-900-private",
+      "filename": "PVC-900-private.txt",
+      "upload_version": 2,
+      "classification": "internal",
+      "scope": "target",
+      "content": "SYNTHETIC 材料规格：型号 PVC-900，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "PVC-900-other-project",
+      "filename": "PVC-900-other-project.txt",
+      "upload_version": 2,
+      "classification": "public",
+      "scope": "other",
+      "content": "SYNTHETIC 材料规格：型号 PVC-900，厚度0.8 mm，强度6000 N/5cm。",
+      "metadata": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "document_type": "material",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-000",
+      "filename": "DISTRACTOR-000.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档0：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-0",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-001",
+      "filename": "DISTRACTOR-001.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档1：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-1",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-002",
+      "filename": "DISTRACTOR-002.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档2：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-2",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-003",
+      "filename": "DISTRACTOR-003.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档3：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-3",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-004",
+      "filename": "DISTRACTOR-004.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档4：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-4",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-005",
+      "filename": "DISTRACTOR-005.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档5：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-5",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-006",
+      "filename": "DISTRACTOR-006.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档6：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-6",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-007",
+      "filename": "DISTRACTOR-007.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档7：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-7",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-008",
+      "filename": "DISTRACTOR-008.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档8：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-8",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-009",
+      "filename": "DISTRACTOR-009.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档9：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-9",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-010",
+      "filename": "DISTRACTOR-010.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档10：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-10",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-011",
+      "filename": "DISTRACTOR-011.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档11：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-11",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-012",
+      "filename": "DISTRACTOR-012.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档12：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-12",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-013",
+      "filename": "DISTRACTOR-013.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档13：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-13",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-014",
+      "filename": "DISTRACTOR-014.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档14：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-14",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-015",
+      "filename": "DISTRACTOR-015.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档15：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-15",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-016",
+      "filename": "DISTRACTOR-016.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档16：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-16",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-017",
+      "filename": "DISTRACTOR-017.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档17：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-17",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-018",
+      "filename": "DISTRACTOR-018.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档18：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-18",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-019",
+      "filename": "DISTRACTOR-019.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档19：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-19",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-020",
+      "filename": "DISTRACTOR-020.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档20：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-20",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-021",
+      "filename": "DISTRACTOR-021.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档21：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-21",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-022",
+      "filename": "DISTRACTOR-022.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档22：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-22",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-023",
+      "filename": "DISTRACTOR-023.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档23：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-23",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-024",
+      "filename": "DISTRACTOR-024.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档24：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-24",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-025",
+      "filename": "DISTRACTOR-025.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档25：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-25",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-026",
+      "filename": "DISTRACTOR-026.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档26：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-26",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-027",
+      "filename": "DISTRACTOR-027.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档27：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-27",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-028",
+      "filename": "DISTRACTOR-028.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档28：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-28",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-029",
+      "filename": "DISTRACTOR-029.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档29：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-29",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-030",
+      "filename": "DISTRACTOR-030.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档30：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-30",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-031",
+      "filename": "DISTRACTOR-031.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档31：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-31",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-032",
+      "filename": "DISTRACTOR-032.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档32：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-32",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-033",
+      "filename": "DISTRACTOR-033.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档33：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-33",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-034",
+      "filename": "DISTRACTOR-034.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档34：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-34",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-035",
+      "filename": "DISTRACTOR-035.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档35：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-35",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-036",
+      "filename": "DISTRACTOR-036.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档36：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-36",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-037",
+      "filename": "DISTRACTOR-037.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档37：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-37",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-038",
+      "filename": "DISTRACTOR-038.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档38：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-38",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-039",
+      "filename": "DISTRACTOR-039.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档39：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-39",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-040",
+      "filename": "DISTRACTOR-040.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档40：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-40",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-041",
+      "filename": "DISTRACTOR-041.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档41：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-41",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-042",
+      "filename": "DISTRACTOR-042.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档42：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-42",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-043",
+      "filename": "DISTRACTOR-043.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档43：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-43",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-044",
+      "filename": "DISTRACTOR-044.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档44：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-44",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-045",
+      "filename": "DISTRACTOR-045.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档45：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-45",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-046",
+      "filename": "DISTRACTOR-046.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档46：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-46",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-047",
+      "filename": "DISTRACTOR-047.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档47：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-47",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-048",
+      "filename": "DISTRACTOR-048.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档48：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-48",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-049",
+      "filename": "DISTRACTOR-049.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档49：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-49",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-050",
+      "filename": "DISTRACTOR-050.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档50：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-50",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-051",
+      "filename": "DISTRACTOR-051.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档51：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-51",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-052",
+      "filename": "DISTRACTOR-052.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档52：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-52",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-053",
+      "filename": "DISTRACTOR-053.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档53：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-53",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-054",
+      "filename": "DISTRACTOR-054.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档54：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-54",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-055",
+      "filename": "DISTRACTOR-055.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档55：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-55",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-056",
+      "filename": "DISTRACTOR-056.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档56：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-56",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-057",
+      "filename": "DISTRACTOR-057.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档57：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-57",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-058",
+      "filename": "DISTRACTOR-058.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档58：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-58",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-059",
+      "filename": "DISTRACTOR-059.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档59：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-59",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-060",
+      "filename": "DISTRACTOR-060.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档60：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-60",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-061",
+      "filename": "DISTRACTOR-061.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档61：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-61",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-062",
+      "filename": "DISTRACTOR-062.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档62：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-62",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-063",
+      "filename": "DISTRACTOR-063.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档63：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-63",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-064",
+      "filename": "DISTRACTOR-064.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档64：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-64",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-065",
+      "filename": "DISTRACTOR-065.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档65：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-65",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-066",
+      "filename": "DISTRACTOR-066.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档66：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-66",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-067",
+      "filename": "DISTRACTOR-067.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档67：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-67",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-068",
+      "filename": "DISTRACTOR-068.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档68：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-68",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-069",
+      "filename": "DISTRACTOR-069.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档69：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-69",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-070",
+      "filename": "DISTRACTOR-070.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档70：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-70",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-071",
+      "filename": "DISTRACTOR-071.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档71：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-71",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-072",
+      "filename": "DISTRACTOR-072.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档72：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-72",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-073",
+      "filename": "DISTRACTOR-073.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档73：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-73",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-074",
+      "filename": "DISTRACTOR-074.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档74：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-74",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-075",
+      "filename": "DISTRACTOR-075.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档75：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-75",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-076",
+      "filename": "DISTRACTOR-076.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档76：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-76",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-077",
+      "filename": "DISTRACTOR-077.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档77：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-77",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-078",
+      "filename": "DISTRACTOR-078.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档78：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-78",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    },
+    {
+      "key": "DISTRACTOR-079",
+      "filename": "DISTRACTOR-079.txt",
+      "upload_version": 1,
+      "content": "SYNTHETIC 工程归档79：消防检修、施工节点、名义厚度与材料拉伸强度通用检查，未提供目标型号依据。",
+      "metadata": {
+        "engineering_model": "OTHER-79",
+        "applicable_revision": "R1",
+        "document_type": "other",
+        "effective_from": "2026-01-01",
+        "effective_to": null
+      }
+    }
+  ],
+  "queries": [
+    {
+      "eval_id": "PTFE-502-spec",
+      "query": "名义厚度",
+      "category": "exact_model",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "document_type": "material"
+      },
+      "relevant_document_keys": [
+        "PTFE-502-material-R2"
+      ]
+    },
+    {
+      "eval_id": "PTFE-502-multi",
+      "query": "拉伸强度",
+      "category": "multi_relevant",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": [
+        "PTFE-502-design-R2",
+        "PTFE-502-material-R2"
+      ]
+    },
+    {
+      "eval_id": "PTFE-502-history",
+      "query": "材料规格",
+      "category": "effective_date",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "document_type": "material",
+        "effective_on": "2025-12-31"
+      },
+      "relevant_document_keys": [
+        "PTFE-502-material-R1"
+      ]
+    },
+    {
+      "eval_id": "PTFE-502-future",
+      "query": "材料规格",
+      "category": "effective_date",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R3",
+        "document_type": "material",
+        "effective_on": "2027-01-01"
+      },
+      "relevant_document_keys": [
+        "PTFE-502-material-R3"
+      ]
+    },
+    {
+      "eval_id": "PTFE-502-version",
+      "query": "节点",
+      "category": "upload_version",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "upload_version": 2,
+        "document_type": "design"
+      },
+      "relevant_document_keys": [
+        "PTFE-502-design-R2"
+      ]
+    },
+    {
+      "eval_id": "PTFE-502-paraphrase",
+      "query": "这个产品在施工时如何施加初始张力",
+      "category": "semantic_paraphrase",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": [
+        "PTFE-502-design-R2"
+      ]
+    },
+    {
+      "eval_id": "PTFE-502-empty-query",
+      "query": "",
+      "category": "exact_only",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "document_type": "price"
+      },
+      "relevant_document_keys": [
+        "PTFE-502-price-R2"
+      ]
+    },
+    {
+      "eval_id": "PTFE-502-absent-revision",
+      "query": "厚度",
+      "category": "unanswerable_filter",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R99",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": []
+    },
+    {
+      "eval_id": "PTFE-502-absent-topic",
+      "query": "供应商法定代表人的护照号码",
+      "category": "unanswerable_semantic",
+      "filters": {
+        "engineering_model": "PTFE-502",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": []
+    },
+    {
+      "eval_id": "ETFE-250-spec",
+      "query": "名义厚度",
+      "category": "exact_model",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "document_type": "material"
+      },
+      "relevant_document_keys": [
+        "ETFE-250-material-R2"
+      ]
+    },
+    {
+      "eval_id": "ETFE-250-multi",
+      "query": "拉伸强度",
+      "category": "multi_relevant",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": [
+        "ETFE-250-design-R2",
+        "ETFE-250-material-R2"
+      ]
+    },
+    {
+      "eval_id": "ETFE-250-history",
+      "query": "材料规格",
+      "category": "effective_date",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "document_type": "material",
+        "effective_on": "2025-12-31"
+      },
+      "relevant_document_keys": [
+        "ETFE-250-material-R1"
+      ]
+    },
+    {
+      "eval_id": "ETFE-250-future",
+      "query": "材料规格",
+      "category": "effective_date",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R3",
+        "document_type": "material",
+        "effective_on": "2027-01-01"
+      },
+      "relevant_document_keys": [
+        "ETFE-250-material-R3"
+      ]
+    },
+    {
+      "eval_id": "ETFE-250-version",
+      "query": "节点",
+      "category": "upload_version",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "upload_version": 2,
+        "document_type": "design"
+      },
+      "relevant_document_keys": [
+        "ETFE-250-design-R2"
+      ]
+    },
+    {
+      "eval_id": "ETFE-250-paraphrase",
+      "query": "这个产品在施工时如何施加初始张力",
+      "category": "semantic_paraphrase",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": [
+        "ETFE-250-design-R2"
+      ]
+    },
+    {
+      "eval_id": "ETFE-250-empty-query",
+      "query": "",
+      "category": "exact_only",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "document_type": "price"
+      },
+      "relevant_document_keys": [
+        "ETFE-250-price-R2"
+      ]
+    },
+    {
+      "eval_id": "ETFE-250-absent-revision",
+      "query": "厚度",
+      "category": "unanswerable_filter",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R99",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": []
+    },
+    {
+      "eval_id": "ETFE-250-absent-topic",
+      "query": "供应商法定代表人的护照号码",
+      "category": "unanswerable_semantic",
+      "filters": {
+        "engineering_model": "ETFE-250",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": []
+    },
+    {
+      "eval_id": "PVC-900-spec",
+      "query": "名义厚度",
+      "category": "exact_model",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "document_type": "material"
+      },
+      "relevant_document_keys": [
+        "PVC-900-material-R2"
+      ]
+    },
+    {
+      "eval_id": "PVC-900-multi",
+      "query": "拉伸强度",
+      "category": "multi_relevant",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": [
+        "PVC-900-design-R2",
+        "PVC-900-material-R2"
+      ]
+    },
+    {
+      "eval_id": "PVC-900-history",
+      "query": "材料规格",
+      "category": "effective_date",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "document_type": "material",
+        "effective_on": "2025-12-31"
+      },
+      "relevant_document_keys": [
+        "PVC-900-material-R1"
+      ]
+    },
+    {
+      "eval_id": "PVC-900-future",
+      "query": "材料规格",
+      "category": "effective_date",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R3",
+        "document_type": "material",
+        "effective_on": "2027-01-01"
+      },
+      "relevant_document_keys": [
+        "PVC-900-material-R3"
+      ]
+    },
+    {
+      "eval_id": "PVC-900-version",
+      "query": "节点",
+      "category": "upload_version",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "upload_version": 2,
+        "document_type": "design"
+      },
+      "relevant_document_keys": [
+        "PVC-900-design-R2"
+      ]
+    },
+    {
+      "eval_id": "PVC-900-paraphrase",
+      "query": "这个产品在施工时如何施加初始张力",
+      "category": "semantic_paraphrase",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": [
+        "PVC-900-design-R2"
+      ]
+    },
+    {
+      "eval_id": "PVC-900-empty-query",
+      "query": "",
+      "category": "exact_only",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02",
+        "document_type": "price"
+      },
+      "relevant_document_keys": [
+        "PVC-900-price-R2"
+      ]
+    },
+    {
+      "eval_id": "PVC-900-absent-revision",
+      "query": "厚度",
+      "category": "unanswerable_filter",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R99",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": []
+    },
+    {
+      "eval_id": "PVC-900-absent-topic",
+      "query": "供应商法定代表人的护照号码",
+      "category": "unanswerable_semantic",
+      "filters": {
+        "engineering_model": "PVC-900",
+        "applicable_revision": "R2",
+        "effective_on": "2026-11-02"
+      },
+      "relevant_document_keys": []
+    },
+    {
+      "eval_id": "unfiltered-design",
+      "query": "PTFE-502 R2 安装预张力",
+      "category": "unfiltered",
+      "filters": {},
+      "relevant_document_keys": [
+        "PTFE-502-design-R2"
+      ]
+    },
+    {
+      "eval_id": "unfiltered-spec",
+      "query": "ETFE-250 R2 防火等级",
+      "category": "unfiltered",
+      "filters": {},
+      "relevant_document_keys": [
+        "ETFE-250-material-R2"
+      ]
+    },
+    {
+      "eval_id": "missing-model",
+      "query": "材料规格",
+      "category": "unanswerable_filter",
+      "filters": {
+        "engineering_model": "NO-SUCH-MODEL"
+      },
+      "relevant_document_keys": []
+    }
+  ]
+}

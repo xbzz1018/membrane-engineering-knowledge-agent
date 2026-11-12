@@ -11,11 +11,13 @@ from langchain_core.tools import tool
 from langgraph.checkpoint.memory import InMemorySaver
 
 from src.agents.prompts import get_prompt
+from src.application.authorization import ProjectAuthorizationService
 from src.application.knowledge import KnowledgeQueryError, KnowledgeQueryService
 from src.application.memory import get_memory_service
 from src.core.config import get_settings
 from src.core.observability import span
 from src.core.security import Principal
+from src.domain.document_search import DocumentSearchFilters
 from src.infrastructure.database import EngineeringStorage, storage
 from src.infrastructure.model_provider import ModelProvider, get_model_provider
 from src.infrastructure.retrieval import RetrievalService
@@ -38,7 +40,9 @@ class KnowledgeAgent:
         self.store = store
         self.provider = provider or get_model_provider()
         self.retrieval = RetrievalService(store, self.provider)
-        self.queries = KnowledgeQueryService(store, retrieval=self.retrieval)
+        self.queries = KnowledgeQueryService(
+            store, authorization=ProjectAuthorizationService(store), retrieval=self.retrieval,
+        )
         self.memory = get_memory_service(store)
 
     def _checkpointer(self):
@@ -48,7 +52,7 @@ class KnowledgeAgent:
             return get_redis_checkpointer()
         return _local_checkpointer
 
-    def _tools(self, principal: Principal, project_id: str):
+    def _tools(self, principal: Principal, project_id: str, role: str | None = None):
         queries = self.queries
 
         async def call_query(operation, tool_name: str) -> str:
@@ -61,11 +65,13 @@ class KnowledgeAgent:
             return json.dumps(result, ensure_ascii=False, default=str)
 
         @tool
-        async def search_project_documents(query: str, limit: int = 8) -> str:
-            """检索当前项目的公开文档Evidence，适合文件内容、设计版本和原文定位问题。"""
+        async def search_project_documents(query: str, limit: int = 8,
+                                           filters: DocumentSearchFilters | None = None) -> str:
+            """检索当前项目公开资料。明确型号/适用版本/业务日期放filters，未知条件不要猜测。"""
             return await call_query(
                 lambda: queries.search_documents(
                     principal, project_id, query, limit=limit, classifications={"public"},
+                    **({"filters": filters} if filters is not None else {}),
                 ),
                 "search_project_documents",
             )
@@ -95,12 +101,21 @@ class KnowledgeAgent:
             """按文档ID读取公开Evidence的文件名、页码或位置、版本和受限长度正文。"""
             return await call_query(
                 lambda: queries.get_document_evidence(
-                    principal, document_id, limit=limit, classifications={"public"},
+                    principal, document_id, limit=limit, classifications={"public"}, project_id=project_id,
                 ),
                 "get_document_evidence",
             )
 
-        return [search_project_documents, query_material_specs, query_price_records, get_document_evidence]
+        tools = [search_project_documents, query_material_specs, query_price_records, get_document_evidence]
+        if role is None:
+            return tools
+        allowed = {
+            "retrieval": {"search_project_documents", "query_price_records", "get_document_evidence"},
+            "material": {"query_material_specs", "search_project_documents", "get_document_evidence"},
+        }
+        if role not in allowed:
+            raise AgentProtocolError("Unknown knowledge query role")
+        return [item for item in tools if item.name in allowed[role]]
 
     @staticmethod
     def _tool_payloads(messages: list[Any]) -> list[dict[str, Any]]:
@@ -136,16 +151,26 @@ class KnowledgeAgent:
         session_id: str,
         query: str,
         memories: list[str],
+        *,
+        role: str | None = None,
+        provider: ModelProvider | None = None,
     ) -> dict[str, Any]:
         if await self.store.project_has_nonpublic_documents(project_id):
             raise AgentProtocolError("项目包含非公开资料，未配置本地模型时禁止云端调用")
+        normalization = None
+        if get_settings().LORA_TASKS_ENABLED:
+            from src.application.model_tasks import TaskAdapterService
+
+            query, normalization = await TaskAdapterService("query_normalization").normalize(query)
         prompt = get_prompt("knowledge")
+        active_provider = provider or self.provider
+        role_prompt = (get_prompt(f"{role}-query").text + "\n") if role else ""
         agent = create_agent(
-            model=self.provider.langchain_model(),
-            tools=self._tools(principal, project_id),
-            system_prompt=prompt.text,
-            checkpointer=self._checkpointer(),
-            name="knowledge_agent",
+            model=active_provider.langchain_model(),
+            tools=self._tools(principal, project_id, role),
+            system_prompt=role_prompt + prompt.text,
+            checkpointer=self._checkpointer() if role is None else None,
+            name=f"{role}_query_agent" if role else "knowledge_agent",
         )
         content = (
             f"问题：{query}\n"
@@ -154,9 +179,9 @@ class KnowledgeAgent:
         if memories:
             content += "\n用户已确认的项目记忆（仅作上下文，不是证据）：" + json.dumps(memories, ensure_ascii=False)
         with span("gen_ai.invoke_agent", {
-            "gen_ai.agent.name": "KnowledgeAgent",
-            "gen_ai.provider.name": str(self.provider.metadata.get("provider", "")),
-            "gen_ai.request.model": str(self.provider.metadata.get("model", "")),
+            "gen_ai.agent.name": {"retrieval": "RetrievalAgent", "material": "MaterialAgent"}.get(role, "KnowledgeAgent"),
+            "gen_ai.provider.name": str(active_provider.metadata.get("provider", "")),
+            "gen_ai.request.model": str(active_provider.metadata.get("model", "")),
         }):
             result = await agent.ainvoke(
                 {"messages": [{"role": "user", "content": content}]},
@@ -170,7 +195,15 @@ class KnowledgeAgent:
         payloads = self._tool_payloads(messages)
         if not payloads:
             raise AgentProtocolError("KnowledgeAgent did not call a knowledge tool")
+        if any(payload.get("error") for payload in payloads):
+            raise AgentProtocolError("Knowledge query tool failed")
         answer, usage, finish_reason = self._answer(messages)
+        if role:
+            usage = {
+                key: sum(int((message.usage_metadata or {}).get(key, 0)) for message in messages
+                         if isinstance(message, AIMessage))
+                for key in ("input_tokens", "output_tokens")
+            }
         sources = []
         uncertainties = []
         evidence_ids = set()
@@ -184,19 +217,24 @@ class KnowledgeAgent:
                     evidence_ids.add(str(evidence_id))
             uncertainties.extend(item for item in payload.get("uncertainties", []) if item not in uncertainties)
         citations = set(re.findall(r"\[([^\[\]]+)\]", answer))
-        memory_intent = bool(re.search(r"记住|记下|记得|remember", query, re.IGNORECASE))
-        if evidence_ids and not memory_intent and ((not citations) or not citations <= evidence_ids):
+        if normalization:
+            usage = {key: int(usage.get(key, 0)) + int(normalization.get(key, 0))
+                     for key in ("input_tokens", "output_tokens")}
+        memory_intent = role is None and bool(re.search(r"记住|记下|记得|remember", query, re.IGNORECASE))
+        if not memory_intent and ((evidence_ids and not citations) or not citations <= evidence_ids):
             raise AgentProtocolError("KnowledgeAgent returned missing or invalid evidence citations")
         return {
             "answer": answer,
             "route": "knowledge",
             "sources": sources,
             "uncertainties": uncertainties,
+            "_tool_evidence": [item for payload in payloads for item in payload.get("evidence", [])],
             "usage": {
-                **self.provider.metadata,
+                **active_provider.metadata,
                 "model_usage": usage,
+                "normalization": normalization,
                 "finish_reason": finish_reason,
-                "agents_used": ["KnowledgeAgent"],
+                "agents_used": [{"retrieval": "RetrievalAgent", "material": "MaterialAgent"}.get(role, "KnowledgeAgent")],
             },
         }
 

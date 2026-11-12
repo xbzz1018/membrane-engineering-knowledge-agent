@@ -12,7 +12,7 @@ import type { DocumentItem, ReviewItem } from '../types/domain'
 
 const session = useSessionStore(); const router = useRouter(); const loading = ref(false)
 const reviews = ref<ReviewItem[]>([]); const documents = ref<DocumentItem[]>([]); const dialog = ref(false)
-const status = ref(''); const form = reactive({ document_ids: [] as string[], review_mode: 'full', question: '比较资料中的设计方案、膜材规格和价格差异' })
+const status = ref(''); const form = reactive({ document_ids: [] as string[], review_mode: 'full', question: '查找资料依据、核验材料参数并审查跨文档一致性' })
 const indexedDocuments = computed(() => documents.value.filter((item) => item.status === 'indexed'))
 
 async function load() {
@@ -41,7 +41,7 @@ onMounted(load)
 </script>
 
 <template>
-  <PageHeader title="资料包审查" description="由 Supervisor 规划设计、膜材和价格领域审查，并输出证据化问题单">
+  <PageHeader title="资料包审查" description="由 Supervisor 组织资料检索、材料核验与综合审查，输出带证据的问题单">
     <el-button type="primary" :icon="Plus" @click="dialog=true">发起审查</el-button>
   </PageHeader>
   <section class="section"><div class="section__body">
@@ -57,7 +57,7 @@ onMounted(load)
   </div></section>
 
   <el-dialog v-model="dialog" title="发起资料包审查" width="620px">
-    <el-form label-position="top"><el-form-item label="审查模式"><el-radio-group v-model="form.review_mode"><el-radio-button value="full">三领域正式审查</el-radio-button><el-radio-button value="focused">专项审查</el-radio-button></el-radio-group><small class="form-help">三领域模式固定执行设计、膜材和价格 Worker；专项模式由 Supervisor 从白名单选择。</small></el-form-item>
+    <el-form label-position="top"><el-form-item label="审查模式"><el-radio-group v-model="form.review_mode"><el-radio-button value="full">三领域正式审查</el-radio-button><el-radio-button value="focused">专项审查</el-radio-button></el-radio-group><small class="form-help">检索与材料先并行取证，再执行综合审查；专项模式由 Supervisor 从白名单选择，综合审查会自动补齐前置任务。</small></el-form-item>
       <el-form-item label="选择资料"><el-select v-model="form.document_ids" multiple filterable collapse-tags collapse-tags-tooltip placeholder="选择 1–20 份已索引资料" style="width:100%"><el-option v-for="item in indexedDocuments" :key="item.id" :label="`${item.filename} · V${item.version}`" :value="item.id" /></el-select></el-form-item>
       <el-form-item label="审查目标"><el-input v-model="form.question" type="textarea" :rows="4" maxlength="2000" show-word-limit /></el-form-item>
     </el-form><template #footer><el-button @click="dialog=false">取消</el-button><el-button type="primary" @click="createReview">确认发起</el-button></template>

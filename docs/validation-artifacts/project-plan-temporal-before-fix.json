@@ -1,0 +1,20 @@
+{
+  "run_id": "20261103T121124Z-d4689f43",
+  "mode": "real Temporal dev server / SQLite / Fake Agents / synthetic sources",
+  "code_sha256_at_start": "3f153720df1a4c2e886604690c8bcc3333980af697f9f4f76ec330ac63dd0e98",
+  "checks": {
+    "duplicate_request_same_plan_and_workflow": true
+  },
+  "not_validated": [
+    "PostgreSQL/pgvector",
+    "real model quality",
+    "production failover",
+    "Word layout"
+  ],
+  "all_passed": false,
+  "error_type": "TimeoutError",
+  "error": "proposal acceptance condition not reached",
+  "code_sha256_at_end": "3f153720df1a4c2e886604690c8bcc3333980af697f9f4f76ec330ac63dd0e98",
+  "source_changed_during_run": false,
+  "finished_at": "2026-11-03T12:14:14.659483+00:00"
+}

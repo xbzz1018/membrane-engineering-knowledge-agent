@@ -120,10 +120,13 @@ async def main() -> None:
             transport = httpx.ASGITransport(app=app)
             async with httpx.AsyncClient(transport=transport, base_url="http://test", timeout=600) as client:
                 if settings.AUTH_ENABLED:
-                    login = await client.post("/api/v1/auth/login", json={
-                        "username": settings.BOOTSTRAP_ADMIN_USERNAME,
-                        "password": settings.BOOTSTRAP_ADMIN_PASSWORD,
-                    })
+                    login = await client.post(
+                        "/api/v1/auth/login",
+                        json={
+                            "username": settings.BOOTSTRAP_ADMIN_USERNAME,
+                            "password": settings.BOOTSTRAP_ADMIN_PASSWORD,
+                        },
+                    )
                     login.raise_for_status()
                     client.headers["Authorization"] = f"Bearer {login.json()['access_token']}"
                 suffix = uuid.uuid4().hex[:10]
@@ -140,7 +143,9 @@ async def main() -> None:
                     raise AssertionError("Document workflow idempotent start did not reuse the workflow")
                 summary["document_ingest"] = ingest_state["status"]
 
-                async def submit_batch(size: int, label: str, document_ids: list[str] | None = None) -> tuple[dict, list[str]]:
+                async def submit_batch(
+                    size: int, label: str, document_ids: list[str] | None = None
+                ) -> tuple[dict, list[str]]:
                     batch_ids = list(document_ids or [])
                     for number in range(len(batch_ids), size):
                         uploaded = await client.post(
@@ -156,10 +161,13 @@ async def main() -> None:
                         )
                         uploaded.raise_for_status()
                         batch_ids.append(uploaded.json()["document_id"])
-                    batch = await client.post("/api/v1/batch-imports", json={
-                        "project_id": settings.DEFAULT_PROJECT_ID,
-                        "document_ids": batch_ids,
-                    })
+                    batch = await client.post(
+                        "/api/v1/batch-imports",
+                        json={
+                            "project_id": settings.DEFAULT_PROJECT_ID,
+                            "document_ids": batch_ids,
+                        },
+                    )
                     batch.raise_for_status()
                     state = await wait_state(
                         client,
@@ -183,8 +191,14 @@ async def main() -> None:
 
                 package_document_ids = []
                 for number, text in (
-                    (1, f"设计资料 厚度 0.7 mm，版本 1，日期 2025-01，批次 {suffix}。"),
-                    (2, f"膜材和价格资料 厚度 0.8 mm，版本 2，日期 2025-02，synthetic 价格，批次 {suffix}。"),
+                    (
+                        1,
+                        f"设计资料 PTFE-502 厚度 0.7 mm，适用版本 R1，文件编号 PKG-01，版本 1，日期 2025-01，批次 {suffix}。",
+                    ),
+                    (
+                        2,
+                        f"膜材规格 PTFE-502 厚度 0.8 mm，适用版本 R1，文件编号 PKG-01，版本 2，日期 2025-02，synthetic 价格，批次 {suffix}。",
+                    ),
                 ):
                     document_id, workflow_id = await upload_and_start_ingest(
                         client,
@@ -207,13 +221,27 @@ async def main() -> None:
                     payload = response.json()
                     workflow_id = payload["workflow"]["workflow_id"]
                     await wait_state(client, workflow_id, {"awaiting_approval"}, timeout=420)
+                    current = (await client.get(f"/api/v1/package-reviews/{payload['review_id']}")).json()
                     if action == "approved":
-                        signal = await client.post(f"/api/v1/workflows/{workflow_id}/approve")
-                    else:
-                        signal = await client.post(
-                            f"/api/v1/workflows/{workflow_id}/reject",
-                            json={"reason": "版本冲突需退回"},
-                        )
+                        for issue in current.get("issues", []):
+                            updated = await client.patch(
+                                f"/api/v1/package-reviews/{payload['review_id']}/issues/{issue['issue_id']}",
+                                json={
+                                    "status": "resolved",
+                                    "reason": "synthetic验收中已核对",
+                                    "expected_lock_version": current["lock_version"],
+                                },
+                            )
+                            updated.raise_for_status()
+                            current["lock_version"] = updated.json()["lock_version"]
+                    signal = await client.post(
+                        f"/api/v1/package-reviews/{payload['review_id']}/decision",
+                        json={
+                            "decision": action,
+                            "expected_lock_version": current["lock_version"],
+                            "reason": "synthetic验收",
+                        },
+                    )
                     signal.raise_for_status()
                     final = await wait_state(client, workflow_id, {action}, timeout=120)
                     stored = await client.get(f"/api/v1/package-reviews/{payload['review_id']}")
@@ -223,7 +251,7 @@ async def main() -> None:
                     if "ReviewSupervisorAgent" not in stored.json().get("agents_used", []):
                         raise AssertionError("Review did not persist the Supervisor Agent")
                     plan = stored.json().get("review_plan", {})
-                    if not set(plan.get("workers", [])) >= {"design", "material", "price"}:
+                    if not set(plan.get("workers", [])) >= {"retrieval", "material", "review"}:
                         raise AssertionError(f"Supervisor plan omitted expected workers: {plan}")
                     issues = await client.get(f"/api/v1/package-reviews/{payload['review_id']}/issues")
                     issues.raise_for_status()

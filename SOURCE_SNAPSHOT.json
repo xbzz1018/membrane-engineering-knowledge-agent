@@ -1,0 +1,13 @@
+{
+  "source": "F:\\code\\homework\\project\\membrane-engineering-knowledge-agent",
+  "source_commit": "cf013d7ebf84c7141068bbe8ad32dac8b3e7395d",
+  "copied_files": 215,
+  "excluded": [
+    ".env",
+    "runtime",
+    "uploads",
+    "results",
+    "node_modules",
+    ".git"
+  ]
+}
