@@ -3,4 +3,4 @@ pgvector>=0.3,<1
 minio>=7.2,<8
 temporalio>=1.8,<2
 agentevals>=0.0.9,<1
-mcp>=2,<3
+mcp>=2.2.0,<3
